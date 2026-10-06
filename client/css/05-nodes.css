@@ -1,0 +1,103 @@
+/* =========================================================
+   5. Nodos: contenedores (software) y cards hoja (DS / UI Kit)
+   ========================================================= */
+.node { position: absolute; left: 0; top: 0; will-change: transform; transition: box-shadow .15s, opacity .18s, border-color .12s; }
+.node.dragging { transition: none; z-index: 1000; }
+.node.lift { z-index: 900; }
+
+/* Contenedor */
+.ctr {
+  border: 1px solid var(--border); border-radius: 12px; background: var(--ctr-bg); cursor: grab;
+  min-width: 300px;
+}
+.ctr.root { border: 1.5px solid var(--border-strong); background: var(--ctr-root-bg); border-radius: 14px; }
+.ctr:hover { border-color: var(--border-strong); }
+.ctr.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.ctr.dragging { box-shadow: var(--shadow-lg); cursor: grabbing; }
+.ctr.drop-target { border-color: var(--accent); border-style: dashed; background: var(--accent-soft); }
+.ctr.dim { border-color: var(--border); }
+.ctr.dim > .ctr-head { opacity: .3; }
+.ctr.target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ctr-head {
+  position: relative; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px;
+  border-radius: 11px 11px 0 0; background: var(--panel); border-bottom: 1px solid var(--border); cursor: grab;
+}
+.ctr.root > .ctr-head { padding: 12px 16px; border-radius: 13px 13px 0 0; }
+.ctr.nested > .ctr-head { background: transparent; border-bottom: 1px dashed var(--border); }
+.head-top { display: flex; align-items: center; gap: 8px; }
+.head-top .spacer { flex: 1; }
+.head-actions { display: inline-flex; gap: 2px; opacity: 0; transition: opacity .12s; }
+.ctr-head:hover .head-actions, .ctr.selected > .ctr-head .head-actions { opacity: 1; }
+.head-actions .icon-btn { width: 22px; height: 22px; font-size: 15px; line-height: 1; }
+.head-main { display: flex; gap: 10px; align-items: flex-start; }
+.head-main .thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex: none; border: 1px solid var(--border); pointer-events: none; }
+.head-main .texts { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ctr.root .card-name { font-size: 15.5px; }
+.ctr-empty {
+  position: absolute; left: 16px; right: 16px; bottom: 16px; top: auto; height: 60px; display: grid; place-items: center;
+  border: 1px dashed var(--border); border-radius: 8px; color: var(--fg-3); font-size: 12px; pointer-events: none; text-align: center; padding: 0 8px;
+}
+.resize {
+  position: absolute; right: -1px; bottom: -1px; width: 16px; height: 16px; cursor: nwse-resize; border-radius: 0 0 12px 0;
+  background: linear-gradient(135deg, transparent 50%, var(--border-strong) 50%, var(--border-strong) 60%, transparent 60%, transparent 75%, var(--border-strong) 75%, var(--border-strong) 85%, transparent 85%);
+  opacity: 0; transition: opacity .12s;
+}
+.ctr:hover > .resize, .ctr.selected > .resize { opacity: 1; }
+
+/* Card hoja */
+.leaf {
+  width: 220px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow); cursor: grab;
+}
+.leaf:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+.leaf.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft), var(--shadow-md); }
+.leaf.dragging { box-shadow: var(--shadow-lg); cursor: grabbing; }
+.leaf.dim { opacity: .28; }
+.leaf.target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-lg); }
+.leaf .card-img { height: 112px; border-radius: 9px 9px 0 0; overflow: hidden; background: var(--hover); border-bottom: 1px solid var(--border); }
+.leaf .card-img img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.leaf .card-body { padding: 10px 12px 11px; display: flex; flex-direction: column; gap: 6px; }
+.type-ds { border-left: 3px solid var(--c-ds); }
+.type-uikit { border-left: 3px solid var(--c-uikit); }
+
+/* Contenido compartido entre contenedor y hoja */
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.type-badge {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  text-transform: uppercase; color: var(--fg-2); white-space: nowrap;
+}
+.type-badge::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--c-software); flex: none; }
+.type-ds .type-badge::before { border-radius: 50%; background: var(--c-ds); }
+.type-uikit .type-badge::before { border-radius: 2px 50% 50% 2px; background: var(--c-uikit); }
+.ctr.root > .ctr-head .type-badge { color: var(--accent); }
+.card-menu { width: 22px; height: 22px; opacity: 0; font-size: 16px; line-height: 1; }
+.leaf:hover .card-menu, .leaf.selected .card-menu { opacity: 1; }
+.card-name { font-weight: 600; font-size: 14px; line-height: 1.3; word-wrap: break-word; }
+.card-desc { font-size: 12.5px; color: var(--fg-2); line-height: 1.35; word-wrap: break-word; }
+.card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 2px; font-size: 12px; color: var(--fg-2); }
+.owner { font-family: var(--mono); font-size: 11.5px; color: var(--fg-2); background: var(--hover); padding: 0 5px; border-radius: 4px; }
+.ds-ref { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 500; }
+.ds-ref::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+.ds-ref.none { color: var(--fg-3); font-weight: 400; }
+.ds-ref.none::before { background: var(--fg-3); opacity: .5; }
+.ds-ref.ext::before { background: transparent; border: 1.5px dashed var(--accent); width: 5px; height: 5px; }
+.src-ref { display: inline-flex; align-items: center; gap: 4px; color: var(--edge-source); font-weight: 500; }
+.src-ref.none { color: var(--danger); }
+.count-ref { color: var(--fg-3); }
+.ext-ref { display: inline-flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 500; font-size: 11.5px; border: 1px dashed var(--accent); border-radius: 4px; padding: 0 5px; }
+
+/* Puertos de conexión */
+.port {
+  position: absolute; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--panel); border: 2px solid var(--accent); opacity: 0; transition: opacity .12s, transform .12s;
+  cursor: crosshair; z-index: 2; touch-action: none;
+}
+.port:hover { transform: scale(1.25); background: var(--accent); }
+.leaf:hover .port, .leaf.selected .port, .ctr-head:hover > .port, .ctr.selected > .ctr-head > .port, #viewport.connecting .port { opacity: 1; }
+.port-t { top: -7px; left: calc(50% - 6px); }
+.port-b { bottom: -7px; left: calc(50% - 6px); }
+.port-l { left: -8px; top: calc(50% - 6px); }
+.port-r { right: -7px; top: calc(50% - 6px); }
+.type-ds .port-l, .type-uikit .port-l { left: -9px; }
+

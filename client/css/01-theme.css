@@ -1,0 +1,84 @@
+/* =========================================================
+   1. Variables y tema
+   ========================================================= */
+:root {
+  --font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --bg: #ffffff;
+  --bg-canvas: #fbfbfa;
+  --panel: #ffffff;
+  --fg: #37352f;
+  --fg-2: #787774;
+  --fg-3: #9b9a97;
+  --border: rgba(55, 53, 47, 0.16);
+  --border-strong: rgba(55, 53, 47, 0.32);
+  --hover: rgba(55, 53, 47, 0.06);
+  --active: rgba(55, 53, 47, 0.1);
+  --ctr-bg: rgba(55, 53, 47, 0.025);
+  --ctr-root-bg: rgba(55, 53, 47, 0.04);
+  --accent: #2383e2;
+  --accent-soft: rgba(35, 131, 226, 0.14);
+  --danger: #eb5757;
+  --danger-soft: rgba(235, 87, 87, 0.12);
+  --grid-dot: rgba(55, 53, 47, 0.2);
+  --shadow: 0 1px 2px rgba(15, 15, 15, 0.06), 0 1px 1px rgba(15, 15, 15, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 15, 15, 0.1), 0 1px 3px rgba(15, 15, 15, 0.06);
+  --shadow-lg: 0 14px 36px rgba(15, 15, 15, 0.16), 0 3px 8px rgba(15, 15, 15, 0.08);
+  --edge-source: #c29343;
+  --guide: #ff4fa3;
+
+  --c-software: #2383e2;
+  --c-ds: #9065b0;
+  --c-uikit: #d9730d;
+
+  --radius: 6px;
+  --radius-lg: 10px;
+}
+:root[data-theme="dark"] {
+  --bg: #191919;
+  --bg-canvas: #191919;
+  --panel: #202020;
+  --fg: #d4d4d4;
+  --fg-2: #9b9b9b;
+  --fg-3: #6f6f6f;
+  --border: rgba(255, 255, 255, 0.13);
+  --border-strong: rgba(255, 255, 255, 0.3);
+  --hover: rgba(255, 255, 255, 0.055);
+  --active: rgba(255, 255, 255, 0.1);
+  --ctr-bg: rgba(255, 255, 255, 0.025);
+  --ctr-root-bg: rgba(255, 255, 255, 0.04);
+  --accent: #529cca;
+  --accent-soft: rgba(82, 156, 202, 0.2);
+  --danger: #ff7369;
+  --danger-soft: rgba(255, 115, 105, 0.16);
+  --grid-dot: rgba(255, 255, 255, 0.16);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.55), 0 3px 8px rgba(0, 0, 0, 0.35);
+  --edge-source: #d4a25a;
+  --c-software: #529cca;
+  --c-ds: #b58ad1;
+  --c-uikit: #e8923d;
+}
+
+/* Chips de etiquetas (paleta tipo Notion) */
+.tag-gray   { background: #e3e2e0; color: #32302c; }
+.tag-brown  { background: #eee0da; color: #442a1e; }
+.tag-orange { background: #fadec9; color: #49290e; }
+.tag-yellow { background: #fdecc8; color: #402c1b; }
+.tag-green  { background: #dbeddb; color: #1c3829; }
+.tag-blue   { background: #d3e5ef; color: #183347; }
+.tag-purple { background: #e8deee; color: #412454; }
+.tag-pink   { background: #f5e0e9; color: #4c2337; }
+.tag-red    { background: #ffe2dd; color: #5d1715; }
+:root[data-theme="dark"] .tag-gray   { background: #5a5a5a; color: #f0f0f0; }
+:root[data-theme="dark"] .tag-brown  { background: #603b2c; color: #f0e4dc; }
+:root[data-theme="dark"] .tag-orange { background: #854c1d; color: #fbe6d4; }
+:root[data-theme="dark"] .tag-yellow { background: #89632a; color: #fbefd6; }
+:root[data-theme="dark"] .tag-green  { background: #2b593f; color: #dcefe0; }
+:root[data-theme="dark"] .tag-blue   { background: #28456c; color: #d8e6f3; }
+:root[data-theme="dark"] .tag-purple { background: #492f64; color: #e8dcf1; }
+:root[data-theme="dark"] .tag-pink   { background: #69314c; color: #f5dde8; }
+:root[data-theme="dark"] .tag-red    { background: #6e3630; color: #fadcd8; }
+

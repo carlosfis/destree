@@ -1,0 +1,35 @@
+/* =========================================================
+   3. Barra superior
+   ========================================================= */
+.topbar {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  background: var(--panel); border-bottom: 1px solid var(--border);
+  position: relative; z-index: 20; flex-wrap: wrap;
+}
+.topbar .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-right: 4px; }
+.topbar .brand svg { width: 20px; height: 20px; }
+.topbar .spacer { flex: 1; }
+.topbar .sep { width: 1px; height: 20px; background: var(--border); margin: 0 2px; }
+.segmented { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.segmented button {
+  padding: 4px 9px; font-size: 13px; color: var(--fg-2); display: inline-flex; align-items: center; gap: 6px;
+  border-right: 1px solid var(--border);
+}
+.segmented button:last-child { border-right: 0; }
+.segmented button:hover { background: var(--hover); }
+.segmented button.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.save-status { font-size: 12px; color: var(--fg-3); white-space: nowrap; }
+.theme-switch {
+  position: relative; width: 40px; height: 22px; border-radius: 11px; background: var(--border);
+  border: 0; transition: background .2s; flex: none;
+}
+.theme-switch::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--panel); box-shadow: var(--shadow); transition: transform .2s;
+}
+:root[data-theme="dark"] .theme-switch { background: var(--accent); }
+:root[data-theme="dark"] .theme-switch::after { transform: translateX(18px); }
+.theme-switch svg { position: absolute; top: 5px; width: 12px; height: 12px; color: var(--fg-2); }
+.theme-switch .sun { left: 5px; }
+.theme-switch .moon { right: 5px; }
+

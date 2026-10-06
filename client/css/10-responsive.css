@@ -1,0 +1,12 @@
+/* =========================================================
+   10. Responsivo
+   ========================================================= */
+@media (max-width: 720px) {
+  .topbar { padding: 6px 8px; gap: 6px; }
+  .topbar .hide-sm, .save-status, .topbar .brand span { display: none; }
+  .panel { width: 100%; border-left: 0; }
+  #minimap, #legend { display: none !important; }
+  .shortcuts { grid-template-columns: 1fr; }
+  .type-picker, .field-row { grid-template-columns: 1fr; }
+  .img-field { flex-direction: column; }
+}
