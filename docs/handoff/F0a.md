@@ -1,5 +1,5 @@
 # Handoff F0a — Legacy + split en scripts clásicos + paridad   [✅ completa]
-Commit: COMMIT_HASH · Tag: f0a (se crea en F0b junto con f0b; F0a solo commit local)
+Commit: 1d63855 · Tag: f0a (se crea en F0b junto con f0b; F0a solo commit local)
 ## Hecho
 - `arbol.html` → `legacy/arbol.html` (intacto). Split con `sed -n` por rangos: 10 css + 20 js + `client/index.html` (`<link>`/`<script src>` clásicos en orden original, sin `type=module`).
 - `package.json` (scripts fijos dev/start/test/migrate/backup/lint; sin dependencias), `scripts/dev-server.js` (estático, puerto 5173), stubs `migrate.js`/`backup.js`, `lint.js` (`node --check`), `.gitignore`, `.env.example`, `docs/DECISIONS.md`.
