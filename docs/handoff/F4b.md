@@ -1,5 +1,5 @@
 # Handoff F4b — Panel de administración + page-settings   [✅ completa]
-Commit: (hash en el commit siguiente) · Tag: f4b (f4a → 0a578e6)
+Commit: 7224b70 · Tag: f4b (f4a → 0a578e6)
 ## Hecho
 - `GET /api/audit?limit&before&action` (audit.read, admin): paginación por ULID descendente, `userName`, `meta` parseado; `lib/audit.js#listAudit`.
 - `#/admin` (`views/admin-view.js`, overlay reutilizando `.lobby`): pestañas por permiso → Usuarios (`invite`; head solo invita designers a sus células), Células (`cells.read`; head solo gestiona miembros de las suyas), Páginas borradas (`pages.delete`; restaurar), Audit log (`audit.read`; filtro por prefijo de acción, "Cargar más"). Botón `⚑ Admin` en topbar solo si hay alguna pestaña.
