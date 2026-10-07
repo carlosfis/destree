@@ -57,7 +57,7 @@ export function getVersion(db, pageId, number, ctx = null) {
   const document = filterDocumentForUser(JSON.parse(gunzipSync(r.snapshot_gz).toString('utf8')), ctx);
   return { version: pub(r), document };
 }
-const NODE_FIELDS = ['type', 'name', 'description', 'imageId', 'tags', 'owner', 'ownerUserId', 'parentId', 'branchTypeId', 'notes', 'docs', 'visibility', 'status', 'cellIds', 'assigneeIds'];
+const NODE_FIELDS = ['type', 'name', 'description', 'imageId', 'tags', 'owner', 'staff', 'ownerUserId', 'parentId', 'branchTypeId', 'notes', 'docs', 'visibility', 'status', 'cellIds', 'assigneeIds'];
 /** Diferencias entre dos documentos: nodos +/−/~ (campos, sin posición), movidos, aristas +/−, tags/tipos. */
 export function diffDocuments(a, b) {
   const A = new Map(a.nodes.map(n => [n.id, n])), B = new Map(b.nodes.map(n => [n.id, n]));

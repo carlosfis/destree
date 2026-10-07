@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="css/13-lobby.css">
 <link rel="stylesheet" href="css/14-admin.css">
 <link rel="stylesheet" href="css/15-overrides.css">
+<link rel="stylesheet" href="css/16-drawer.css">
 </head>
 <body>
 
@@ -104,6 +105,9 @@
 <dialog id="confirmDialog"></dialog>
 <dialog id="shortcutsDialog"></dialog>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
+
+<!-- Sidebar de instancia (editor por pestañas / ficha de lectura); sustituye al modal #editorDialog para cards -->
+<aside class="panel node-drawer" id="nodeDrawer" aria-label="Instancia"></aside>
 
 <!-- F2: setup / login / invitación (overlay) -->
 <div id="authView" hidden></div>

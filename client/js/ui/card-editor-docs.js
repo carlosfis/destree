@@ -1,8 +1,31 @@
 /* =========================================================
-   F3. Secciones del editor de card: documentación (docs[] + notas), equipo (responsable, asignados) y visibilidad de raíz
+   F3. Secciones del editor de card: documentación (docs[] + notas), staff (usuario/rol), equipo (responsable, asignados) y visibilidad de raíz
    ========================================================= */
 import { $, esc } from '../core/utils.js';
 import { S } from '../core/state.js';
+
+export const normalizeOwner = s => { s = String(s || '').trim().replace(/\s+/g, ''); return s ? (s.startsWith('@') ? s : '@' + s) : ''; };
+const staffRow = m => `<div class="staff-row"><input class="staff-name" maxlength="80" placeholder="@usuario" value="${esc(m.name)}" autocomplete="off"><input class="staff-role" maxlength="80" placeholder="Rol (p. ej. UX Designer)" value="${esc(m.role || '')}" autocomplete="off"><button type="button" class="icon-btn staff-del" title="Quitar">🗑</button></div>`;
+
+/** Staff: lista usuario (@nombre, texto libre) + rol. `owner` legado se conserva como staff[0].name. */
+export function staffSection(draft) {
+  const list = draft.staff && draft.staff.length ? draft.staff : (draft.owner ? [{ name: draft.owner, role: '' }] : []);
+  const html = `<div class="field"><label>Staff <span class="counter" id="fStaffCount">${list.length}/20</span></label>
+      <div id="fStaff">${list.map(staffRow).join('')}</div>
+      <button type="button" class="btn" id="fStaffAdd">＋ Añadir persona</button><div class="hint">Usuario en formato @nombre y su rol, p. ej. @Lorena / UX Designer. Texto libre; no se vincula a ningún usuario.</div></div>`;
+  const bind = form => {
+    const box = $('#fStaff', form), count = () => { $('#fStaffCount', form).textContent = `${box.children.length}/20`; $('#fStaffAdd', form).disabled = box.children.length >= 20; };
+    $('#fStaffAdd', form).addEventListener('click', () => { if (box.children.length >= 20) return; box.insertAdjacentHTML('beforeend', staffRow({ name: '', role: '' })); count(); box.lastElementChild.querySelector('.staff-name').focus(); });
+    box.addEventListener('click', e => { const b = e.target.closest('.staff-del'); if (b) { b.parentElement.remove(); count(); } });
+    box.addEventListener('focusout', e => { if (e.target.classList.contains('staff-name')) e.target.value = normalizeOwner(e.target.value); });
+    count();
+  };
+  const read = form => {
+    const staff = [...form.querySelectorAll('.staff-row')].map(r => ({ name: normalizeOwner(r.querySelector('.staff-name').value).slice(0, 80), role: r.querySelector('.staff-role').value.trim().slice(0, 80) })).filter(m => m.name).slice(0, 20);
+    return { staff, owner: staff[0]?.name || '' };
+  };
+  return { html, bind, read };
+}
 
 const row = (d, i) => `<div class="doc-row" data-i="${i}"><input class="doc-label" maxlength="80" placeholder="Etiqueta" value="${esc(d.label)}"><input class="doc-url" type="url" maxlength="2048" placeholder="https://…" value="${esc(d.url)}"><button type="button" class="icon-btn doc-del" title="Quitar">🗑</button></div>`;
 
@@ -10,9 +33,9 @@ const row = (d, i) => `<div class="doc-row" data-i="${i}"><input class="doc-labe
 export function docsSection(draft) {
   const html = `<div class="field"><label>Enlaces de documentación <span class="counter" id="fDocCount">${draft.docs.length}/20</span></label>
       <div id="fDocs">${draft.docs.map(row).join('')}</div>
-      <button type="button" class="btn" id="fDocAdd">＋ Añadir enlace</button><div class="hint">Figma, Notion, repositorio, Storybook… Solo http(s).</div></div>
-    <div class="field"><label>Notas <span class="counter" id="fNotesCount">${draft.notes.length}/4000</span></label>
-      <textarea name="notes" maxlength="4000" rows="5" placeholder="Markdown básico: # títulos, - listas, [enlace](https://…), \`código\`, **negrita**">${esc(draft.notes)}</textarea></div>`;
+      <button type="button" class="btn" id="fDocAdd">＋ Añadir enlace</button><div class="hint">Figma, Notion, repositorio, Storybook… Solo http(s).</div></div>`;
+  const notesHtml = `<div class="field"><label>Notas <span class="counter" id="fNotesCount">${draft.notes.length}/4000</span></label>
+      <textarea name="notes" maxlength="4000" rows="14" placeholder="Markdown básico: # títulos, - listas, [enlace](https://…), \`código\`, **negrita**">${esc(draft.notes)}</textarea></div>`;
   const bind = form => {
     const box = $('#fDocs', form), count = () => { $('#fDocCount', form).textContent = `${box.children.length}/20`; $('#fDocAdd', form).disabled = box.children.length >= 20; };
     $('#fDocAdd', form).addEventListener('click', () => { if (box.children.length >= 20) return; box.insertAdjacentHTML('beforeend', row({ label: '', url: '' }, box.children.length)); count(); box.lastElementChild.querySelector('.doc-url').focus(); });
@@ -24,7 +47,7 @@ export function docsSection(draft) {
     docs: [...form.querySelectorAll('.doc-row')].map(r => ({ label: r.querySelector('.doc-label').value.trim().slice(0, 80), url: r.querySelector('.doc-url').value.trim().slice(0, 2048) })).filter(d => /^https?:\/\//i.test(d.url)).slice(0, 20),
     notes: form.notes.value.slice(0, 4000),
   });
-  return { html, bind, read };
+  return { html, notesHtml, bind, read };
 }
 
 /** Responsable (usuario) + asignados; solo con directorio (admin/head). */

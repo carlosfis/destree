@@ -47,10 +47,11 @@ function normalizeNode(n) {
   let docs = Array.isArray(n.docs) ? n.docs.filter(d => d && typeof d.url === 'string' && d.url.trim()).slice(0, 20).map(d => ({ label: str(d.label, 80), url: str(d.url.trim(), 2048) })) : [];
   const legacyUrl = n.docUrl ?? n.doc_url; // F3: campo legado → docs[0]
   if (!docs.length && typeof legacyUrl === 'string' && legacyUrl.trim()) docs = [{ label: 'Documentación', url: str(legacyUrl.trim(), 2048) }];
+  const staff = Array.isArray(n.staff) ? n.staff.filter(m => m && typeof m.name === 'string' && m.name.trim()).slice(0, 20).map(m => ({ name: str(m.name.trim(), 80), role: str(m.role, 80) })) : []; // equipo (usuario/rol)
   return {
     id: String(n.id), type: TYPES.includes(n.type) ? n.type : 'software', name: str(n.name, 120, 'Sin nombre') || 'Sin nombre',
     description: str(n.description, 140), image: typeof n.image === 'string' && n.image.startsWith('data:image') ? n.image : null, imageId: n.imageId ? String(n.imageId) : null,
-    tags: Array.isArray(n.tags) ? n.tags.map(String).slice(0, 50) : [], owner: str(n.owner, 80), ownerUserId: n.ownerUserId ? String(n.ownerUserId) : null,
+    tags: Array.isArray(n.tags) ? n.tags.map(String).slice(0, 50) : [], owner: str(n.owner, 80), staff, ownerUserId: n.ownerUserId ? String(n.ownerUserId) : null,
     parentId: n.parentId ? String(n.parentId) : null, branchTypeId: n.branchTypeId ? String(n.branchTypeId) : null,
     x: num(n.x), y: num(n.y), w: Math.max(0, num(n.w)), h: Math.max(0, num(n.h)), demo: !!n.demo,
     notes: str(n.notes, 4000), docs, visibility: ['org', 'cells'].includes(n.visibility) ? n.visibility : 'inherit',

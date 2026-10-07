@@ -38,7 +38,8 @@ export function commonHTML(n) {
   const tags = n.tags.map(tagById).filter(Boolean);
   let foot = '';
   if (n.ownerUserId) foot += `<span class="owner person" title="Responsable">${esc(userName(n.ownerUserId))}</span>`;
-  else if (n.owner) foot += `<span class="owner">${esc(n.owner)}</span>`;
+  if (n.staff && n.staff.length) foot += n.staff.slice(0, 3).map(m => `<span class="owner staff" title="${esc(m.role || 'Staff')}">${esc(m.name)}${m.role ? `<span class="role"> · ${esc(m.role)}</span>` : ''}</span>`).join('') + (n.staff.length > 3 ? `<span class="count-ref">+${n.staff.length - 3}</span>` : '');
+  else if (n.owner && !n.ownerUserId) foot += `<span class="owner">${esc(n.owner)}</span>`;
   for (const u of n.assigneeIds || []) foot += `<span class="assignee" title="Asignado">${esc(userName(u))}</span>`; // F3
   if (n.docs && n.docs.length) foot += `<span class="docs-ref" title="${n.docs.length} enlace${n.docs.length > 1 ? 's' : ''} de documentación">⎘ ${n.docs.length}</span>`;
   if (n.hasExternalRefs) foot += `<span class="hidden-ref" title="Tiene conexiones con elementos que no puedes ver">⇢ ocultas</span>`;
@@ -85,13 +86,15 @@ export function leafHTML(n) {
 export function headHTML(n) {
   const c = commonHTML(n);
   const bt = n.parentId ? branchTypeById(n.branchTypeId) : null;
-  return `<div class="head-top">
+  const img = imageSrc(n);
+  return `${img ? `<div class="card-img"><img src="${img}" alt="" draggable="false"></div>` : ''}
+    <div class="head-top">
       <span class="type-badge">${n.parentId ? 'Software' : 'Software · Raíz'}</span>
       ${bt ? `<span class="chip tag-${bt.color}" title="Tipo de ramificación">↳ ${esc(bt.name)}</span>` : (n.parentId ? '<span class="chip tag-gray">↳ sin tipo</span>' : visibilityChip(n))}
       <span class="spacer"></span>
       <span class="head-actions"><button class="icon-btn" data-action="add" title="Agregar dentro">＋</button><button class="icon-btn" data-action="menu" title="Opciones">⋯</button></span>
     </div>
-    <div class="head-main">${imageSrc(n) ? `<img class="thumb" src="${imageSrc(n)}" alt="" draggable="false">` : ''}<div class="texts">${c.name}${c.desc}</div></div>
+    <div class="head-main"><div class="texts">${c.name}${c.desc}</div></div>
     ${c.tags}${c.foot}${PORTS}`;
 }
 
@@ -125,7 +128,20 @@ export function renderNodes() {
   for (const [id, el] of nodeEls) if (!seen.has(id)) { el.remove(); nodeEls.delete(id); sizes.delete(id); measured.delete(id); }
   // Dos pasadas: el alto de la cabecera depende del ancho final del contenedor
   measureDOM(); computeSizes(); applySizes();
+  pushBelowHead();
   measureDOM(); computeSizes(); applySizes();
+}
+/** Si la cabecera creció (p. ej. hero recién añadido), baja en bloque a los hijos que quedaron debajo de ella. */
+function pushBelowHead() {
+  for (const n of S.state.nodes) {
+    if (!isContainer(n)) continue;
+    const kids = childrenOf(n.id); if (!kids.length) continue;
+    const minY = ((sizes.get(n.id) || {}).headH || 60) + HEAD_GAP;
+    const dy = minY - Math.min(...kids.map(k => k.y));
+    if (dy <= 0) continue;
+    for (const k of kids) k.y += dy;
+    updateNodeTransforms(kids.map(k => k.id));
+  }
 }
 export function measureDOM() {
   for (const [id, el] of nodeEls) {

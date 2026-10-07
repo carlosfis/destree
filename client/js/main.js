@@ -8,6 +8,7 @@ import { openLobby, closeLobby } from './views/lobby.js';
 import { history } from './core/history.js';
 import { closePopover } from './ui/popover.js';
 import { editorDialog } from './ui/card-editor.js';
+import { closeDrawer } from './ui/node-drawer.js';
 import { undo, redo, updateUndoButtons } from './core/history.js';
 import { measureViewport, applyCamera, zoomStep, setZoom, fitToScreen } from './canvas/camera.js';
 import { renderAll, clearSelection } from './canvas/selection.js';
@@ -77,7 +78,7 @@ function renderPageButton() {
 async function loadPage(pid) {
   try { await bootstrap(pid); } catch (err) { if (err.noPage || err.status === 403 || err.status === 404) { toast(err.message, 'error', 5000); if (!S.pageId) return openLobby(); if (location.hash !== '#/lobby') location.hash = '#/lobby'; return; } throw err; }
   history.past.length = 0; history.future.length = 0; updateUndoButtons();
-  closePopover(); if (editorDialog.open) editorDialog.close(); toggleAdmin(false);
+  closePopover(); if (editorDialog.open) editorDialog.close(); closeDrawer(); toggleAdmin(false);
   document.dispatchEvent(new CustomEvent('destree:reload'));
   closeLobby(); renderPageButton();
   setSaveStatus(S.offline ? 'Sin conexión' : S.readonly ? 'Solo lectura' : 'Guardado');

@@ -7,6 +7,7 @@ import { S } from './state.js';
 import { setTool } from '../canvas/pointer-gestures.js';
 import { sel } from '../canvas/render-nodes.js';
 import { openNodeView } from '../ui/node-view.js';
+import { isDrawerOpen, closeDrawer } from '../ui/node-drawer.js';
 
 export const canEdit = () => !S.session || S.session.permissions.includes('pages.edit');
 const ALLOWED_KEYS = new Set(['Escape', '?', '+', '=', '-', '0', ' ', 'h', 'H', 'Shift', 'Meta', 'Control', 'Alt']);
@@ -24,6 +25,7 @@ export function applyReadonly() {
   document.addEventListener('keydown', e => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || $('dialog[open]');
     if (typing) return;
+    if (e.key === 'Escape' && isDrawerOpen()) { block(e); closeDrawer(); return; }
     if (e.shiftKey && (e.code === 'Digit1' || e.code === 'Digit2')) return;
     if (e.key === 'Enter' && sel.nodes.size === 1) { block(e); openNodeView([...sel.nodes][0]); return; }
     if (!ALLOWED_KEYS.has(e.key)) block(e);

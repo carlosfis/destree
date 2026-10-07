@@ -5,7 +5,8 @@ Fuente única de verdad para agencias: árbol de software → Design Systems / U
 ## Estado actual
 - Fase hecha: F7 ⚠️ (Docker/compose/Caddy, CI + release, README/INSTALL/ADMIN/USER/FIGMA, `008` drop `image_legacy` con guarda, v0.1.0; verificación Docker/GHCR en `PENDIENTE.md`).
 - Próxima: **ALTO** — F8a (Figma) no se implementa por decisión del plan. Esperar al usuario (`PENDIENTE.md`). Candidatas: F9b sin Figma (SMTP), F11a, F11b.
-- Deuda crítica: ninguna. `npm test` 25/25; `node scripts/smoke.js` 25/25 (Chrome headless, consola limpia).
+- Iteración UI (2026-10-07): sidebar `#nodeDrawer` por pestañas (General/Staff/Documentación/Notas) sustituye al modal para editar/ver cards; títulos Main/Child instance; `node.staff[]` (`009_staff.sql`); hero de imagen en cards y contenedores.
+- Deuda crítica: ninguna. `npm test` 25/25; `node scripts/smoke.js` 24 pasos OK (Chrome headless, consola limpia).
 
 ## Comandos (fijos desde F0a)
 ```

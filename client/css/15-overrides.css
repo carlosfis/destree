@@ -14,3 +14,11 @@
 /* Las aristas (#edges) se dibujan encima de los nodos: con contenedores opacos quedaban ocultas.
    Los nodos en arrastre (z 1000) o elevados (z 900) siguen por encima; el hit-stroke de la arista sigue siendo clicable. */
 #edges { z-index: 2; }
+
+/* Hero: la imagen de una card se muestra arriba a todo el ancho (estilo Notion), también en la cabecera de los contenedores. */
+.leaf .card-img { height: 120px; }
+.ctr-head > .card-img { height: 120px; margin: -10px -12px 4px; border-radius: 11px 11px 0 0; overflow: hidden; background: var(--hover); border-bottom: 1px solid var(--border); }
+.ctr.root > .ctr-head > .card-img { margin: -12px -16px 4px; border-radius: 13px 13px 0 0; }
+.ctr-head > .card-img img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+/* Staff en el pie de la card: @usuario · rol */
+.card-foot .staff .role { color: var(--fg-3); }

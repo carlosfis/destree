@@ -98,7 +98,7 @@ const readPrefs = () => { try { return JSON.parse(localStorage.getItem(PREFS_KEY
 function applyPrefs(s) { const p = readPrefs(); s.settings.theme = ['light', 'dark'].includes(p.theme) ? p.theme : null; s.settings.tool = p.tool === 'hand' ? 'hand' : 'select'; return s; }
 function writePrefs() { try { localStorage.setItem(PREFS_KEY, JSON.stringify({ theme: S.state.settings.theme, tool: S.state.settings.tool, pageId: S.pageId || readPrefs().pageId || null })); } catch { /* sin localStorage */ } }
 export const lastPageId = () => readPrefs().pageId || null;
-function withDemo(s) { const demo = demoData(); s.nodes = demo.nodes; s.edges = demo.edges; S.firstRun = true; return s; }
+function withDemo(s) { const demo = demoData(); S.firstRun = true; return normalizeState({ ...s, nodes: demo.nodes, edges: demo.edges }); } // normalizado: el editor espera notes/docs/staff
 
 /** Estado local (offline): localStorage o demo. */
 export function loadState() {

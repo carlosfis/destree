@@ -53,7 +53,7 @@ await step('crear raíz (btnNew → menú → editor → submit)', async () => {
   const n = await ev(`document.querySelectorAll('#popover .menu-item').length`); if (!n) throw new Error('sin menú');
   await ev(`document.querySelector('#popover .menu-item').click()`); await sleep(120);
   await ev(`(() => { const f = document.querySelector('#editorForm'); f.elements.name.value = 'Smoke Root'; f.requestSubmit(); })()`); await sleep(150);
-  return ev(`({ open: document.querySelector('#editorDialog').open, nodes: S.state.nodes.length, last: S.state.nodes.at(-1).name })`);
+  return ev(`({ open: document.querySelector('#nodeDrawer').classList.contains('open'), nodes: S.state.nodes.length, last: S.state.nodes.at(-1).name })`);
 });
 await step('anidar DS (menú contextual del nodo → Design System)', async () => {
   const id = await ev(`S.state.nodes.at(-1).id`);
@@ -170,26 +170,29 @@ await step('F3: célula + editor raíz (visibilidad, 2 enlaces, notas, asignado)
     rows[1].querySelector('.doc-url').value = 'https://notion.so/y';
     f.elements.notes.value = ${JSON.stringify(NOTES)};
     f.querySelector('#fAssignees input').checked = true; f.elements.ownerUserId.value = S.session.user.id;
-    f.requestSubmit(); return { visHidden: f.querySelector('#fVisField').hidden }; })()`); await sleep(1200);
+    f.querySelector('#fStaffAdd').click(); const st = f.querySelector('.staff-row'); st.querySelector('.staff-name').value = 'lorena'; st.querySelector('.staff-role').value = 'UX Designer';
+    const tabs = [...f.querySelectorAll('.drawer-tabs button')].map(b => b.dataset.tab), title = f.querySelector('#drawerTitle').textContent;
+    f.requestSubmit(); return { visHidden: f.querySelector('#fVisField').hidden, tabs, title }; })()`); await sleep(1200);
   const n = await ev(`(() => { const n = S.state.nodes.find(n => n.id === ${JSON.stringify(rootId)}); const el = document.querySelector('.node[data-id="' + n.id + '"]');
-    return { vis: n.visibility, cells: n.cellIds, docs: n.docs.length, notes: n.notes.length, ass: n.assigneeIds.length, owner: n.ownerUserId === S.session.user.id, chip: !!el.querySelector('.vis-cells'), person: el.querySelectorAll('.assignee, .owner.person').length, docsRef: el.querySelector('.docs-ref')?.textContent, status: document.querySelector('#saveStatus').textContent }; })()`);
-  const server = await ev(`fetch('/api/pages/' + S.pageId).then(r => r.json()).then(d => { const n = d.nodes.find(n => n.id === ${JSON.stringify(rootId)}); return { vis: n.visibility, cells: n.cellIds.length, docs: n.docs.length, refs: d.refs.cells.map(c => c.name) }; })`);
+    return { vis: n.visibility, cells: n.cellIds, docs: n.docs.length, notes: n.notes.length, ass: n.assigneeIds.length, owner: n.ownerUserId === S.session.user.id, staff: n.staff, ownerLegacy: n.owner, staffChip: el.querySelector('.card-foot .staff')?.textContent, chip: !!el.querySelector('.vis-cells'), person: el.querySelectorAll('.assignee, .owner.person').length, docsRef: el.querySelector('.docs-ref')?.textContent, status: document.querySelector('#saveStatus').textContent }; })()`);
+  const server = await ev(`fetch('/api/pages/' + S.pageId).then(r => r.json()).then(d => { const n = d.nodes.find(n => n.id === ${JSON.stringify(rootId)}); return { vis: n.visibility, cells: n.cellIds.length, docs: n.docs.length, staff: n.staff, refs: d.refs.cells.map(c => c.name) }; })`);
   if (!tab.cells || !tab.dir || !tab.rows) throw new Error('pestaña Células vacía ' + JSON.stringify(tab));
   if (server.vis !== 'cells' || server.cells !== 1 || server.docs !== 2) throw new Error('servidor: ' + JSON.stringify(server));
+  if (server.staff?.[0]?.name !== '@lorena' || server.staff[0].role !== 'UX Designer' || n.ownerLegacy !== '@lorena' || r.title !== 'Main instance') throw new Error('staff/título: ' + JSON.stringify({ server: server.staff, n, r }));
   return { ...n, cellName: cell.name, ...r, serverRefs: server.refs };
 });
 await step('F3: ficha (Ver ficha) con markdown escapado + #/me con deep-link', async () => {
   const rootId = await ev(`S.state.nodes.find(n => !n.parentId).id`);
   await ev(`import('/js/ui/node-view.js').then(m => m.openNodeView(${JSON.stringify(rootId)}))`); await sleep(100);
-  const view = await ev(`(() => { const d = document.querySelector('#editorDialog'); const md = d.querySelector('.md'); return { open: d.open, h3: md.querySelector('h3')?.textContent, li: md.querySelectorAll('li').length, rawB: !!md.querySelector('li b'), escaped: md.innerHTML.includes('&lt;b&gt;'), links: [...md.querySelectorAll('a')].map(a => a.getAttribute('href')), code: !!md.querySelector('code'), docs: d.querySelectorAll('.doc-list a').length, people: d.querySelectorAll('.person').length }; })()`);
+  const view = await ev(`(() => { const d = document.querySelector('#nodeDrawer'); const md = d.querySelector('.md'); return { open: d.classList.contains('open'), h3: md.querySelector('h3')?.textContent, li: md.querySelectorAll('li').length, rawB: !!md.querySelector('li b'), escaped: md.innerHTML.includes('&lt;b&gt;'), links: [...md.querySelectorAll('a')].map(a => a.getAttribute('href')), code: !!md.querySelector('code'), docs: d.querySelectorAll('.doc-list a').length, people: d.querySelectorAll('.person').length }; })()`);
   if (view.rawB || !view.escaped) throw new Error('HTML sin escapar en notas');
   if (view.links.some(h => !/^https:/.test(h))) throw new Error('enlace inseguro: ' + view.links);
-  await ev(`document.querySelector('#editorDialog [data-cancel]').click(); true`);
+  await ev(`document.querySelector('#nodeDrawer [data-cancel]').click(); true`);
   await ev(`location.hash = '#/me'; true`); await sleep(200);
   const me = await ev(`({ open: document.querySelector('#editorDialog').open, items: document.querySelectorAll('#editorDialog .me-list li').length, title: document.querySelector('#editorDialog h2')?.textContent })`);
   await ev(`document.querySelector('#editorDialog .me-list a').click(); true`); await sleep(600);
-  const go = await ev(`({ hash: location.hash, selected: [...document.querySelectorAll('.node.selected')].map(e => e.dataset.id), open: document.querySelector('#editorDialog').open })`);
-  await ev(`document.querySelector('#editorDialog [data-cancel]').click(); location.hash = ''; true`); await sleep(100);
+  const go = await ev(`({ hash: location.hash, selected: [...document.querySelectorAll('.node.selected')].map(e => e.dataset.id), open: document.querySelector('#nodeDrawer').classList.contains('open') })`);
+  await ev(`document.querySelector('#nodeDrawer [data-cancel]').click(); location.hash = ''; true`); await sleep(100);
   return { view, me, go };
 });
 // F4a: lobby → nueva página → cambio sin fugas (historial/selección vacíos) → volver → archivar/restaurar.
@@ -207,7 +210,7 @@ await step('F4a: lobby → nueva página → cambio sin fugas → volver → arc
   await ev(`(() => { const f = document.querySelector('#editorForm'); f.elements.name.value = 'Raíz P2'; f.requestSubmit(); return true; })()`); await sleep(1000);
   const p2 = await ev(`import('/js/core/history.js').then(m => ({ nodes: S.state.nodes.length, hist: m.history.past.length, sel: [...document.querySelectorAll('.node.selected')].length, status: document.querySelector('#saveStatus').textContent }))`);
   await ev(`location.hash = '#/p/' + ${JSON.stringify(before.page)}; true`); await sleep(900);
-  const back = await ev(`import('/js/core/history.js').then(m => ({ page: S.pageId === ${JSON.stringify(before.page)}, nodes: S.state.nodes.length, hist: m.history.past.length, future: m.history.future.length, sel: [...document.querySelectorAll('.node.selected')].length, popover: document.querySelector('#popover').hidden, dialog: document.querySelector('#editorDialog').open }))`);
+  const back = await ev(`import('/js/core/history.js').then(m => ({ page: S.pageId === ${JSON.stringify(before.page)}, nodes: S.state.nodes.length, hist: m.history.past.length, future: m.history.future.length, sel: [...document.querySelectorAll('.node.selected')].length, popover: document.querySelector('#popover').hidden, dialog: document.querySelector('#nodeDrawer').classList.contains('open') }))`);
   if (!back.page || back.nodes !== before.nodes || back.hist !== 0 || back.sel !== 0) throw new Error('fuga de estado: ' + JSON.stringify(back));
   const arch = await ev(`fetch('/api/pages/' + ${JSON.stringify(newId)} + '/archive', { method: 'POST' }).then(r => r.status)`);
   await ev(`location.hash = '#/lobby'; true`); await sleep(500);
@@ -314,8 +317,8 @@ await step('F3: designer → doble clic abre ficha; raíz solo-células oculta (
   const c = await center('.node');
   const under = await ev(`document.elementFromPoint(${c.x}, ${c.y + 10})?.closest('.node')?.dataset.id || null`);
   await mouse('mousePressed', c.x, c.y + 10); await mouse('mouseReleased', c.x, c.y + 10); await mouse('mousePressed', c.x, c.y + 10, { clickCount: 2 }); await mouse('mouseReleased', c.x, c.y + 10, { clickCount: 2 }); await sleep(150);
-  const r = await ev(`({ open: document.querySelector('#editorDialog').open, isView: !!document.querySelector('#editorDialog .node-view'), isForm: !!document.querySelector('#editorForm'), under: ${JSON.stringify(under)}, roots: ${JSON.stringify(roots)}.length, mine: document.querySelector('#btnMe')?.textContent })`);
-  await ev(`document.querySelector('#editorDialog [data-cancel]')?.click(); true`);
+  const r = await ev(`({ open: document.querySelector('#nodeDrawer').classList.contains('open'), isView: !!document.querySelector('#nodeDrawer .node-view'), isForm: !!document.querySelector('#editorForm'), under: ${JSON.stringify(under)}, roots: ${JSON.stringify(roots)}.length, mine: document.querySelector('#btnMe')?.textContent })`);
+  await ev(`document.querySelector('#nodeDrawer [data-cancel]')?.click(); true`);
   return r;
 });
 await step('logout → login (admin)', async () => {

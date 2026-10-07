@@ -14,7 +14,7 @@ import { minimap, drawMinimap } from '../canvas/minimap.js';
 import { setTool } from '../canvas/pointer-gestures.js';
 import { openPopover, closePopover } from '../ui/popover.js';
 import { confirmBox, promptBox } from '../ui/dialogs.js';
-import { normalizeOwner } from '../ui/card-editor.js';
+import { normalizeOwner } from '../ui/card-editor-docs.js';
 import { computeLayout } from '../canvas/layout.js';
 import { applyTheme, toast } from '../ui/theme.js';
 import * as api from '../core/api.js';
@@ -145,7 +145,7 @@ export function renderOwnersTab(body) {
     row.querySelector('.btn').addEventListener('click', async () => {
       const v = await promptBox({ title: 'Renombrar responsable', label: `Nuevo nombre para ${owner} (${count} cards)`, value: owner, okLabel: 'Renombrar' });
       if (v === null) return; const nv = normalizeOwner(v);
-      pushHistory(); S.state.nodes.forEach(n => { if (n.owner === owner) n.owner = nv; }); renderAll(); save();
+      pushHistory(); S.state.nodes.forEach(n => { if (n.owner === owner) n.owner = nv; (n.staff || []).forEach(m => { if (m.name === owner) m.name = nv; }); n.staff = (n.staff || []).filter(m => m.name); }); renderAll(); save();
       toast(nv ? `Renombrado a ${nv}` : 'Responsable eliminado de las cards');
     });
     rows.appendChild(row);

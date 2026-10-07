@@ -7,12 +7,13 @@
 
 ## Crear y editar (admin / head)
 - `＋ Nueva card` o clic derecho en el fondo → software raíz. Dentro de un contenedor: botón `＋` o menú `⋯` → feature, DS o UI Kit.
-- Doble clic / Enter / `⋯ → Editar`: nombre, descripción, imagen (arrastra, pega o sube), etiquetas, responsable, asignados, **visibilidad de la raíz** (organización o solo células), DS que usa / fuente, **enlaces de documentación** y **notas** (markdown: títulos, listas, enlaces, código, negrita).
+- Doble clic / Enter / `⋯ → Editar` abre el **sidebar** de la instancia (**Main instance** si es raíz, **Child instance** si vive dentro de un contenedor), con pestañas: **General** (tipo, nombre, contenedor padre, descripción, imagen, etiquetas, DS que usa / fuente), **Staff** (usuario `@nombre` + rol, p. ej. `@Lorena / UX Designer`; responsable, asignados y **visibilidad de la raíz**), **Documentación** (enlaces) y **Notas** (markdown: títulos, listas, enlaces, código, negrita).
+- Si la card tiene imagen se muestra arriba como **hero** (también en la cabecera de los contenedores).
 - Arrastra una card dentro de otro contenedor para anidarla, o fuera para sacarla a raíz. Arrastra desde un puerto para conectar.
 - `⇅ Auto-layout` ordena todo. Ctrl/⌘+Z deshace. Todo se guarda solo ("Guardado" arriba).
 
 ## Ver (designer)
-Modo lectura: pan/zoom, doble clic o Enter abren la **ficha** (documentación, enlaces, equipo). Solo ves las raíces de la organización, las de tus células y aquellas donde estás asignado o eres responsable; `⇢ ocultas` indica conexiones con elementos que no ves.
+Modo lectura: pan/zoom, doble clic o Enter abren la **ficha** en el sidebar, con las mismas pestañas (General, Staff, Documentación, Notas). Solo ves las raíces de la organización, las de tus células y aquellas donde estás asignado o eres responsable; `⇢ ocultas` indica conexiones con elementos que no ves.
 
 ## Mis asignaciones (`★ Mías` o `#/me`)
 Lista de cards donde eres responsable o asignado en todas las páginas; cada una centra el lienzo en la card.

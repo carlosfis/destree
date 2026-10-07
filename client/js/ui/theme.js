@@ -36,7 +36,7 @@ export function openShortcuts() {
       ${row('Acercar / alejar', '+', '−')}${row('Zoom 100%', MOD + '+0')}${row('Ajustar a pantalla', 'Shift+1')}${row('Ajustar a selección', 'Shift+2')}
       ${row('Herramienta mover / mano', 'V', 'H')}
       <h4>Cards y contenedores</h4>
-      ${row('Nueva card', 'N')}${row('Editar card', 'Enter', 'Doble clic')}${row('Seleccionar / sumar', 'Clic', 'Shift+clic')}
+      ${row('Nueva card', 'N')}${row('Editar instancia (sidebar)', 'Enter', 'Doble clic')}${row('Seleccionar / sumar', 'Clic', 'Shift+clic')}
       ${row('Selección por recuadro', 'Arrastrar fondo')}${row('Seleccionar raíces', MOD + '+A')}${row('Mover 1 px / 10 px', '←↑→↓', 'Shift+flechas')}
       ${row('Anidar / sacar', 'Soltar dentro / fuera')}${row('Desactivar snap al arrastrar', 'Alt')}${row('Duplicar', MOD + '+D')}${row('Eliminar', 'Supr', 'Backspace')}
       ${row('Conectar o anidar', 'Arrastrar desde un puerto')}${row('Redimensionar contenedor', 'Esquina inferior derecha')}

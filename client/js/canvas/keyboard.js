@@ -15,6 +15,7 @@ import { openEditor } from '../ui/card-editor.js';
 import { deleteSelection, duplicateSelection } from '../ui/node-actions.js';
 import { adminPanel, toggleAdmin } from '../ui/page-settings.js';
 import { openShortcuts } from '../ui/theme.js';
+import { isDrawerOpen, closeDrawer } from '../ui/node-drawer.js';
 export function nudge(dx, dy) {
   const ids = topLevelSelection(); if (!ids.length) return;
   if (!S.nudgeTimer) pushHistory();
@@ -25,11 +26,12 @@ export function nudge(dx, dy) {
 document.addEventListener('keydown', e => {
   const t = e.target;
   const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable;
-  const dialogOpen = !!$('dialog[open]');
+  const dialogOpen = !!$('dialog[open]') || isDrawerOpen();
   if (e.key === 'Alt') S.altDown = true;
   if (e.key === 'Escape') {
     if (S.popoverOpen) { closePopover(); return; }
-    if (dialogOpen) return;
+    if ($('dialog[open]')) return;
+    if (isDrawerOpen()) { closeDrawer(); return; }
     if (S.ptr) { cancelGesture(); return; }
     if ($('#adminPanel').classList.contains('open')) { toggleAdmin(false); return; }
     clearSelection(); return;
