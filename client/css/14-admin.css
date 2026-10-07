@@ -14,3 +14,17 @@
 @media (max-width: 720px) { .audit-table th:nth-child(4), .audit-table td:nth-child(4) { display: none; } }
 /* F5: zona de arrastre del editor */
 .img-preview.drop-over { border-color: var(--accent); background: var(--accent-soft); }
+/* F6a: historial de versiones */
+.ver-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ver-list li { border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; }
+.ver-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.ver-head .url { color: var(--fg-3); font-size: 11.5px; flex: 1; min-width: 0; }
+.ver-label { font-weight: 500; }
+.ver-actions { display: flex; gap: 4px; margin-left: auto; }
+.ver-actions .btn { padding: 2px 8px; font-size: 12px; }
+.ver-detail { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 13px; }
+.ver-tree { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.ver-tree li { display: flex; align-items: baseline; gap: 6px; }
+.ver-tree .url { color: var(--fg-3); font-size: 11.5px; }
+.ver-diff { display: flex; flex-direction: column; gap: 4px; }
+#btnVersions { white-space: nowrap; }

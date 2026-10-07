@@ -15,6 +15,7 @@ import { setTool } from './canvas/pointer-gestures.js';
 import { showNewMenu } from './ui/popover.js';
 import { adminPanel, toggleAdmin, applySettingsUI, enablePageTab } from './ui/page-settings.js';
 import { openAdminView, closeAdminView, adminTabsFor } from './views/admin-view.js';
+import { openVersionsPanel } from './views/versions-panel.js';
 import * as api from './core/api.js';
 import { showSetup, showLogin, showInvite, hideAuth, ROLE_LABEL } from './views/auth-views.js';
 import { applyReadonly, canEdit } from './core/readonly.js';
@@ -60,9 +61,10 @@ function renderUserChip() {
   out.addEventListener('click', async () => { await api.logout().catch(() => {}); location.hash = '#/login'; location.reload(); });
   const me = document.createElement('button'); me.className = 'btn'; me.id = 'btnMe'; me.title = 'Mis asignaciones'; me.textContent = '★ Mías'; // F3
   me.addEventListener('click', () => { location.hash = '#/me'; });
+  const ver = document.createElement('button'); ver.className = 'btn'; ver.id = 'btnVersions'; ver.title = 'Historial de versiones'; ver.textContent = '⟲ Historial'; ver.addEventListener('click', openVersionsPanel); // F6a
   const org = adminTabsFor().length ? document.createElement('button') : null; // F4b
   if (org) { org.className = 'btn'; org.id = 'btnOrg'; org.title = 'Administración (usuarios, células, audit)'; org.textContent = '⚑ Admin'; org.addEventListener('click', () => { location.hash = '#/admin'; }); }
-  $('#btnAdmin').before(chip, me, ...(org ? [org] : []), out);
+  $('#btnAdmin').before(chip, me, ver, ...(org ? [org] : []), out);
   $('#btnAdmin').innerHTML = '⚙ <span class="hide-sm">Página</span>'; $('#btnAdmin').title = 'Ajustes de la página';
 }
 /** F4a: botón de página actual → lobby (inyectado tras la marca). */
@@ -137,6 +139,7 @@ export async function init() {
 // F1: tras un 409 state.js recarga el documento del servidor y avisa aquí para repintar.
 document.addEventListener('destree:reload', () => { clearSelection(); applyTheme(); applySettingsUI(); renderAll(); applyCamera(); renderPageButton(); });
 document.addEventListener('destree:page-meta', renderPageButton); // F4b
+document.addEventListener('destree:load-page', e => loadPage(e.detail.pageId)); // F6a: recarga tras restaurar una versión
 init();
 
 

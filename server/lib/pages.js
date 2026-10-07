@@ -1,6 +1,4 @@
 // Repositorio de páginas: documento completo (page-document v3) ⇄ tablas SQLite.
-import fs from 'node:fs';
-import path from 'node:path';
 import { DEFAULT_ORG_ID, transaction } from '../db/sqlite.js';
 import { ulid, nowIso } from './ids.js';
 import { normalizeDocument, defaultDocument } from './normalize.js';
@@ -175,17 +173,9 @@ export function setPageStatus(db, pageId, status, userId = null) {
     return pageMeta(db, pageId);
   });
 }
-/** F4a: borrado suave + export JSON del documento a `deletedDir` (hasta F6a, que lo sustituye por un snapshot `reason=delete`). */
-export function deletePage(db, pageId, userId, deletedDir) {
-  const doc = getDocument(db, pageId);
-  const meta = setPageStatus(db, pageId, 'deleted', userId);
-  let file = null;
-  if (deletedDir) {
-    fs.mkdirSync(deletedDir, { recursive: true });
-    file = path.join(deletedDir, `${pageId}-${nowIso().replace(/[:.]/g, '-')}.json`);
-    fs.writeFileSync(file, JSON.stringify({ ...doc, deletedAt: meta.deletedAt, deletedBy: userId }, null, 2));
-  }
-  return { ...meta, file };
+/** F4a: borrado suave (F6a: la ruta crea antes un snapshot `reason=delete`). */
+export function deletePage(db, pageId, userId) {
+  return setPageStatus(db, pageId, 'deleted', userId);
 }
 /** F4a: duplica contenido (nodos, aristas, tags, tipos, células/asignados) en una página nueva. */
 export function duplicatePage(db, pageId, { name, createdBy = null } = {}) {

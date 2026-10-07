@@ -77,7 +77,8 @@ export function deleteImage(db, dir, id) {
 /** Huérfanas: sin uso y con más de `olderThanMs` (24 h) de antigüedad. Devuelve ids borrados. */
 export function purgeOrphans(db, dir, olderThanMs = 86400e3) {
   const limit = new Date(Date.now() - olderThanMs).toISOString();
-  const rows = db.prepare(`SELECT id FROM images i WHERE created_at < ? AND NOT EXISTS (SELECT 1 FROM nodes n WHERE n.image_id = i.id) AND NOT EXISTS (SELECT 1 FROM pages p WHERE p.cover_image_id = i.id)`).all(limit);
+  const rows = db.prepare(`SELECT id FROM images i WHERE created_at < ? AND NOT EXISTS (SELECT 1 FROM nodes n WHERE n.image_id = i.id) AND NOT EXISTS (SELECT 1 FROM pages p WHERE p.cover_image_id = i.id)
+    AND NOT EXISTS (SELECT 1 FROM page_versions v WHERE instr(v.image_ids_json, i.id) > 0)`).all(limit); // F6a: respeta imágenes de versiones
   for (const r of rows) deleteImage(db, dir, r.id);
   return rows.map(r => r.id);
 }

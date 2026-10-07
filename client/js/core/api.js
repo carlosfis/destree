@@ -34,6 +34,12 @@ export async function uploadImage(file, { kind = 'node', filename = '' } = {}) {
   return data;
 }
 export const deleteImage = id => req('DELETE', `/images/${encodeURIComponent(id)}`);
+/* --- F6a: versiones --- */
+export const listVersions = id => req('GET', `/pages/${encodeURIComponent(id)}/versions`).then(r => r.versions);
+export const createVersion = (id, label) => req('POST', `/pages/${encodeURIComponent(id)}/versions`, label ? { label } : null);
+export const getVersion = (id, n) => req('GET', `/pages/${encodeURIComponent(id)}/versions/${n}`);
+export const diffVersions = (id, a, b) => req('GET', `/pages/${encodeURIComponent(id)}/versions/${a}/diff/${b}`);
+export const restoreVersion = (id, n) => req('POST', `/pages/${encodeURIComponent(id)}/versions/${n}/restore`);
 /* --- F4b --- */
 export const listAudit = params => req('GET', '/audit?' + new URLSearchParams(Object.fromEntries(Object.entries(params || {}).filter(([, v]) => v != null && v !== ''))));
 export const getPage = (id, opts = {}) => req('GET', `/pages/${encodeURIComponent(id)}` + (opts.embedImages ? '?embedImages=1' : ''));

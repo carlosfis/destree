@@ -1,4 +1,4 @@
-# API (F5)
+# API (F6a)
 
 Base `/api`. JSON. Errores: `{ error, message, errors?, version?, setup? }` con `error` ∈ `validation|unauthorized|forbidden|not_found|conflict|gone|rate_limited|error`.
 Auth: cookie `destree_sid` (HttpOnly, SameSite=Lax, `Secure` si `TRUST_PROXY`), 30 días. Sin sesión → 401 (`setup:true` si aún no hay usuarios). Rol sin la acción → 403.
@@ -35,13 +35,18 @@ Validación: JSON Schema de `/schema` vía Ajv (`strict:false`, `allErrors`, ajv
 | POST | `/api/images?kind=node\|page&filename=` | pages.edit | cuerpo binario `image/png\|jpeg\|webp\|svg+xml` ≤5 MB (tipo real por magic bytes) | 201 `{ id, kind, filename, mime:'image/webp', width, height, bytes, sha256, url, thumbUrl }` · 413 · 415 |
 | DELETE | `/api/images/:id` | pages.edit | — | 204 · 409 en uso |
 | GET | `/uploads/:id` · `/uploads/:id/thumb` | sesión + visibilidad (regla 5) | `If-None-Match` | `image/webp`, `Cache-Control: private, max-age=86400`, ETag · 304 · 401 · 403 · 404 |
+| GET | `/api/pages/:id/versions` | versions.read | — | `{ versions: [{ id, number, label, reason, hash, size, createdBy, createdByName, createdAt }] }` (desc) |
+| POST | `/api/pages/:id/versions` | versions.write | `{ label? }` | 201 version (reason manual) |
+| GET | `/api/pages/:id/versions/:n` | versions.read | — | `{ version, document }` (designer: filtrado) · 404 |
+| GET | `/api/pages/:id/versions/:a/diff/:b` | versions.read | `a`,`b` número o `current` | `{ from, to, diff: { nodes:{added,removed,changed[{id,name,fields}],moved}, edges:{added,removed}, tags, branchTypes, same } }` |
+| POST | `/api/pages/:id/versions/:n/restore` | versions.write | — | `{ version, nodes, edges, updatedAt, restoredFrom, snapshot }` + `ETag` · 409 página no activa |
 | GET | `/api/audit?limit&before&action` | audit.read (admin) | `limit` 1–200 (defecto 50), `before` id, `action` prefijo | `{ items: [{ id, userId, userName, action, entity, entityId, meta, createdAt }], next }` (más recientes primero) |
 | GET | `/api/me/assignments` | pages.read | — | `{ items: [{ pageId, pageName, pageStatus, nodeId, name, type, isRoot, role:'owner'\|'assignee' }] }` en páginas visibles (no borradas) |
 | GET | `/api/pages?status=` | pages.read | `status` active (defecto) \| archived \| deleted (admin) \| all | `{ pages: [{ id, name, description, visibility, cellIds, status, version, createdAt, updatedAt, archivedAt, deletedAt, nodeCount, rootCount }] }` (designer: solo visibles, regla 2) |
 | PATCH | `/api/pages/:id` | pages.edit | `{ name?, description?, visibility?, cellIds? }` | page meta (+`cellIds`), `ETag`; version += 1 · 409 borrada |
 | POST | `/api/pages/:id/archive` · `/unarchive` | pages.archive | — | page meta · 409 estado repetido / borrada |
-| DELETE | `/api/pages/:id` | pages.delete (admin) | — | page meta + `file` (JSON en `data/deleted/`) · 409 única activa |
-| POST | `/api/pages/:id/restore-deleted` | pages.delete (admin) | — | page meta (status active) |
+| DELETE | `/api/pages/:id` | pages.delete (admin) | — | page meta (antes crea versión `delete`) · 409 única activa |
+| POST | `/api/pages/:id/restore-deleted` | pages.delete (admin) | — | page meta (status active; `restoredFromVersion` si repuso la última versión) |
 | POST | `/api/pages/:id/duplicate` | pages.create | `{ name? }` \| null | 201 page-document nuevo (copia contenido, células, asignados) |
 | POST | `/api/pages` | pages.create | `{ name, description?, visibility?, cellIds? }` | 201 + page-document (versión 1), `ETag` |
 | GET | `/api/pages/:id?embedImages=1` | pages.read | `embedImages` incrusta `image` como dataURL webp (export portable) | page-document v3 + `refs { users[{id,name}], cells[{id,name,color}] }`; `ETag: "<version>"`. Designer: filtrado por `lib/visibility.js` (raíces org / de sus células / donde está asignado o es responsable; aristas solo con ambos extremos; `hasExternalRefs`); 403 si la página es solo-células ajena |
@@ -49,6 +54,7 @@ Validación: JSON Schema de `/schema` vía Ajv (`strict:false`, `allErrors`, ajv
 | POST | `/api/import?pageId=` | pages.import | JSON v1/v2/v3 (`nodes[]`, `edges[]`) | `{ pageId, version, nodes, edges, updatedAt }`. Sin If-Match: sustituye el contenido |
 
 Notas
+- F6a: PUT crea versión `auto` si cambia el hash (coalescencia 5 min por usuario); import → `import`; archive → `archive`; delete → `delete`. Retención `VERSIONS_KEEP` (50) solo sobre autos.
 - F5: PUT e import convierten `nodes[].image` (dataURL) en archivos (`imageId`); el servidor nunca persiste dataURL; `imageId` desconocido se descarta.
 - PUT reemplaza el contenido completo en una transacción (tags, branch_types, nodes, node_tags, edges, node_cells, node_assignees) y `version += 1`. `cellIds` solo cuenta en raíces `visibility:'cells'`; ids de célula/usuario desconocidos se descartan.
 - El servidor normaliza (`server/lib/normalize.js`) tras validar; `page.name/description/visibility` solo cambian si vienen en `page`.

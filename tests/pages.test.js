@@ -70,8 +70,8 @@ test('pages: visibilidad por célula en lobby, archivar reversible, borrar solo 
   // borrar: solo admin; soft; export JSON; no se lista salvo ?status=deleted (admin); GET → 404 para no admin; restaurar
   assert.equal((await j({ method: 'DELETE', url: `/api/pages/${pOrg.id}` }, head)).status, 403);
   const del = (await j({ method: 'DELETE', url: `/api/pages/${pOrg.id}` }, admin)).body;
-  assert.equal(del.status, 'deleted'); assert.ok(del.deletedAt); assert.ok(del.file && fs.existsSync(del.file), 'export JSON en data/deleted');
-  const exported = JSON.parse(fs.readFileSync(del.file, 'utf8')); assert.equal(exported.nodes.length, 2); assert.equal(exported.page.id, pOrg.id);
+  assert.equal(del.status, 'deleted'); assert.ok(del.deletedAt);
+  const snap = app.db.prepare("SELECT reason, size FROM page_versions WHERE page_id = ? ORDER BY number DESC LIMIT 1").get(pOrg.id); assert.equal(snap.reason, 'delete'); assert.ok(snap.size > 100, 'F6a: snapshot final al borrar');
   assert.deepEqual(await names(admin), ['Árbol principal', 'Solo A2', 'Solo B', 'Pública copia']);
   assert.deepEqual(await names(admin, 'deleted'), ['Pública']);
   assert.equal((await j({ method: 'GET', url: '/api/pages?status=deleted' }, head)).status, 403);

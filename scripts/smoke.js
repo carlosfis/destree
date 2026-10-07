@@ -262,6 +262,27 @@ await step('F5: upload en editor → imageId + thumb /uploads; dataURL importada
   fs.rmSync(pngPath, { force: true });
   return { preview: preview.slice(0, 9), node, srv, ingested };
 });
+// F6a: versión manual → 3 ediciones (autos coalescidas) → panel: lista, diff (+3), restaurar la manual → nodos de vuelta, versión 'restore'.
+await step('F6a: historial (manual → 3 ediciones → diff → restaurar)', async () => {
+  const n0 = await ev(`S.state.nodes.length`);
+  const manual = await ev(`fetch('/api/pages/' + S.pageId + '/versions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ label: 'antes' }) }).then(r => r.json()).then(v => v.number)`);
+  for (let i = 0; i < 3; i++) {
+    await ev(`import('/js/ui/card-editor.js').then(m => m.openEditor(null, { type: 'software', x: 900 + ${i} * 40, y: 900 }))`); await sleep(100);
+    await ev(`(() => { const f = document.querySelector('#editorForm'); f.elements.name.value = 'Ver ${i}'; f.requestSubmit(); return true; })()`); await sleep(1100);
+  }
+  const list = await ev(`fetch('/api/pages/' + S.pageId + '/versions').then(r => r.json()).then(j => j.versions.map(v => [v.number, v.reason]))`);
+  await ev(`document.querySelector('#btnVersions').click(); true`); await sleep(500);
+  const panel = await ev(`({ open: document.querySelector('#editorDialog').open, items: document.querySelectorAll('.ver-list li').length, manual: !!document.querySelector('#verManual') })`);
+  const li = `document.querySelector('.ver-list li[data-n="${manual}"]')`;
+  await ev(`${li}.querySelector('[data-diff]').click(); true`); await sleep(400);
+  const diff = await ev(`${li}.querySelector('.ver-detail').textContent.replace(/\\s+/g, ' ').slice(0, 90)`);
+  await ev(`${li}.querySelector('[data-restore]').click(); true`); await sleep(200);
+  await ev(`(() => { const d = document.querySelector('#confirmDialog'); [...d.querySelectorAll('[data-v]')].filter(b => b.dataset.v).at(-1).click(); return true; })()`); await sleep(1200);
+  const after = await ev(`import('/js/core/history.js').then(m => ({ nodes: S.state.nodes.length, hist: m.history.past.length, dialog: document.querySelector('#editorDialog').open, status: document.querySelector('#saveStatus').textContent }))`);
+  const top = await ev(`fetch('/api/pages/' + S.pageId + '/versions').then(r => r.json()).then(j => j.versions.slice(0, 2).map(v => [v.number, v.reason, v.label]))`);
+  if (after.nodes !== n0 || !/\+3/.test(diff) || top[0][1] !== 'restore') throw new Error('restore: ' + JSON.stringify({ n0, list, diff, after, top }));
+  return { n0, versions: list, panel, diff, after, top };
+});
 await step('recarga: persistencia SQLite vía API', async () => { await send('Page.reload'); await sleep(1200); return ev(`({ nodes: S.state.nodes.length, theme: document.documentElement.dataset.theme })`); });
 // F2: invitación (enlace copiable) → alta de designer → modo lectura; PUT → 403; logout → login.
 await step('invitación → designer en modo lectura (403 en PUT)', async () => {

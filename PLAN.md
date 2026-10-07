@@ -277,15 +277,15 @@ Cada fase cierra con handoff + commit + tag y encadena la siguiente en la misma 
 - **Handoff:** `F5.md`.
 - **Verificación:** `npm test`.
 
-### F6a — Versiones e historial
+### F6a — Versiones e historial ✅
 - **Objetivo:** Consultar/restaurar versiones por página.
 - **Entregables:**
-  - [ ] `006_versions.sql` (page_versions)
-  - [ ] Snapshot auto en PUT si hash cambia (coalescer 5 min), manual con etiqueta, reason restore/import/archive/delete; gzip; retención `VERSIONS_KEEP` (default 50 auto; manuales/archive/delete ilimitadas; páginas archived/deleted excluidas de la purga)
-  - [ ] `GET /api/pages/:id/versions`, `GET …/:n`, `GET …/:a/diff/:b` (nodos +/−/~), `POST …/:n/restore`, `POST …/versions`
-  - [ ] `DELETE /api/pages/:id` ahora genera snapshot `reason=delete`; restore de página borrada repone la última versión
-  - [ ] `views/versions-panel.js`: lista, preview solo lectura, diff resumido, restaurar
-  - [ ] `tests/versions.test.js`
+  - [x] `006_versions.sql` (page_versions)
+  - [x] Snapshot auto en PUT si hash cambia (coalescer 5 min), manual con etiqueta, reason restore/import/archive/delete; gzip; retención `VERSIONS_KEEP` (default 50 auto; manuales/archive/delete ilimitadas; páginas archived/deleted excluidas de la purga)
+  - [x] `GET /api/pages/:id/versions`, `GET …/:n`, `GET …/:a/diff/:b` (nodos +/−/~), `POST …/:n/restore`, `POST …/versions`
+  - [x] `DELETE /api/pages/:id` ahora genera snapshot `reason=delete`; restore de página borrada repone la última versión
+  - [x] `views/versions-panel.js`: lista, preview solo lectura, diff resumido, restaurar
+  - [x] `tests/versions.test.js`
 - **Aceptación:** editar 3 veces → versiones; restaurar la 1ª reproduce el canvas exacto (test) · archivar y borrar página conservan versiones; restaurar página borrada devuelve el canvas (test).
 - **Riesgos:** crecimiento → gzip + retención.
 - **Handoff:** `F6a.md`.

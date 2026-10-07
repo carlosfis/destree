@@ -21,6 +21,7 @@ import cellRoutes from './routes/cells.js';
 import nodeRoutes from './routes/nodes.js';
 import auditRoutes from './routes/audit.js';
 import imageRoutes from './routes/images.js';
+import versionRoutes from './routes/versions.js';
 import { migrateLegacyImages, purgeOrphans } from './lib/images.js';
 
 export async function buildApp({ dbPath = config.dbPath, logger = { level: config.logLevel } } = {}) {
@@ -32,7 +33,6 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   });
   const db = openReady(dbPath);
   app.decorate('db', db);
-  app.decorate('deletedDir', dbPath === ':memory:' ? null : path.join(path.dirname(dbPath), 'deleted')); // F4a: export JSON al borrar (hasta F6a)
   app.decorate('uploadsDir', config.uploadsDir || (dbPath === ':memory:' ? fs.mkdtempSync(path.join(os.tmpdir(), 'destree-uploads-')) : path.join(path.dirname(dbPath), 'uploads'))); // F5
   const migrated = await migrateLegacyImages(db, app.uploadsDir); // F5: dataURLs heredadas → archivos
   if (migrated && logger) app.log.info(`imágenes legadas migradas: ${migrated}`);
@@ -66,6 +66,7 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   await app.register(nodeRoutes);
   await app.register(auditRoutes);
   await app.register(imageRoutes);
+  await app.register(versionRoutes);
   app.addHook('onReady', async () => { try { purgeOrphans(db, app.uploadsDir); } catch (err) { app.log.warn(err, 'purga de imágenes huérfanas'); } });
   // Cliente estático. normalize.js llega vía symlink client/js/core/normalize.js → server/lib/normalize.js.
   await app.register(fastifyStatic, { root: config.clientDir, prefix: '/', index: ['index.html'], cacheControl: false, decorateReply: false });

@@ -4,6 +4,7 @@ import { DEFAULT_PAGE_ID } from '../db/sqlite.js';
 import { audit } from '../lib/audit.js';
 import { visibilityCtx } from '../lib/cells.js';
 import { ingestDataUrls, embedImages } from '../lib/images.js';
+import { createVersion, restoreLatestIfDiverged } from '../lib/versions.js';
 
 const idParam = { type: 'object', required: ['id'], properties: { id: { type: 'string', minLength: 1, maxLength: 64 } } };
 const parseIfMatch = h => { if (h == null) return null; const m = String(h).trim().match(/^(?:W\/)?"?(\d+)"?$/); if (!m) throw new HttpError(400, 'If-Match inválido: se espera la versión numérica'); return Number(m[1]); };
@@ -45,6 +46,7 @@ export default async function pageRoutes(app) {
     if (expected == null) throw new HttpError(428, 'Falta la cabecera If-Match con la versión de la página');
     await ingestDataUrls(app.db, app.uploadsDir, req.body, { orgId: req.orgId, createdBy: req.user.id }); // F5: dataURL → archivo
     const res = saveDocument(app.db, req.params.id, req.body, expected);
+    createVersion(app.db, req.params.id, { reason: 'auto', userId: req.user.id }); // F6a: snapshot si cambió el hash (coalesce 5 min)
     log(req, 'page.save', req.params.id, { version: res.version, nodes: res.nodes });
     reply.header('ETag', `"${res.version}"`);
     return res;
@@ -57,19 +59,22 @@ export default async function pageRoutes(app) {
     reply.header('ETag', `"${p.version}"`);
     return p;
   });
-  const transition = (url, action, status, auditAction) => app.post(`/api/pages/:id/${url}`, { onRequest: app.guard(action), schema: { params: idParam } }, async (req) => {
+  const transition = (url, action, status, auditAction, snapshot) => app.post(`/api/pages/:id/${url}`, { onRequest: app.guard(action), schema: { params: idParam } }, async (req) => {
+    if (snapshot) createVersion(app.db, req.params.id, { reason: snapshot, userId: req.user.id }); // F6a: antes de cambiar el estado (la retención no toca archived/deleted)
     const p = setPageStatus(app.db, req.params.id, status, req.user.id);
+    if (status === 'active' && url === 'restore-deleted') { const n = restoreLatestIfDiverged(app.db, p.id, req.user.id); if (n) p.restoredFromVersion = n; } // F6a
     log(req, auditAction, p.id);
     return p;
   });
-  transition('archive', 'pages.archive', 'archived', 'page.archive');
+  transition('archive', 'pages.archive', 'archived', 'page.archive', 'archive');
   transition('unarchive', 'pages.archive', 'active', 'page.unarchive');
   transition('restore-deleted', 'pages.delete', 'active', 'page.restore');
 
   app.delete('/api/pages/:id', { onRequest: app.guard('pages.delete'), schema: { params: idParam } }, async (req) => {
     if (listPages(app.db, req.orgId, null, 'active').length <= 1 && pageMeta(app.db, req.params.id).status === 'active') throw new HttpError(409, 'No se puede borrar la única página activa');
-    const p = deletePage(app.db, req.params.id, req.user.id, app.deletedDir);
-    log(req, 'page.delete', p.id, { file: p.file });
+    const v = createVersion(app.db, req.params.id, { reason: 'delete', userId: req.user.id }); // F6a: snapshot final
+    const p = deletePage(app.db, req.params.id, req.user.id);
+    log(req, 'page.delete', p.id, { version: v.number });
     return p;
   });
 
@@ -91,6 +96,7 @@ export default async function pageRoutes(app) {
     const images = await ingestDataUrls(app.db, app.uploadsDir, req.body, { orgId: req.orgId, createdBy: req.user.id }); // F5
     const res = importDocument(app.db, pageId, req.body);
     res.images = images;
+    createVersion(app.db, pageId, { reason: 'import', userId: req.user.id }); // F6a
     log(req, 'page.import', pageId, { version: res.version, nodes: res.nodes });
     return { pageId, ...res };
   });
