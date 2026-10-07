@@ -283,6 +283,17 @@ await step('F6a: historial (manual → 3 ediciones → diff → restaurar)', asy
   if (after.nodes !== n0 || !/\+3/.test(diff) || top[0][1] !== 'restore') throw new Error('restore: ' + JSON.stringify({ n0, list, diff, after, top }));
   return { n0, versions: list, panel, diff, after, top };
 });
+// F6b: #/admin → Respaldos → crear respaldo → fila ok, descarga 200, export org JSON.
+await step('F6b: respaldos (crear desde #/admin, descargar, export org)', async () => {
+  await ev(`location.hash = '#/admin/backups'; true`); await sleep(800);
+  await ev(`document.querySelector('#bkCreate').click(); true`); await sleep(2500);
+  const rows = await ev(`[...document.querySelectorAll('#bkRows .row')].map(r => r.querySelector('.count').textContent)`);
+  const dl = await ev(`fetch(document.querySelector('#bkRows a[download]').getAttribute('href')).then(r => ({ status: r.status, type: r.headers.get('content-type'), len: Number(r.headers.get('content-length')) }))`);
+  const exp = await ev(`fetch('/api/org/export').then(r => r.json()).then(d => ({ v: d.version, pages: d.pages.length, users: d.users.length, images: d.images.length, versions: d.pages[0].versions.length }))`);
+  await ev(`document.querySelector('#adminBack').click(); true`); await sleep(300);
+  if (!rows.length || !/ok/.test(rows[0]) || dl.status !== 200 || !dl.len) throw new Error('backup: ' + JSON.stringify({ rows, dl }));
+  return { rows, dl, exp };
+});
 await step('recarga: persistencia SQLite vía API', async () => { await send('Page.reload'); await sleep(1200); return ev(`({ nodes: S.state.nodes.length, theme: document.documentElement.dataset.theme })`); });
 // F2: invitación (enlace copiable) → alta de designer → modo lectura; PUT → 403; logout → login.
 await step('invitación → designer en modo lectura (403 en PUT)', async () => {

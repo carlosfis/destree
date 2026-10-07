@@ -40,6 +40,11 @@ export const createVersion = (id, label) => req('POST', `/pages/${encodeURICompo
 export const getVersion = (id, n) => req('GET', `/pages/${encodeURIComponent(id)}/versions/${n}`);
 export const diffVersions = (id, a, b) => req('GET', `/pages/${encodeURIComponent(id)}/versions/${a}/diff/${b}`);
 export const restoreVersion = (id, n) => req('POST', `/pages/${encodeURIComponent(id)}/versions/${n}/restore`);
+/* --- F6b: respaldos y export/import de org --- */
+export const listBackups = () => req('GET', '/backups');
+export const createBackup = () => req('POST', '/backups');
+export const deleteBackup = id => req('DELETE', `/backups/${encodeURIComponent(id)}`);
+export const importOrg = data => req('POST', '/org/import', data);
 /* --- F4b --- */
 export const listAudit = params => req('GET', '/audit?' + new URLSearchParams(Object.fromEntries(Object.entries(params || {}).filter(([, v]) => v != null && v !== ''))));
 export const getPage = (id, opts = {}) => req('GET', `/pages/${encodeURIComponent(id)}` + (opts.embedImages ? '?embedImages=1' : ''));

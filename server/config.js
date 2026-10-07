@@ -14,6 +14,9 @@ export const config = {
   clientDir: path.join(ROOT, 'client'),
   schemaDir: path.join(ROOT, 'schema'),
   uploadsDir: process.env.UPLOADS_DIR || null, // F5: por defecto junto a la BD (data/uploads)
+  backupsDir: process.env.BACKUPS_DIR || null, // F6b: por defecto data/backups
+  backupKeep: Math.max(1, Number(process.env.BACKUP_KEEP) || 10), // F6b: programados conservados
+  backupCron: process.env.BACKUP_CRON ?? '', // F6b: p. ej. "30 3 * * *" (vacío = sin programación)
   versionsKeep: Math.max(1, Number(process.env.VERSIONS_KEEP) || 50), // F6a: versiones auto conservadas por página
   versionsCoalesceMs: Math.max(0, Number(process.env.VERSIONS_COALESCE_MIN ?? 5) * 60e3), // F6a: autos del mismo usuario se funden en esta ventana
   trustProxy: /^(1|true|yes)$/i.test(process.env.TRUST_PROXY || ''), // detrás de proxy TLS: cookie Secure + X-Forwarded-*

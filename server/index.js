@@ -22,6 +22,8 @@ import nodeRoutes from './routes/nodes.js';
 import auditRoutes from './routes/audit.js';
 import imageRoutes from './routes/images.js';
 import versionRoutes from './routes/versions.js';
+import backupRoutes from './routes/backups.js';
+import { createBackup, scheduleBackups, acquireLock } from './lib/backup.js';
 import { migrateLegacyImages, purgeOrphans } from './lib/images.js';
 
 export async function buildApp({ dbPath = config.dbPath, logger = { level: config.logLevel } } = {}) {
@@ -34,6 +36,7 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   const db = openReady(dbPath);
   app.decorate('db', db);
   app.decorate('uploadsDir', config.uploadsDir || (dbPath === ':memory:' ? fs.mkdtempSync(path.join(os.tmpdir(), 'destree-uploads-')) : path.join(path.dirname(dbPath), 'uploads'))); // F5
+  app.decorate('backupsDir', config.backupsDir || (dbPath === ':memory:' ? fs.mkdtempSync(path.join(os.tmpdir(), 'destree-backups-')) : path.join(path.dirname(dbPath), 'backups'))); // F6b
   const migrated = await migrateLegacyImages(db, app.uploadsDir); // F5: dataURLs heredadas → archivos
   if (migrated && logger) app.log.info(`imágenes legadas migradas: ${migrated}`);
   app.addHook('onClose', async () => db.close());
@@ -67,7 +70,13 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   await app.register(auditRoutes);
   await app.register(imageRoutes);
   await app.register(versionRoutes);
+  await app.register(backupRoutes);
   app.addHook('onReady', async () => { try { purgeOrphans(db, app.uploadsDir); } catch (err) { app.log.warn(err, 'purga de imágenes huérfanas'); } });
+  // F6b: lock para scripts/restore.js + respaldos programados (BACKUP_CRON)
+  let releaseLock = () => {};
+  app.addHook('onListen', async () => { releaseLock = acquireLock(dbPath); });
+  const stopCron = scheduleBackups(config.backupCron, () => createBackup(db, { backupsDir: app.backupsDir, uploadsDir: app.uploadsDir, kind: 'scheduled' }).then(b => app.log.info(`respaldo programado: ${b.filename}`)), err => app.log.error(err, 'respaldo programado'));
+  app.addHook('onClose', async () => { stopCron(); releaseLock(); });
   // Cliente estático. normalize.js llega vía symlink client/js/core/normalize.js → server/lib/normalize.js.
   await app.register(fastifyStatic, { root: config.clientDir, prefix: '/', index: ['index.html'], cacheControl: false, decorateReply: false });
   app.get('/favicon.ico', (req, reply) => reply.code(204).send());

@@ -11,7 +11,7 @@ import { renderCellsTab } from './cells.js';
 
 const has = p => !!S.session && S.session.permissions.includes(p);
 const fmt = s => (s ? new Date(s).toLocaleString() : '—');
-const TABS = [['users', 'Usuarios', 'invite'], ['cells', 'Células', 'cells.read'], ['deleted', 'Páginas borradas', 'pages.delete'], ['audit', 'Audit log', 'audit.read']];
+const TABS = [['users', 'Usuarios', 'invite'], ['cells', 'Células', 'cells.read'], ['deleted', 'Páginas borradas', 'pages.delete'], ['backups', 'Respaldos', 'backups'], ['audit', 'Audit log', 'audit.read']];
 export const adminTabsFor = () => TABS.filter(([, , perm]) => has(perm));
 const view = () => { let v = $('#adminView'); if (!v) { v = document.createElement('div'); v.id = 'adminView'; v.hidden = true; document.body.appendChild(v); } return v; };
 export function closeAdminView() { const v = $('#adminView'); if (v) { v.hidden = true; v.innerHTML = ''; } }
@@ -32,7 +32,29 @@ export async function openAdminView(tab) {
   if (tab === 'users') return renderUsersTab(body);
   if (tab === 'cells') return renderCellsTab(body);
   if (tab === 'deleted') return renderDeleted(body);
+  if (tab === 'backups') return renderBackups(body);
   return renderAudit(body);
+}
+
+/* --- F6b: respaldos + export/import org --- */
+const kb = n => (n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : (n / 1024).toFixed(1) + ' KB');
+async function renderBackups(body) {
+  let r; try { r = await api.listBackups(); } catch (err) { body.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }
+  body.innerHTML = `<h3>Respaldos (${r.backups.length})</h3><p>Copia consistente de la base de datos + imágenes en <code>${esc(r.dir)}</code>. Restaurar: con el servidor parado, <code>node scripts/restore.js &lt;archivo&gt;</code>.</p>
+    <div class="inline-actions"><button class="btn primary" id="bkCreate">＋ Crear respaldo</button><a class="btn" href="/api/org/export?images=embed" download>⤓ Exportar organización (JSON)</a><label class="btn">⤒ Importar organización<input type="file" accept="application/json,.json" hidden id="bkImport"></label></div>
+    <div id="bkRows"></div>`;
+  const rows = $('#bkRows', body); if (!r.backups.length) rows.innerHTML = '<div class="empty">Sin respaldos todavía.</div>';
+  for (const b of r.backups) {
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = `<span class="grow"><b>${esc(b.filename)}</b><br><span class="count">${esc(b.kind)} · ${esc(b.status)} · ${kb(b.bytes)} · ${fmt(b.createdAt)}${b.error ? ' · ' + esc(b.error) : ''}</span></span>${b.status === 'ok' ? `<a class="btn" href="/api/backups/${b.id}/download" download>Descargar</a>` : ''}<button class="icon-btn" title="Eliminar">🗑</button>`;
+    row.querySelector('.icon-btn').addEventListener('click', async () => { try { await api.deleteBackup(b.id); renderBackups(body); } catch (err) { toast(err.message, 'error'); } });
+    rows.appendChild(row);
+  }
+  $('#bkCreate', body).addEventListener('click', async e => { e.currentTarget.disabled = true; try { await api.createBackup(); toast('Respaldo creado'); } catch (err) { toast(err.message, 'error', 6000); } renderBackups(body); });
+  $('#bkImport', body).addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try { const data = JSON.parse(await f.text()); const st = await api.importOrg(data); toast(`Importado: ${st.pages} páginas, ${st.versions} versiones, ${st.users} usuarios nuevos, ${st.images} imágenes`, 'info', 8000); } catch (err) { toast('Importación fallida: ' + err.message, 'error', 8000); }
+  });
 }
 
 async function renderDeleted(body) {

@@ -1,4 +1,4 @@
-# API (F6a)
+# API (F6b)
 
 Base `/api`. JSON. Errores: `{ error, message, errors?, version?, setup? }` con `error` ∈ `validation|unauthorized|forbidden|not_found|conflict|gone|rate_limited|error`.
 Auth: cookie `destree_sid` (HttpOnly, SameSite=Lax, `Secure` si `TRUST_PROXY`), 30 días. Sin sesión → 401 (`setup:true` si aún no hay usuarios). Rol sin la acción → 403.
@@ -21,7 +21,7 @@ Validación: JSON Schema de `/schema` vía Ajv (`strict:false`, `allErrors`, ajv
 | POST | `/api/invites/accept` | pública | `{ token, name?, password≥8 }` | 201 `{ user, invite }` + cookie · 410 |
 | GET | `/api/users` | users.manage | — | `{ users: [{ id, email, name, role, isActive, lastLoginAt, createdAt }] }` |
 | POST | `/api/users` | users.manage | `{ email, name?, password, role }` | 201 user · 409 correo repetido |
-| PATCH | `/api/users/:id` | users.manage | `{ name?, role?, isActive? }` | user · 409 último admin / propia cuenta. Cambiar rol o desactivar cierra sus sesiones |
+| PATCH | `/api/users/:id` | users.manage | `{ name?, role?, isActive?, password? }` | user · 409 último admin / propia cuenta. Cambiar rol, desactivar o fijar contraseña cierra sus sesiones |
 | DELETE | `/api/users/:id` | users.manage | — | 204 (desactiva; no borra) |
 | GET | `/api/users/directory` | directory.read (admin/head) | — | `{ users: [{ id, name, email, role }] }` (activos) |
 | GET | `/api/cells` | cells.read (admin/head) | — | `{ cells: [{ id, name, color, description, leadUserId, memberIds[], createdAt }] }` |
@@ -40,6 +40,12 @@ Validación: JSON Schema de `/schema` vía Ajv (`strict:false`, `allErrors`, ajv
 | GET | `/api/pages/:id/versions/:n` | versions.read | — | `{ version, document }` (designer: filtrado) · 404 |
 | GET | `/api/pages/:id/versions/:a/diff/:b` | versions.read | `a`,`b` número o `current` | `{ from, to, diff: { nodes:{added,removed,changed[{id,name,fields}],moved}, edges:{added,removed}, tags, branchTypes, same } }` |
 | POST | `/api/pages/:id/versions/:n/restore` | versions.write | — | `{ version, nodes, edges, updatedAt, restoredFrom, snapshot }` + `ETag` · 409 página no activa |
+| GET | `/api/backups` | backups (admin) | — | `{ backups: [{ id, filename, bytes, sha256, kind, status, error, createdBy, createdAt }], dir }` |
+| POST | `/api/backups` | backups | — | 201 backup (tar.gz: destree.db + uploads/ + MANIFEST.json) |
+| GET | `/api/backups/:id/download` | backups | — | `application/gzip` attachment · 404 |
+| DELETE | `/api/backups/:id` | backups | — | 204 |
+| GET | `/api/org/export?images=manifest\|embed` | backups | — | `org-export.schema.json` (attachment JSON) |
+| POST | `/api/org/import` | backups | org-export (≤512 MB) | `{ cells, users, pages, versions, images, skippedImages }` · 400 schema |
 | GET | `/api/audit?limit&before&action` | audit.read (admin) | `limit` 1–200 (defecto 50), `before` id, `action` prefijo | `{ items: [{ id, userId, userName, action, entity, entityId, meta, createdAt }], next }` (más recientes primero) |
 | GET | `/api/me/assignments` | pages.read | — | `{ items: [{ pageId, pageName, pageStatus, nodeId, name, type, isRoot, role:'owner'\|'assignee' }] }` en páginas visibles (no borradas) |
 | GET | `/api/pages?status=` | pages.read | `status` active (defecto) \| archived \| deleted (admin) \| all | `{ pages: [{ id, name, description, visibility, cellIds, status, version, createdAt, updatedAt, archivedAt, deletedAt, nodeCount, rootCount }] }` (designer: solo visibles, regla 2) |

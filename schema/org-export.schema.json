@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "org-export.schema.json",
+  "title": "OrgExport",
+  "description": "F6b: export completo de la organización: células, usuarios (sin hash), páginas con documento y versiones, manifiesto de imágenes (data base64 webp si images=embed).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "org", "cells", "users", "pages", "images"],
+  "properties": {
+    "version": { "const": 3 },
+    "exportedAt": { "type": "string" },
+    "org": { "type": "object", "required": ["name"], "additionalProperties": false, "properties": { "id": { "type": "string" }, "name": { "type": "string", "maxLength": 120 }, "slug": { "type": "string", "maxLength": 80 }, "settings": { "type": "object" } } },
+    "cells": { "type": "array", "maxItems": 500, "items": { "type": "object", "required": ["id", "name"], "additionalProperties": false, "properties": { "id": { "type": "string", "maxLength": 64 }, "name": { "type": "string", "maxLength": 80 }, "color": { "type": "string", "maxLength": 20 }, "description": { "type": "string", "maxLength": 500 }, "leadUserId": { "type": ["string", "null"] }, "memberIds": { "type": "array", "items": { "type": "string" } } } } },
+    "users": { "type": "array", "maxItems": 5000, "items": { "type": "object", "required": ["id", "email", "role"], "additionalProperties": false, "properties": { "id": { "type": "string", "maxLength": 64 }, "email": { "type": "string", "maxLength": 200 }, "name": { "type": "string", "maxLength": 120 }, "role": { "enum": ["admin", "head", "designer"] }, "isActive": { "type": "boolean" }, "createdAt": { "type": "string" } } } },
+    "pages": { "type": "array", "maxItems": 1000, "items": { "type": "object", "required": ["document"], "additionalProperties": false, "properties": {
+      "document": { "$ref": "page-document.schema.json#" },
+      "status": { "enum": ["active", "archived", "deleted"] },
+      "versions": { "type": "array", "maxItems": 500, "items": { "type": "object", "required": ["number", "reason", "document"], "additionalProperties": false, "properties": { "number": { "type": "integer", "minimum": 1 }, "label": { "type": "string", "maxLength": 120 }, "reason": { "enum": ["auto", "manual", "restore", "import", "archive", "delete"] }, "createdBy": { "type": ["string", "null"] }, "createdAt": { "type": "string" }, "document": { "$ref": "page-document.schema.json#" } } } }
+    } } },
+    "images": { "type": "array", "maxItems": 20000, "items": { "type": "object", "required": ["id", "sha256"], "additionalProperties": false, "properties": { "id": { "type": "string", "maxLength": 64 }, "kind": { "enum": ["node", "page", "figma-thumb"] }, "filename": { "type": "string", "maxLength": 200 }, "mime": { "type": "string" }, "width": { "type": "integer" }, "height": { "type": "integer" }, "bytes": { "type": "integer" }, "sha256": { "type": "string" }, "createdAt": { "type": "string" }, "data": { "type": "string", "description": "webp base64 (images=embed)" }, "thumb": { "type": "string", "description": "thumb webp base64" } } } }
+  }
+}

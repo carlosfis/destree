@@ -291,13 +291,13 @@ Cada fase cierra con handoff + commit + tag y encadena la siguiente en la misma 
 - **Handoff:** `F6a.md`.
 - **Verificación:** `npm test`.
 
-### F6b — Respaldos + export/import org
+### F6b — Respaldos + export/import org ✅
 - **Objetivo:** Backups programados y restore documentado.
 - **Entregables:**
-  - [ ] `backups` en `007_backups.sql`
-  - [ ] `lib/backup.js`: `db.backup()` + tar.gz uploads → `/data/backups`, `BACKUP_CRON`, retención N; `POST/GET /api/backups`, descarga (admin); `scripts/backup.js`, `scripts/restore.js`
-  - [ ] Export/import org completo (`org-export.schema.json`) con manifest de imágenes
-  - [ ] Tests en `versions.test.js` (backup crea archivo válido; restore en dir vacío)
+  - [x] `backups` en `007_backups.sql`
+  - [x] `lib/backup.js`: `db.backup()` + tar.gz uploads → `/data/backups`, `BACKUP_CRON`, retención N; `POST/GET /api/backups`, descarga (admin); `scripts/backup.js`, `scripts/restore.js`
+  - [x] Export/import org completo (`org-export.schema.json`) con manifest de imágenes
+  - [x] Tests en `backup.test.js` (backup crea archivo válido; restore en dir vacío; export/import org)
 - **Aceptación:** backup manual descargable; restore en `/data` limpio recupera datos e imágenes · export org → import en instancia limpia reproduce páginas y versiones.
 - **Riesgos:** restore con DB abierta → script exige servidor parado.
 - **Handoff:** `F6b.md` con procedimiento de restore.
