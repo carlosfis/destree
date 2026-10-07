@@ -13,7 +13,8 @@ import { measureViewport, applyCamera, zoomStep, setZoom, fitToScreen } from './
 import { renderAll, clearSelection } from './canvas/selection.js';
 import { setTool } from './canvas/pointer-gestures.js';
 import { showNewMenu } from './ui/popover.js';
-import { adminPanel, toggleAdmin, applySettingsUI, enableUsersTab } from './views/admin.js';
+import { adminPanel, toggleAdmin, applySettingsUI, enablePageTab } from './ui/page-settings.js';
+import { openAdminView, closeAdminView, adminTabsFor } from './views/admin-view.js';
 import * as api from './core/api.js';
 import { showSetup, showLogin, showInvite, hideAuth, ROLE_LABEL } from './views/auth-views.js';
 import { applyReadonly, canEdit } from './core/readonly.js';
@@ -36,7 +37,7 @@ $('#zoomLabel').addEventListener('click', () => setZoom(1));
 viewport.addEventListener('pointerdown', () => { if (innerWidth <= 720 && adminPanel.classList.contains('open')) toggleAdmin(false); });
 
 /* --- F2: router mínimo por hash (#/login, #/setup, #/invite/<token>) + sesión --- */
-const route = () => { const m = location.hash.match(/^#\/(login|setup|invite|me|n|p|lobby)(?:\/([^/]+))?(?:\/n\/([^/]+))?/); return m ? { name: m[1], arg: m[2], node: m[3] } : null; };
+const route = () => { const m = location.hash.match(/^#\/(login|setup|invite|me|n|p|lobby|admin)(?:\/([^/]+))?(?:\/n\/([^/]+))?/); return m ? { name: m[1], arg: m[2], node: m[3] } : null; };
 /** Resuelve S.session (o null sin servidor). Muestra setup/login/invitación cuando hace falta. */
 async function authenticate() {
   const r = route();
@@ -59,7 +60,10 @@ function renderUserChip() {
   out.addEventListener('click', async () => { await api.logout().catch(() => {}); location.hash = '#/login'; location.reload(); });
   const me = document.createElement('button'); me.className = 'btn'; me.id = 'btnMe'; me.title = 'Mis asignaciones'; me.textContent = '★ Mías'; // F3
   me.addEventListener('click', () => { location.hash = '#/me'; });
-  $('#btnAdmin').before(chip, me, out);
+  const org = adminTabsFor().length ? document.createElement('button') : null; // F4b
+  if (org) { org.className = 'btn'; org.id = 'btnOrg'; org.title = 'Administración (usuarios, células, audit)'; org.textContent = '⚑ Admin'; org.addEventListener('click', () => { location.hash = '#/admin'; }); }
+  $('#btnAdmin').before(chip, me, ...(org ? [org] : []), out);
+  $('#btnAdmin').innerHTML = '⚙ <span class="hide-sm">Página</span>'; $('#btnAdmin').title = 'Ajustes de la página';
 }
 /** F4a: botón de página actual → lobby (inyectado tras la marca). */
 function renderPageButton() {
@@ -85,6 +89,8 @@ async function loadTeamData() {
 /** F3: rutas de app (#/me, #/n/<id>) tras cargar el documento. */
 async function appRoute() {
   const r = route(); if (!r || !S.state) return;
+  if (r.name === 'admin') { closeLobby(); return openAdminView(r.arg); }
+  closeAdminView();
   if (r.name === 'lobby') return openLobby();
   if (r.name === 'p' && r.arg) {
     const pid = decodeURIComponent(r.arg);
@@ -105,7 +111,7 @@ export async function init() {
   S.session = await authenticate();
   hideAuth();
   renderUserChip();
-  enableUsersTab();
+  enablePageTab();
   if (!canEdit()) applyReadonly();
   await loadTeamData();
   measureViewport(); // F0b: antes era eager en camera.js (S.vpRect); debe preceder a applyTheme → drawMinimap
@@ -130,6 +136,7 @@ export async function init() {
 }
 // F1: tras un 409 state.js recarga el documento del servidor y avisa aquí para repintar.
 document.addEventListener('destree:reload', () => { clearSelection(); applyTheme(); applySettingsUI(); renderAll(); applyCamera(); renderPageButton(); });
+document.addEventListener('destree:page-meta', renderPageButton); // F4b
 init();
 
 

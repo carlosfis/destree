@@ -13,7 +13,7 @@ import { setTool, cancelGesture } from './pointer-gestures.js';
 import { closePopover, showNewMenu } from '../ui/popover.js';
 import { openEditor } from '../ui/card-editor.js';
 import { deleteSelection, duplicateSelection } from '../ui/node-actions.js';
-import { adminPanel, toggleAdmin } from '../views/admin.js';
+import { adminPanel, toggleAdmin } from '../ui/page-settings.js';
 import { openShortcuts } from '../ui/theme.js';
 export function nudge(dx, dy) {
   const ids = topLevelSelection(); if (!ids.length) return;

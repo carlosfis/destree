@@ -252,12 +252,12 @@ Cada fase cierra con handoff + commit + tag y encadena la siguiente en la misma 
 - **Handoff:** `F4a.md`.
 - **Verificación:** `npm test`.
 
-### F4b — Panel de administración + page-settings
+### F4b — Panel de administración + page-settings ✅
 - **Objetivo:** Gestión de usuarios/células/permisos en UI.
 - **Entregables:**
-  - [ ] `#/admin` (admin; head solo células propias e invitaciones designer): usuarios, roles, invitaciones pendientes/revocar, células y miembros, páginas borradas (restaurar), audit log paginado
-  - [ ] Drawer actual → `ui/page-settings.js` (tags, tipos de rama, datos, ajustes, visibilidad de página, células)
-  - [ ] `admin.css` reutilizando estilos del drawer; tablas simples
+  - [x] `#/admin` (admin; head solo células propias e invitaciones designer): usuarios, roles, invitaciones pendientes/revocar, células y miembros, páginas borradas (restaurar), audit log paginado
+  - [x] Drawer actual → `ui/page-settings.js` (tags, tipos de rama, datos, ajustes, visibilidad de página, células)
+  - [x] `14-admin.css` reutilizando estilos del drawer/lobby; tablas simples
 - **Aceptación:** cambiar rol/célula desde UI aplica sin reiniciar · head no ve pestañas de admin global · audit log muestra las acciones anteriores.
 - **Riesgos:** scope creep → tablas simples, sin filtros avanzados.
 - **Handoff:** `F4b.md`.

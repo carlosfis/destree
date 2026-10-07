@@ -51,6 +51,7 @@ export const S = {
   docRefs: null,         // F3: `refs` del GET de página { users:[{id,name}], cells:[{id,name,color}] } para chips
   pageList: [],          // F4a: páginas visibles (GET /api/pages) para lobby y topbar
   lobbyTab: 'active',    // F4a: pestaña activa del lobby
+  orgTab: null,          // F4b: pestaña activa de #/admin
 
 };
 // normalize.js (compartido con el servidor) es la única fuente de saneado y defaults.

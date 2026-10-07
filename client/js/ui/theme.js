@@ -4,7 +4,7 @@
 import { $, esc, MOD } from '../core/utils.js';
 import { S, save } from '../core/state.js';
 import { drawMinimap } from '../canvas/minimap.js';
-import { adminPanel, renderAdmin } from '../views/admin.js';
+import { adminPanel, renderAdmin } from './page-settings.js';
 export const mql = window.matchMedia('(prefers-color-scheme: dark)');
 export function applyTheme() {
   const dark = S.state.settings.theme ? S.state.settings.theme === 'dark' : mql.matches;

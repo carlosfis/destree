@@ -1,4 +1,4 @@
-# API (F4a)
+# API (F4b)
 
 Base `/api`. JSON. Errores: `{ error, message, errors?, version?, setup? }` con `error` ∈ `validation|unauthorized|forbidden|not_found|conflict|gone|rate_limited|error`.
 Auth: cookie `destree_sid` (HttpOnly, SameSite=Lax, `Secure` si `TRUST_PROXY`), 30 días. Sin sesión → 401 (`setup:true` si aún no hay usuarios). Rol sin la acción → 403.
@@ -32,6 +32,7 @@ Validación: JSON Schema de `/schema` vía Ajv (`strict:false`, `allErrors`, ajv
 | PATCH | `/api/pages/:pageId/nodes/:nodeId/visibility` | pages.edit | `{ visibility:'org'\|'cells', cellIds? }` | `{ version, node, updatedAt }` · 400 si no es raíz · 404 |
 | PUT | `/api/pages/:pageId/nodes/:nodeId/assignees` | pages.edit | `{ assigneeIds[] }` | `{ version, node, updatedAt }` |
 | PATCH | `/api/pages/:pageId/nodes/:nodeId/owner` | pages.edit | `{ ownerUserId\|null }` | `{ version, node, updatedAt }` · 400 usuario desconocido |
+| GET | `/api/audit?limit&before&action` | audit.read (admin) | `limit` 1–200 (defecto 50), `before` id, `action` prefijo | `{ items: [{ id, userId, userName, action, entity, entityId, meta, createdAt }], next }` (más recientes primero) |
 | GET | `/api/me/assignments` | pages.read | — | `{ items: [{ pageId, pageName, pageStatus, nodeId, name, type, isRoot, role:'owner'\|'assignee' }] }` en páginas visibles (no borradas) |
 | GET | `/api/pages?status=` | pages.read | `status` active (defecto) \| archived \| deleted (admin) \| all | `{ pages: [{ id, name, description, visibility, cellIds, status, version, createdAt, updatedAt, archivedAt, deletedAt, nodeCount, rootCount }] }` (designer: solo visibles, regla 2) |
 | PATCH | `/api/pages/:id` | pages.edit | `{ name?, description?, visibility?, cellIds? }` | page meta (+`cellIds`), `ETag`; version += 1 · 409 borrada |

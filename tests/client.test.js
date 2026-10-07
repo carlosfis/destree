@@ -24,7 +24,7 @@ const walk = (dir, out = []) => {
   return out;
 };
 const JS = walk(path.join(CLIENT, 'js')).map((p) => path.relative(CLIENT, p)).sort();
-const S_KEYS = ['firstRun', 'state', 'cam', 'vpRect', 'camRaf', 'mmScale', 'ptr', 'spaceDown', 'altDown', 'rafPending', 'nudgeTimer', 'popoverOpen', 'adminTab', 'pageId', 'version', 'offline', 'saving', 'dirty', 'session', 'readonly', 'cellList', 'userDir', 'docRefs', 'pageList', 'lobbyTab'];
+const S_KEYS = ['firstRun', 'state', 'cam', 'vpRect', 'camRaf', 'mmScale', 'ptr', 'spaceDown', 'altDown', 'rafPending', 'nudgeTimer', 'popoverOpen', 'adminTab', 'pageId', 'version', 'offline', 'saving', 'dirty', 'session', 'readonly', 'cellList', 'userDir', 'docRefs', 'pageList', 'lobbyTab', 'orgTab'];
 const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 const exportsOf = (src) => {
   const names = new Set();
@@ -53,11 +53,11 @@ test('index.html: markup original y un único <script type="module" src="js/main
   assert.ok(html.includes(range(503, 587)), 'body');
   const scripts = [...html.matchAll(/<script[^>]*>/g)].map((m) => m[0]);
   assert.deepEqual(scripts, ['<script type="module" src="js/main.js">']);
-  assert.deepEqual([...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]), [...CSS.map(([f]) => f), 'css/11-auth.css', 'css/12-cells.css', 'css/13-lobby.css']); // F2: +auth · F3: +cells · F4a: +lobby
+  assert.deepEqual([...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]), [...CSS.map(([f]) => f), 'css/11-auth.css', 'css/12-cells.css', 'css/13-lobby.css', 'css/14-admin.css']); // F2: +auth · F3: +cells · F4a: +lobby · F4b: +admin
 });
 
 test('ESM: sin use strict, sin let/var top-level, sin globales window.* salvo S en main.js', () => {
-  assert.equal(JS.length, 32, JS.join(','));
+  assert.equal(JS.length, 33, JS.join(','));
   for (const f of JS) {
     const src = read(f);
     assert.ok(!src.includes("'use strict'"), `${f}: 'use strict' sobra en ESM`);

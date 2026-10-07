@@ -1,4 +1,4 @@
-# Mapa del repositorio (F4a)
+# Mapa del repositorio (F4b)
 
 Una línea por archivo. Actualizar al crear/mover archivos (protocolo de handoff §6).
 
@@ -27,18 +27,18 @@ Una línea por archivo. Actualizar al crear/mover archivos (protocolo de handoff
 - `lib/schemas.js` — `loadSchemas`, `createValidator` (Ajv independiente para tests/scripts), `formatErrors`.
 - `lib/permissions.js` — matriz acción → roles (PLAN §3); `can(ctx, action)`, `permissionsFor(role)`, `ACTIONS`, `ROLES`. F3: `cells.members`, `directory.read`.
 - `lib/auth.js` — scrypt (`hashPassword`/`verifyPassword`), usuarios (`createUser`, `getUser`, `listUsers`, `adminCount`), sesiones (`createSession`/`resolveSession`/`deleteSession`), invitaciones (`createInvite`, `getInviteByToken` 404/410, `acceptInvite`), `rateLimit` en memoria.
-- `lib/audit.js` — `audit(db, { orgId, userId, action, entity, entityId, meta })`.
+- `lib/audit.js` — `audit(db, { orgId, userId, action, entity, entityId, meta })`; F4b: `listAudit(db, orgId, { limit, before, action })`.
 - `plugins/session.js` — cookie `destree_sid` → `req.user/role/orgId/sessionToken` (onRequest global, skip-override); `parseCookies`, `sessionCookie`.
 - `plugins/guard.js` — `app.guard('action')` → hook onRequest: 401 (con `setup`) / 403.
 - `plugins/origin-check.js` — mutaciones `/api/*`: Origin/Referer debe coincidir con Host; `config.skipOriginCheck` exime.
 - `routes/health.js` — `GET /api/health` (pública). `routes/pages.js` — `/api/pages` (GET ?status, POST), `/api/pages/:id` (GET/PUT/PATCH/DELETE), `archive|unarchive|restore-deleted|duplicate`, `/api/import`; guard + audit.
 - `routes/auth.js` — `/api/setup` (GET/POST), `/api/auth/login|logout`, `/api/me` (+`cellIds`, `cells`). `routes/invites.js` — `/api/invites` (POST con `cellIds`/GET/DELETE), `/api/invites/:token`, `/api/invites/accept` (hereda células). `routes/users.js` — `/api/users` CRUD (admin).
-- `routes/cells.js` — F3: `/api/cells` CRUD + `PUT /:id/members`, `GET /api/users/directory`. `routes/nodes.js` — F3: `PATCH /api/pages/:pageId/nodes/:nodeId/visibility|owner`, `PUT …/assignees`; F4a: `GET /api/me/assignments`.
+- `routes/cells.js` — F3: `/api/cells` CRUD + `PUT /:id/members`, `GET /api/users/directory`. `routes/audit.js` — F4b: `GET /api/audit` (admin). `routes/nodes.js` — F3: `PATCH /api/pages/:pageId/nodes/:nodeId/visibility|owner`, `PUT …/assignees`; F4a: `GET /api/me/assignments`.
 
 ## client/ (vanilla JS ESM + CSS, sin bundler)
 - `index.html` — markup original + `<link>` css/01..12 + `#authView` (overlay F2) + único `<script type="module" src="js/main.js">`.
-- `css/01-theme … 10-responsive.css` — split 1:1 del `<style>` legacy (líneas 9-501); paridad en `tests/client.test.js`. `css/11-auth.css` — overlay de acceso, chip de usuario, `body.viewer` (modo lectura). `css/12-cells.css` — F3: chips de células/asignados, pestaña Células, ficha de lectura, enlaces y markdown. `css/13-lobby.css` — F4a: lobby y botón de página.
-- `js/main.js` — entrada: botones topbar, router por hash (`#/login`, `#/setup`, `#/invite/<token>`, `#/me`, `#/n/<id>`, F4a: `#/lobby`, `#/p/<id>[/n/<nodeId>]` → `appRoute()`), `authenticate()` → `S.session`, `loadTeamData()`, `loadPage()` (cambio sin fugas), `renderPageButton()` (⌂ página), chip usuario + ★ Mías + logout (inyectados por JS), `init()`, `window.S` solo en localhost.
+- `css/01-theme … 10-responsive.css` — split 1:1 del `<style>` legacy (líneas 9-501); paridad en `tests/client.test.js`. `css/11-auth.css` — overlay de acceso, chip de usuario, `body.viewer` (modo lectura). `css/12-cells.css` — F3: chips de células/asignados, pestaña Células, ficha de lectura, enlaces y markdown. `css/13-lobby.css` — F4a: lobby y botón de página. `css/14-admin.css` — F4b: `#/admin`, tabla de audit, formulario Página.
+- `js/main.js` — entrada: botones topbar, router por hash (`#/login`, `#/setup`, `#/invite/<token>`, `#/me`, `#/n/<id>`, `#/lobby`, `#/p/<id>[/n/<nodeId>]`, F4b: `#/admin[/<tab>]` → `appRoute()`), `authenticate()` → `S.session`, `loadTeamData()`, `loadPage()` (cambio sin fugas), `renderPageButton()` (⌂ página), chip usuario + ★ Mías + ⚑ Admin + logout (inyectados por JS; `#btnAdmin` → "⚙ Página"), `init()`, `window.S` solo en localhost.
 - `js/core/utils.js` — `$`, `$$`, `uid`, `clamp`, `esc`, `debounce`, constantes (`STORAGE_KEY`, `PREFS_KEY`, `CARD_W`, `GRID`…; PAD/MIN_Z/MAX_Z/TAG_COLORS desde normalize.js), `TYPE_META`, `KIND_LABEL`.
 - `js/core/api.js` — fetch JSON: páginas (`listPages`, `getPage`, `putPage` If-Match, `importDocument`, `health`) + F2 (`setup`, `login`, `logout`, `getMe`, `getInvite`, `acceptInvite`, `createInvite`, `listInvites`, `revokeInvite`, `listUsers`, `createUser`, `updateUser`) + F3 (`listCells`, `createCell`, `updateCell`, `deleteCell`, `setCellMembers`, `directory`) + F4a (`listPages(status)`, `createPage`, `patchPage`, `archivePage`, `unarchivePage`, `deletePage`, `restorePage`, `duplicatePage`, `myAssignments`); errores con `status`; 401 fuera de auth → evento `destree:unauthorized`.
 - `js/core/readonly.js` — `canEdit()`, `applyReadonly()`: designer → oculta botones, fuerza mano, bloquea menús/editor/teclado de edición (captura); doble clic / Enter abren la ficha (`openNodeView`); `persist()` no envía PUT.
@@ -61,7 +61,8 @@ Una línea por archivo. Actualizar al crear/mover archivos (protocolo de handoff
 - `js/ui/card-editor-docs.js` — F3: `docsSection` (enlaces ≤20 + notas), `teamSection` (responsable, asignados), `visibilitySection` (raíz: org | células).
 - `js/ui/markdown.js` — F3: `renderMarkdown` (escape total; títulos, listas, enlaces http(s), código, negrita). `js/ui/node-view.js` — F3: `openNodeView` ficha de lectura en `#editorDialog`.
 - `js/ui/node-actions.js` — eliminar/duplicar. `js/ui/theme.js` — tema, `toast`, `openShortcuts`.
-- `js/views/admin.js` — panel admin (etiquetas, ramificaciones, responsables, datos import/export, ajustes; `enableUsersTab()` F2).
+- `js/ui/page-settings.js` — drawer de ajustes de página (antes `views/admin.js`): etiquetas, ramificaciones, responsables, datos import/export, ajustes; F4b: `renderPageTab` (nombre, descripción, visibilidad + células → PATCH, archivar), `enablePageTab()`, `colorPicker`.
+- `js/views/admin-view.js` — F4b: `#/admin` overlay: Usuarios, Células, Páginas borradas (restaurar), Audit log paginado con filtro; `adminTabsFor()` por permisos.
 - `js/views/users.js` — pestaña Usuarios: invitar (enlace copiable, sin correo; F3: chips de células del invitado), invitaciones pendientes/revocar, usuarios con rol/activar (admin).
 - `js/views/cells.js` — F3: pestaña Células (admin: CRUD/color/lead; admin o head de la célula: miembros), `refreshCells()` → `S.cellList`.
 - `js/views/me.js` — F3: `openMyAssignments()` (`#/me`; F4a multipágina vía `assignmentItems()`/`assignmentHTML()`), `goToNode(id)` (selecciona, centra, abre ficha).
@@ -70,7 +71,7 @@ Una línea por archivo. Actualizar al crear/mover archivos (protocolo de handoff
 
 ## scripts/
 - `lint.js` — `node --check` de todos los .js. `migrate.js` — aplica migraciones + seed. `import.js` — `node scripts/import.js archivo.json [pageId]`.
-- `backup.js` — stub hasta F6b. `smoke.js` — checklist en Chrome headless vía CDP sobre Fastify con DB temporal (20 pasos: setup, paridad, F3 célula/editor/ficha/#/me, F4a lobby/cambio de página, invitación→designer readonly + ficha, logout/login; consola limpia).
+- `backup.js` — stub hasta F6b. `smoke.js` — checklist en Chrome headless vía CDP sobre Fastify con DB temporal (22 pasos: setup, paridad, F3 célula/editor/ficha/#/me, F4a lobby/cambio de página, F4b #/admin + pestaña Página, invitación→designer readonly + ficha, logout/login; consola limpia).
 
 ## tests/
 - `client.test.js` — paridad CSS vs legacy, estructura ESM (sin `let` top-level, claves de `S`, imports↔exports, symlink normalize, alcance desde `main.js`).
@@ -81,7 +82,7 @@ Una línea por archivo. Actualizar al crear/mover archivos (protocolo de handoff
 - `fixtures/legacy-v2.json` — `export-actual.json` anonimizado (11 nodos, 9 aristas, v2).
 
 ## docs/
-- `MAP.md` — este archivo. `DECISIONS.md` — append-only. `API.md` — endpoints. `handoff/TEMPLATE.md`, `handoff/F0a.md`, `handoff/F0b.md`, `handoff/F1.md`, `handoff/F2.md`, `handoff/F3.md`, `handoff/F4a.md`.
+- `MAP.md` — este archivo. `DECISIONS.md` — append-only. `API.md` — endpoints. `handoff/TEMPLATE.md`, `handoff/F0a.md`, `handoff/F0b.md`, `handoff/F1.md`, `handoff/F2.md`, `handoff/F3.md`, `handoff/F4a.md`, `handoff/F4b.md`.
 
 ## legacy/
 - `arbol.html` — monolito original (2545 líneas). Nunca leerlo entero.

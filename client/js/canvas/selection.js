@@ -6,7 +6,7 @@ import { S, nodeById, roots, ancestorsOf, descendantsOf } from '../core/state.js
 import { sel, nodeEls, edgeEls, renderNodes } from './render-nodes.js';
 import { renderEdges } from './render-edges.js';
 import { drawMinimap } from './minimap.js';
-import { adminPanel, renderAdmin } from '../views/admin.js';
+import { adminPanel, renderAdmin } from '../ui/page-settings.js';
 /** Linaje de la selección: ancestros, descendientes y nodos conectados por DS / fuente. */
 export function lineageSet() {
   if (!sel.nodes.size) return null;

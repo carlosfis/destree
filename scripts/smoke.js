@@ -45,7 +45,7 @@ await step('setup inicial (org + admin) → sesión', async () => {
   const shown = await ev(`!document.querySelector('#authView').hidden && !!document.querySelector('#authView [name=orgName]')`);
   if (!shown) throw new Error('no apareció el formulario de setup');
   await fill([['orgName', 'Smoke SA'], ['name', 'Ana'], ['email', 'ana@smoke.io'], ['password', 'smoke-1234']]); await sleep(1200);
-  return ev(`({ role: S.session.role, org: S.session.org.name, chip: document.querySelector('#userChip')?.textContent, authHidden: document.querySelector('#authView').hidden, usersTab: !!document.querySelector('#adminTabs [data-tab=users]') })`);
+  return ev(`({ role: S.session.role, org: S.session.org.name, chip: document.querySelector('#userChip')?.textContent, authHidden: document.querySelector('#authView').hidden, orgBtn: !!document.querySelector('#btnOrg'), pageTab: !!document.querySelector('#adminTabs [data-tab=page]') })`);
 });
 await step('carga: demo + S expuesto', () => ev(`({ nodes: S.state.nodes.length, dom: document.querySelectorAll('#nodes .node').length, edges: S.state.edges.length, firstRun: S.firstRun, vp: !!S.vpRect })`));
 await step('crear raíz (btnNew → menú → editor → submit)', async () => {
@@ -94,7 +94,7 @@ await step('exportar (panel admin → Datos → Exportar JSON + exportString)', 
   await ev(`document.querySelector('#btnAdmin').click()`); await sleep(100);
   await ev(`document.querySelector('#adminTabs [data-tab="data"]').click()`); await sleep(100);
   await ev(`document.querySelector('#btnExport').click()`); await sleep(150);
-  return ev(`(async () => { const m = await import('/js/views/admin.js'); const j = JSON.parse(m.exportString()); return { v: j.version, nodes: j.nodes.length, tab: S.adminTab, toast: document.querySelector('#toasts').textContent.trim().slice(0, 40) }; })()`);
+  return ev(`(async () => { const m = await import('/js/ui/page-settings.js'); const j = JSON.parse(m.exportString()); return { v: j.version, nodes: j.nodes.length, tab: S.adminTab, toast: document.querySelector('#toasts').textContent.trim().slice(0, 40) }; })()`);
 });
 const actualPath = path.join(ROOT, 'export-actual.json'); const actual = fs.existsSync(actualPath) ? fs.readFileSync(actualPath, 'utf8') : JSON.stringify({ version: 2, nodes: [], edges: [], tags: [], edgeTypes: [], settings: {} });
 await step('importar export-actual.json (input file → change → confirm)', async () => {
@@ -111,7 +111,7 @@ await step('tema (themeSwitch)', async () => {
   if (a === b) throw new Error('tema sin cambio'); return [a, b, await ev(`S.state.settings.theme`)];
 });
 await step('minimapa (pointer en #minimap mueve la cámara)', async () => {
-  await ev(`(async () => { const m = await import('/js/views/admin.js'); m.toggleAdmin(false); })()`); await sleep(500);
+  await ev(`(async () => { const m = await import('/js/ui/page-settings.js'); m.toggleAdmin(false); })()`); await sleep(500);
   const a = await ev(`({ ...S.cam, adminOpen: document.querySelector('#adminPanel').classList.contains('open') })`);
   const c = await center('#minimap');
   const diag = await ev(`(() => { const el = document.elementFromPoint(${c.x + 20}, ${c.y + 10}); return { hit: el && (el.id || el.tagName + '.' + el.className), hidden: document.querySelector('#minimap').hidden, mm: S.mmScale, setting: S.state.settings.minimap, rect: [${c.l}, ${c.t}, ${c.w}, ${c.h}] }; })()`);
@@ -158,9 +158,9 @@ await step('arrastre de nodo + marquee + rueda zoom', async () => {
 const NOTES = '# Título\n\n- item <b>x</b>\n\n[link](https://ok.io) [mal](javascript:alert(1)) `code`';
 await step('F3: célula + editor raíz (visibilidad, 2 enlaces, notas, asignado) → chips', async () => {
   const cell = await ev(`fetch('/api/cells', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Célula Smoke', color: 'green' }) }).then(r => r.json())`);
-  await ev(`document.querySelector('#btnAdmin').click(); document.querySelector('#adminTabs [data-tab=cells]').click(); true`); await sleep(400);
-  const tab = await ev(`({ rows: document.querySelectorAll('#cellRows .cell-row').length, cells: S.cellList.length, dir: S.userDir.length })`);
-  await ev(`document.querySelector('#closeAdmin').click(); true`);
+  await ev(`location.hash = '#/admin/cells'; true`); await sleep(500);
+  const tab = await ev(`({ rows: document.querySelectorAll('#adminView #cellRows .cell-row').length, cells: S.cellList.length, dir: S.userDir.length, tabs: [...document.querySelectorAll('#orgTabs button')].map(b => b.dataset.tab) })`);
+  await ev(`document.querySelector('#adminBack').click(); true`); await sleep(300);
   const rootId = await ev(`S.state.nodes.find(n => !n.parentId).id`);
   await ev(`import('/js/ui/card-editor.js').then(m => m.openEditor(${JSON.stringify(rootId)}))`); await sleep(150);
   const r = await ev(`(() => { const f = document.querySelector('#editorForm');
@@ -221,6 +221,23 @@ await step('F4a: lobby → nueva página → cambio sin fugas → volver → arc
   await ev(`document.querySelector('#lobbyBack').click(); true`); await sleep(400);
   const end = await ev(`({ lobbyHidden: document.querySelector('#lobbyView').hidden, page: S.pageId === ${JSON.stringify(before.page)}, nodes: S.state.nodes.length })`);
   return { lobby, h0, fresh, p2, back, arch, lobby2, archived, restored, active, end };
+});
+// F4b: #/admin (pestañas por permiso, audit log con acciones previas, borradas) + drawer Página (renombrar → topbar/version).
+await step('F4b: #/admin (usuarios/células/borradas/audit) + pestaña Página del drawer', async () => {
+  await ev(`location.hash = '#/admin/users'; true`); await sleep(1200);
+  const admin = await ev(`({ visible: !document.querySelector('#adminView').hidden, tabs: [...document.querySelectorAll('#orgTabs button')].map(b => b.dataset.tab), users: document.querySelectorAll('#adminView #userRows .row').length, lobbyHidden: document.querySelector('#lobbyView')?.hidden ?? true })`);
+  await ev(`document.querySelector('#orgTabs [data-tab=audit]').click(); true`); await sleep(500);
+  const audit = await ev(`({ rows: document.querySelectorAll('#auditRows tr').length, actions: [...new Set([...document.querySelectorAll('#auditRows code')].map(c => c.textContent))].slice(0, 6), more: !document.querySelector('#auditMore').hidden })`);
+  if (!audit.actions.includes('page.save') || !audit.actions.includes('setup') && audit.rows < 10) throw new Error('audit sin acciones previas: ' + JSON.stringify(audit));
+  await ev(`document.querySelector('#orgTabs [data-tab=deleted]').click(); true`); await sleep(400);
+  const deleted = await ev(`document.querySelector('#deletedRows')?.textContent.slice(0, 40)`);
+  await ev(`document.querySelector('#adminBack').click(); true`); await sleep(400);
+  await ev(`document.querySelector('#btnAdmin').click(); document.querySelector('#adminTabs [data-tab=page]').click(); true`); await sleep(200);
+  const v0 = await ev(`S.version`);
+  await ev(`(() => { const f = document.querySelector('#pageMetaForm'); f.name.value = 'Árbol renombrado'; f.requestSubmit(); return true; })()`); await sleep(700);
+  const page = await ev(`({ name: S.state.page.name, btn: document.querySelector('#btnLobby').textContent, bumped: S.version > ${JSON.stringify(0)} && S.version === ${'${v0}'} + 1, adminHidden: document.querySelector('#adminView').hidden })`.replace('${v0}', JSON.stringify(v0)));
+  await ev(`document.querySelector('#closeAdmin').click(); true`);
+  return { admin, audit, deleted, page };
 });
 await step('recarga: persistencia SQLite vía API', async () => { await send('Page.reload'); await sleep(1200); return ev(`({ nodes: S.state.nodes.length, theme: document.documentElement.dataset.theme })`); });
 // F2: invitación (enlace copiable) → alta de designer → modo lectura; PUT → 403; logout → login.

@@ -26,6 +26,8 @@ export const deletePage = id => req('DELETE', `/pages/${encodeURIComponent(id)}`
 export const restorePage = id => req('POST', `/pages/${encodeURIComponent(id)}/restore-deleted`);
 export const duplicatePage = (id, name) => req('POST', `/pages/${encodeURIComponent(id)}/duplicate`, name ? { name } : null);
 export const myAssignments = () => req('GET', '/me/assignments').then(r => r.items);
+/* --- F4b --- */
+export const listAudit = params => req('GET', '/audit?' + new URLSearchParams(Object.fromEntries(Object.entries(params || {}).filter(([, v]) => v != null && v !== ''))));
 export const getPage = id => req('GET', `/pages/${encodeURIComponent(id)}`);
 /** PUT del documento completo con If-Match; 409 si `ver` es vieja. */
 export const putPage = (id, doc, ver, opts) => req('PUT', `/pages/${encodeURIComponent(id)}`, doc, { ...opts, headers: { 'If-Match': `"${ver}"` } });

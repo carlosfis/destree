@@ -1,5 +1,5 @@
 /* =========================================================
-   16. Panel de administración
+   16. Ajustes de página (drawer): etiquetas, ramificaciones, responsables, datos, ajustes; F4b: pestaña Página (nombre, visibilidad, células)
    ========================================================= */
 import { $, $$, uid, esc, MOD, TAG_COLORS } from '../core/utils.js';
 import { viewport } from '../core/dom.js';
@@ -17,8 +17,7 @@ import { confirmBox, promptBox } from '../ui/dialogs.js';
 import { normalizeOwner } from '../ui/card-editor.js';
 import { computeLayout } from '../canvas/layout.js';
 import { applyTheme, toast } from '../ui/theme.js';
-import { renderUsersTab } from './users.js';
-import { renderCellsTab } from './cells.js';
+import * as api from '../core/api.js';
 export const adminPanel = $('#adminPanel');
 export function toggleAdmin(open) {
   const willOpen = open ?? !adminPanel.classList.contains('open');
@@ -36,13 +35,41 @@ $('#adminTabs').addEventListener('click', e => {
 export function renderAdmin() {
   const body = $('#adminBody');
   body.innerHTML = '';
-  ({ tags: renderTagsTab, edgeTypes: renderEdgeTypesTab, owners: renderOwnersTab, data: renderDataTab, settings: renderSettingsTab, users: renderUsersTab, cells: renderCellsTab })[S.adminTab](body);
+  ({ tags: renderTagsTab, edgeTypes: renderEdgeTypesTab, owners: renderOwnersTab, data: renderDataTab, settings: renderSettingsTab, page: renderPageTab })[S.adminTab](body);
 }
-/** F2: pestaña Usuarios solo para quien puede invitar (admin/head). Se inserta por JS para no tocar el markup legacy. */
-export function enableUsersTab() {
-  if (!S.session) return;
-  const add = (tab, label, perm) => { if (S.session.permissions.includes(perm) && !$(`#adminTabs [data-tab="${tab}"]`)) { const b = document.createElement('button'); b.dataset.tab = tab; b.textContent = label; $('#adminTabs').appendChild(b); } };
-  add('users', 'Usuarios', 'invite'); add('cells', 'Células', 'cells.read'); // F3
+/** F4b: pestaña Página (metadatos/visibilidad) solo con pages.edit. Se inserta por JS para no tocar el markup legacy. Usuarios/células viven en #/admin. */
+export function enablePageTab() {
+  if (!S.session || !S.session.permissions.includes('pages.edit') || $('#adminTabs [data-tab="page"]')) return;
+  const b = document.createElement('button'); b.dataset.tab = 'page'; b.textContent = 'Página';
+  $('#adminTabs').prepend(b);
+}
+/* --- F4b: Página --- */
+export function renderPageTab(body) {
+  const p = S.state.page, cells = S.cellList || [];
+  body.innerHTML = `<h3>Página</h3><form id="pageMetaForm">
+    <div class="field"><label>Nombre</label><input name="name" maxlength="120" required value="${esc(p.name)}"></div>
+    <div class="field"><label>Descripción</label><textarea name="description" maxlength="500" rows="2">${esc(p.description || '')}</textarea></div>
+    <div class="field"><label>Visibilidad</label><div class="segmented" id="pageVis"><button type="button" data-v="org" class="${p.visibility !== 'cells' ? 'active' : ''}">Toda la organización</button><button type="button" data-v="cells" class="${p.visibility === 'cells' ? 'active' : ''}">Solo células</button></div>
+      <div class="check-list" id="pageCells" ${p.visibility === 'cells' ? '' : 'hidden'}>${cells.length ? cells.map(c => `<label><input type="checkbox" value="${c.id}" ${(p.cellIds || []).includes(c.id) ? 'checked' : ''}><span class="t-dot tag-${esc(c.color)}"></span>${esc(c.name)}</label>`).join('') : '<div class="empty">No hay células (Administración → Células).</div>'}</div>
+      <div class="hint">Una página solo-células la ven sus miembros y quienes tengan cards asignadas en ella. Admin y head la ven siempre.</div></div>
+    <div class="inline-actions"><button class="btn primary" type="submit">Guardar</button>${S.session?.permissions.includes('pages.archive') ? '<button class="btn" type="button" id="pageArchive">Archivar página</button>' : ''}</div></form>
+    <p style="margin-top:12px">Versión ${S.version} · ${roots().length} raíces · ${S.state.nodes.length} cards.</p>`;
+  $('#pageVis', body).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; $$('#pageVis button', body).forEach(x => x.classList.toggle('active', x === b)); $('#pageCells', body).hidden = b.dataset.v !== 'cells'; });
+  $('#pageMetaForm', body).addEventListener('submit', async e => {
+    e.preventDefault(); const f = e.currentTarget;
+    const visibility = $('#pageVis button.active', body).dataset.v;
+    const cellIds = visibility === 'cells' ? $$('#pageCells input:checked', body).map(i => i.value) : [];
+    try {
+      const r = await api.patchPage(S.pageId, { name: f.name.value.trim(), description: f.description.value.trim(), visibility, cellIds });
+      S.state.page = { ...S.state.page, name: r.name, description: r.description, visibility: r.visibility, cellIds: r.cellIds }; S.version = r.version;
+      document.dispatchEvent(new CustomEvent('destree:page-meta')); toast('Página guardada'); renderAdmin();
+    } catch (err) { toast(err.message, 'error', 5000); }
+  });
+  $('#pageArchive', body)?.addEventListener('click', async () => {
+    const ok = await confirmBox({ title: 'Archivar página', message: `"${p.name}" dejará de aparecer en el lobby (pestaña Archivadas) y no se podrá editar hasta restaurarla.`, buttons: [{ label: 'Cancelar', value: '' }, { label: 'Archivar', value: 'ok', kind: 'danger' }] });
+    if (!ok) return;
+    try { await api.archivePage(S.pageId); toggleAdmin(false); toast('Página archivada'); location.hash = '#/lobby'; } catch (err) { toast(err.message, 'error', 5000); }
+  });
 }
 export function colorPicker(x, y, current, onPick) {
   openPopover(x, y, el => {

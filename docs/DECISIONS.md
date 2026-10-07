@@ -37,4 +37,6 @@
 - 2026-10-06 F4a: sin hash la app abre la última página visitada (`destree:prefs.pageId`) o la primera visible; el lobby solo con `#/lobby`, botón ⌂ o cuando no hay página visible. `bootstrap(wantedId)` es el único punto de entrada de carga de página.
 - 2026-10-06 F4a: transiciones de estado de página como `POST /api/pages/:id/archive|unarchive|restore-deleted` y `DELETE` (soft); hasta F6a el borrado exporta el documento a `data/deleted/` (`app.deletedDir`, null con `:memory:`). La única página activa no se borra.
 - 2026-10-06 F4a: página archivada sigue legible (GET) y aparece en asignaciones marcada; PUT sobre archivada/borrada → 409. Borrada: 404 para no-admin.
+- 2026-10-06 F4b: el drawer legacy (`#adminPanel`) pasa a ser ajustes de página (`ui/page-settings.js`, pestaña "Página" inyectada por JS); la administración de organización vive en `#/admin` (`views/admin-view.js`) con pestañas por permiso. `#btnAdmin` se reetiqueta por JS ("⚙ Página") para no tocar el markup.
+- 2026-10-06 F4b: `GET /api/audit` pagina por `id` ULID (`before`), `limit` llega como string (Ajv `coerceTypes:false`); filtro `action` por prefijo (LIKE).
 - 2026-10-06 F3: markdown propio (`ui/markdown.js`): escape total antes de marcar; solo enlaces `http(s)`; sin HTML crudo, imágenes ni tablas. La ficha de lectura reutiliza `#editorDialog`.

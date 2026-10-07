@@ -17,6 +17,7 @@ import userRoutes from './routes/users.js';
 import pageRoutes from './routes/pages.js';
 import cellRoutes from './routes/cells.js';
 import nodeRoutes from './routes/nodes.js';
+import auditRoutes from './routes/audit.js';
 
 export async function buildApp({ dbPath = config.dbPath, logger = { level: config.logLevel } } = {}) {
   const app = Fastify({
@@ -56,6 +57,7 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   await app.register(pageRoutes);
   await app.register(cellRoutes);
   await app.register(nodeRoutes);
+  await app.register(auditRoutes);
   // Cliente estático. normalize.js llega vía symlink client/js/core/normalize.js → server/lib/normalize.js.
   await app.register(fastifyStatic, { root: config.clientDir, prefix: '/', index: ['index.html'], cacheControl: false, decorateReply: false });
   app.get('/favicon.ico', (req, reply) => reply.code(204).send());

@@ -6,7 +6,7 @@ import { S } from '../core/state.js';
 import * as api from '../core/api.js';
 import { toast } from '../ui/theme.js';
 import { confirmBox } from '../ui/dialogs.js';
-import { colorPicker } from './admin.js';
+import { colorPicker } from '../ui/page-settings.js';
 import { renderAll } from '../canvas/selection.js';
 
 const isAdmin = () => S.session?.role === 'admin';

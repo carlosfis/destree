@@ -60,6 +60,14 @@ test('rutas × rol → status; sin sesión → 401 (+setup); 403 designer en mut
     ['GET /api/invites', { method: 'GET', url: '/api/invites' }, 200, 200, 403, 401],
     ['POST /api/invites', { method: 'POST', url: '/api/invites', payload: { email: 'i@test.io', role: 'designer' } }, 201, 201, 403, 401],
     ['DELETE /api/invites/:id', { method: 'DELETE', url: '/api/invites/nope' }, 404, 404, 403, 401],
+    ['GET /api/cells', { method: 'GET', url: '/api/cells' }, 200, 200, 403, 401],
+    ['POST /api/cells', { method: 'POST', url: '/api/cells', payload: { name: 'C' } }, 201, 403, 403, 401],
+    ['GET /api/users/directory', { method: 'GET', url: '/api/users/directory' }, 200, 200, 403, 401],
+    ['GET /api/audit', { method: 'GET', url: '/api/audit' }, 200, 403, 403, 401],
+    ['GET /api/pages?status=deleted', { method: 'GET', url: '/api/pages?status=deleted' }, 200, 403, 403, 401],
+    ['POST /api/pages/:id/archive', { method: 'POST', url: '/api/pages/nope/archive' }, 404, 404, 403, 401],
+    ['DELETE /api/pages/:id', { method: 'DELETE', url: '/api/pages/nope' }, 404, 403, 403, 401],
+    ['GET /api/me/assignments', { method: 'GET', url: '/api/me/assignments' }, 200, 200, 200, 401],
     ['POST /api/_nope (sin guard, solo origin)', { method: 'POST', url: '/api/_nope' }, 200, 200, 200, 200],
   ];
   const cookies = { admin, head, designer, anon: '' };
@@ -101,6 +109,14 @@ test('rutas × rol → status; sin sesión → 401 (+setup); 403 designer en mut
   // audit_log
   const actions = app.db.prepare('SELECT DISTINCT action FROM audit_log').all().map(r => r.action);
   for (const a of ['setup', 'invite.create', 'invite.accept', 'page.save', 'page.create', 'page.import', 'user.create', 'user.update', 'user.deactivate']) assert.ok(actions.includes(a), a);
+  // F4b: audit log paginado (admin), filtro por acción, más recientes primero
+  const a1 = (await app.inject({ method: 'GET', url: '/api/audit?limit=3', headers: { cookie: admin } })).json();
+  assert.equal(a1.items.length, 3); assert.ok(a1.next); assert.ok(a1.items[0].id > a1.items[2].id); assert.ok('userName' in a1.items[0] && typeof a1.items[0].meta === 'object');
+  const a2 = (await app.inject({ method: 'GET', url: `/api/audit?limit=3&before=${a1.next}`, headers: { cookie: admin } })).json();
+  assert.ok(a2.items.every(i => i.id < a1.next));
+  const all = (await app.inject({ method: 'GET', url: '/api/audit?limit=200', headers: { cookie: admin } })).json();
+  assert.equal(all.next, null); assert.equal(all.items.length, app.db.prepare('SELECT COUNT(*) AS n FROM audit_log').get().n);
+  assert.ok((await app.inject({ method: 'GET', url: '/api/audit?action=page.', headers: { cookie: admin } })).json().items.every(i => i.action.startsWith('page.')));
 });
 
 test('invitaciones: enlace copiable, info pública, token caducado → 410, usado → 410, inexistente → 404, revocar', async (t) => {
