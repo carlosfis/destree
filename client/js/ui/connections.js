@@ -1,11 +1,10 @@
 /* =========================================================
    12. Conexiones y anidamiento: opciones, validación y alta
    ========================================================= */
-import { $, uid, esc, KIND_LABEL } from '../core/utils.js';
+import { $, uid, esc } from '../core/utils.js';
 import {
   S, save, nodeById, isContainer, sourceEdgeOf, defaultBranchType, rootOf, isAncestor, worldPos,
-  isExternalDs,
-} from '../core/state.js';
+  isExternalDs, typeName, kindLabel } from '../core/state.js';
 import { pushHistory } from '../core/history.js';
 import { sel, nodeRect, freeSpot } from '../canvas/render-nodes.js';
 import { renderAll } from '../canvas/selection.js';
@@ -38,7 +37,7 @@ export function connectionOptions(aId, bId) {
 }
 export function proposeConnection(aId, bId, x, y) {
   const opts = connectionOptions(aId, bId);
-  if (!opts.length) return toast('Dos sistemas de diseño no se conectan directamente: usa un UI Kit como puente.', 'error', 4000);
+  if (!opts.length) return toast(`Dos ${typeName('ds')} no se conectan directamente: usa ${typeName('uikit')} como puente.`, 'error', 4000);
   if (opts.length === 1 && opts[0].kind !== 'nest') return addEdge(opts[0]);
   openPopover(x, y, el => {
     el.innerHTML = '<div class="menu-title">¿Qué relación creamos?</div>';
@@ -68,11 +67,11 @@ export function nestNode(childId, parentId, typeId) {
 }
 export function moveToRoot(id) {
   const n = nodeById(id); if (!n || !n.parentId) return;
-  if (!isContainer(n)) return toast('Un DS o UI Kit debe vivir dentro de un software', 'error');
+  if (!isContainer(n)) return toast(`${typeName('ds')} y ${typeName('uikit')} deben vivir dentro de ${typeName('software')}`, 'error');
   pushHistory();
   const w = worldPos(n); const pr = nodeRect(rootOf(n));
   n.parentId = null; n.branchTypeId = null; n.x = pr.x + pr.w + 80; n.y = w.y;
-  renderAll(); save(); toast(`${n.name} ahora es un software raíz`);
+  renderAll(); save(); toast(`${n.name} ahora es ${typeName('software')} raíz (Main instance)`);
 }
 /** Alta de arista con validaciones. Devuelve true si se agregó. */
 export function addEdge({ kind, from, to }, silent) {
@@ -85,7 +84,7 @@ export function addEdge({ kind, from, to }, silent) {
   const e = { id: uid(), kind, from, to, demo: false };
   S.state.edges.push(e);
   renderAll(); save();
-  if (!silent) toast((kind === 'ds' && isExternalDs(e) ? 'Dependencia externa creada: el DS viene de otro software' : KIND_LABEL[kind] + ' creada') + note);
+  if (!silent) toast((kind === 'ds' && isExternalDs(e) ? `Dependencia externa creada: ${typeName('ds')} viene de otro ${typeName('software')}` : kindLabel(kind) + ' creada') + note);
   return true;
 }
 export function deleteEdge(id) {
@@ -94,6 +93,6 @@ export function deleteEdge(id) {
   S.state.edges = S.state.edges.filter(x => x.id !== id);
   if (sel.edge === id) sel.edge = null;
   renderAll(); save();
-  if (e.kind === 'source') toast('El UI Kit quedó sin fuente: asígnale una desde su editor.', 'error', 4000);
+  if (e.kind === 'source') toast(`${typeName('uikit')} quedó sin fuente: asígnale una desde su editor.`, 'error', 4000);
 }
 

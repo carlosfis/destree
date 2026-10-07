@@ -5,7 +5,7 @@
 import { $, $$, uid, esc, TYPE_META, TAG_COLORS } from '../core/utils.js';
 import {
   S, save, nodeById, tagById, isContainer, childrenOf, sourceEdgeOf, dsOf, defaultBranchType, parentOf,
-  rootOf, isAncestor, worldPos,
+  rootOf, isAncestor, worldPos, typeName,
 } from '../core/state.js';
 import { pushHistory } from '../core/history.js';
 import { freeSpot } from '../canvas/render-nodes.js';
@@ -52,13 +52,14 @@ export function openEditor(id, preset = {}) {
   draft.dsIds = node ? new Set(dsOf(node.id).map(n => n.id)) : new Set();
   const hasKids = node ? childrenOf(node.id).length : 0;
   const title = parentId => `${node ? '' : 'Nueva '}${instanceLabel(parentId)}`;
+  const T = { software: esc(typeName('software')), ds: esc(typeName('ds')), uikit: esc(typeName('uikit')) };
 
   const panes = {
-    general: `<div class="field"><label>Tipo</label><div class="type-picker" id="fType">${Object.entries(TYPE_META).map(([k, m]) => `<button type="button" data-v="${k}" class="${k === draft.type ? 'active' : ''}" title="${esc(m.desc)}"><span class="t"><span class="dot" style="background:${m.color}"></span>${m.label}</span><span class="d">${m.desc}</span></button>`).join('')}</div>
+    general: `<div class="field"><label>Tipo</label><div class="type-picker" id="fType">${Object.entries(TYPE_META).map(([k, m]) => `<button type="button" data-v="${k}" class="${k === draft.type ? 'active' : ''}" title="${esc(m.desc)}"><span class="t"><span class="dot" style="background:${m.color}"></span>${T[k]}</span><span class="d">${m.desc}</span></button>`).join('')}</div>
         ${hasKids ? `<div class="hint">Este contenedor tiene ${hasKids} elemento${hasKids > 1 ? 's' : ''} dentro; para cambiarlo de tipo primero muévelos o elimínalos.</div>` : ''}</div>
-      <div class="field" id="fNameField"><label>Nombre *</label><input name="name" maxlength="80" value="${esc(draft.name)}" placeholder="Nombre del software, DS o kit" autocomplete="off"><div class="error" hidden>El nombre es obligatorio.</div></div>
+      <div class="field" id="fNameField"><label>Nombre *</label><input name="name" maxlength="80" value="${esc(draft.name)}" placeholder="Nombre de la instancia" autocomplete="off"><div class="error" hidden>El nombre es obligatorio.</div></div>
       <div class="field-row">
-        <div class="field" id="fParentField"><label id="fParentLabel">Contenedor padre</label><select name="parent"></select><div class="error" hidden>Un DS o UI Kit debe vivir dentro de un software.</div></div>
+        <div class="field" id="fParentField"><label id="fParentLabel">Contenedor padre</label><select name="parent"></select><div class="error" hidden>${T.ds} y ${T.uikit} deben vivir dentro de ${T.software}.</div></div>
         <div class="field" id="fBranchField"><label>Tipo de ramificación</label><select name="branchType">${S.state.branchTypes.map(t => `<option value="${t.id}" ${t.id === (draft.branchTypeId || defaultBranchType()) ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>
       </div>
       <div class="field"><label>Descripción breve <span class="counter" id="fCounter">${draft.description.length}/140</span></label><textarea name="description" maxlength="140" rows="2" placeholder="¿Qué es y para qué sirve?">${esc(draft.description)}</textarea></div>
@@ -68,8 +69,8 @@ export function openEditor(id, preset = {}) {
         <div class="hint" id="fImgHint">${canUpload() ? 'PNG, JPEG, WebP o SVG hasta 5 MB. Arrastra, pega (Ctrl/⌘+V) o sube; se muestra como hero en la card.' : 'Sin servidor: se recorta a 16:9 (320×180) y se comprime para caber en localStorage.'}</div></div>
       <div class="field"><label>Etiquetas</label><div class="chips-select" id="fTags"></div></div>
       <h3 class="section" id="fRelHead">Relaciones</h3>
-      <div class="field" id="fSourceField"><label>Fuente * (DS o software del que deriva)</label><select name="source"></select><div class="error" hidden>Un UI Kit debe tener fuente.</div></div>
-      <div class="field" id="fDSField"><label>Sistemas de diseño que usa</label><div class="check-list" id="fDS"></div><div class="hint">Si el DS vive en otro software raíz, la línea se dibuja discontinua.</div></div>`,
+      <div class="field" id="fSourceField"><label>Fuente * (${T.ds} o ${T.software} del que deriva)</label><select name="source"></select><div class="error" hidden>${T.uikit} debe tener fuente.</div></div>
+      <div class="field" id="fDSField"><label>${T.ds} que usa</label><div class="check-list" id="fDS"></div><div class="hint">Si ${T.ds} vive en otro ${T.software} raíz, la línea se dibuja discontinua.</div></div>`,
     staff: `${staffSec.html}${teamSec.html}${visSec.html}`,
     docs: docsSec.html,
     notes: docsSec.notesHtml,
@@ -89,16 +90,16 @@ export function openEditor(id, preset = {}) {
     // Contenedores válidos: software que no sea el propio nodo ni un descendiente suyo
     const parents = S.state.nodes.filter(n => isContainer(n) && n.id !== draft.id && !(draft.id && isAncestor(draft.id, n.id))).sort(sortByPath);
     const current = form.parent.value !== undefined && form.parent.options.length ? form.parent.value : (draft.parentId || '');
-    form.parent.innerHTML = (soft ? '<option value="">— Ninguno: Main instance (raíz) —</option>' : '<option value="">— Selecciona un software —</option>') +
+    form.parent.innerHTML = (soft ? '<option value="">— Ninguno: Main instance (raíz) —</option>' : `<option value="">— Selecciona ${T.software} —</option>`) +
       parents.map(n => `<option value="${n.id}" ${n.id === current ? 'selected' : ''}>${esc(pathOf(n))}</option>`).join('');
     refreshBranch();
     const srcSel = form.source;
     const candidates = S.state.nodes.filter(n => n.id !== draft.id && !(draft.id && wouldCycle('source', draft.id, n.id)))
       .sort((a, b) => (a.type === 'ds' ? 0 : a.type === 'uikit' ? 1 : 2) - (b.type === 'ds' ? 0 : b.type === 'uikit' ? 1 : 2) || a.name.localeCompare(b.name));
-    srcSel.innerHTML = `<option value="">— Selecciona la fuente —</option>` + candidates.map(n => `<option value="${n.id}" ${n.id === draft.sourceId ? 'selected' : ''}>${esc(n.name)} · ${TYPE_META[n.type].label}${n.parentId ? ` (en ${esc(rootOf(n).name)})` : ''}</option>`).join('');
+    srcSel.innerHTML = `<option value="">— Selecciona la fuente —</option>` + candidates.map(n => `<option value="${n.id}" ${n.id === draft.sourceId ? 'selected' : ''}>${esc(n.name)} · ${esc(typeName(n.type))}${n.parentId ? ` (en ${esc(rootOf(n).name)})` : ''}</option>`).join('');
     const dsList = S.state.nodes.filter(n => (n.type === 'ds' || n.type === 'uikit') && n.id !== draft.id).sort((a, b) => a.name.localeCompare(b.name));
-    $('#fDS').innerHTML = dsList.length ? dsList.map(n => `<label><input type="checkbox" value="${n.id}" ${draft.dsIds.has(n.id) ? 'checked' : ''}><span class="t-dot" style="background:${TYPE_META[n.type].color}"></span>${esc(n.name)}<span class="where">${TYPE_META[n.type].label} · en ${esc(rootOf(n).name)}</span></label>`).join('')
-      : '<div class="empty">Aún no hay sistemas de diseño ni UI Kits.</div>';
+    $('#fDS').innerHTML = dsList.length ? dsList.map(n => `<label><input type="checkbox" value="${n.id}" ${draft.dsIds.has(n.id) ? 'checked' : ''}><span class="t-dot" style="background:${TYPE_META[n.type].color}"></span>${esc(n.name)}<span class="where">${esc(typeName(n.type))} · en ${esc(rootOf(n).name)}</span></label>`).join('')
+      : `<div class="empty">Aún no hay ${T.ds} ni ${T.uikit}.</div>`;
   };
   const refreshBranch = () => {
     $('#fBranchField').hidden = !(draft.type === 'software' && form.parent.value); $('#fVisField').hidden = !(draft.type === 'software' && !form.parent.value);

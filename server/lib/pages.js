@@ -69,7 +69,7 @@ export function saveDocument(db, pageId, doc, expected) {
     const meta = doc && doc.page ? doc.page : {};
     db.prepare('UPDATE pages SET name = ?, description = ?, visibility = ?, settings_json = ?, camera_json = ?, version = ?, updated_at = ? WHERE id = ?')
       .run(meta.name ? d.page.name : cur.name, meta.description != null ? d.page.description : cur.description, meta.visibility ? d.page.visibility : cur.visibility,
-        j({ snap: d.settings.snap, grid: d.settings.grid, minimap: d.settings.minimap }), j(d.camera), version, now, pageId);
+        j({ snap: d.settings.snap, grid: d.settings.grid, minimap: d.settings.minimap, typeNames: d.settings.typeNames }), j(d.camera), version, now, pageId);
     for (const t of ['node_tags', 'edges', 'nodes', 'tags', 'branch_types']) db.prepare(`DELETE FROM ${t} WHERE page_id = ?`).run(pageId);
     const insTag = db.prepare('INSERT INTO tags (id, page_id, name, color, position) VALUES (?, ?, ?, ?, ?)');
     d.tags.forEach((t, i) => insTag.run(t.id, pageId, t.name, t.color, i));

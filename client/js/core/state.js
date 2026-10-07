@@ -19,7 +19,7 @@
    }
    La ramificación padre → hijo ya no es una línea: es el anidamiento del contenedor.
    ========================================================= */
-import { $, debounce, STORAGE_KEY, LEGACY_KEY, PREFS_KEY } from './utils.js';
+import { $, debounce, STORAGE_KEY, LEGACY_KEY, PREFS_KEY, TYPE_META } from './utils.js';
 import { normalizeDocument, defaultDocument } from './normalize.js';
 import * as api from './api.js';
 import { toast } from '../ui/theme.js';
@@ -191,6 +191,10 @@ export const nodeById = id => S.state.nodes.find(n => n.id === id);
 export const tagById = id => S.state.tags.find(t => t.id === id);
 export const branchTypeById = id => S.state.branchTypes.find(t => t.id === id);
 export const isContainer = n => !!n && n.type === 'software';
+/** Nombres de tipo visibles de la página actual (settings.typeNames; editables en Administrar → Tipos). */
+export const typeNames = () => S.state.settings.typeNames;
+export const typeName = t => typeNames()[t] || TYPE_META[t].label;
+export const kindLabel = kind => (kind === 'source' ? `Fuente de ${typeName('uikit')}` : `Dependencia de ${typeName('ds')}`);
 export const childrenOf = id => S.state.nodes.filter(n => n.parentId === id);
 export const roots = () => S.state.nodes.filter(n => !n.parentId);
 export const edgesOf = id => S.state.edges.filter(e => e.from === id || e.to === id);

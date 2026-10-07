@@ -1,6 +1,7 @@
 /* Normalización del documento de página (v1/v2/v3 → v3). Compartido servidor/cliente:
    sin imports, sin DOM, sin Node. El cliente lo importa vía symlink client/js/core/normalize.js. */
 export const TYPES = ['software', 'ds', 'uikit'];
+export const DEFAULT_TYPE_NAMES = { software: 'Software', ds: 'Design System', uikit: 'UI Kit' }; // editables por página (settings.typeNames); las reglas de anidación no cambian
 export const EDGE_KINDS = ['ds', 'source'];
 export const TAG_COLORS = ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red'];
 export const NODE_STATUS = ['active', 'draft', 'deprecated', 'archived'];
@@ -35,7 +36,7 @@ export function defaultPage(page = {}) {
 export function defaultDocument(page) {
   return {
     version: DOC_VERSION, page: defaultPage(page), nodes: [], edges: [], tags: defaultTags(), branchTypes: defaultBranchTypes(),
-    settings: { theme: null, snap: true, minimap: true, grid: true, tool: 'select' },
+    settings: { theme: null, snap: true, minimap: true, grid: true, tool: 'select', typeNames: { ...DEFAULT_TYPE_NAMES } },
     camera: { x: 80, y: 60, z: 0.9 },
   };
 }
@@ -129,7 +130,8 @@ export function normalizeDocument(raw, page) {
   const tagIds = new Set(s.tags.map(t => t.id));
   s.nodes.forEach(n => { n.tags = n.tags.filter(t => tagIds.has(t)); });
   const st = r.settings || {};
-  s.settings = { theme: ['light', 'dark'].includes(st.theme) ? st.theme : null, snap: st.snap !== false, minimap: st.minimap !== false, grid: st.grid !== false, tool: st.tool === 'hand' ? 'hand' : 'select' };
+  s.settings = { theme: ['light', 'dark'].includes(st.theme) ? st.theme : null, snap: st.snap !== false, minimap: st.minimap !== false, grid: st.grid !== false, tool: st.tool === 'hand' ? 'hand' : 'select',
+    typeNames: Object.fromEntries(TYPES.map(t => [t, str(st.typeNames && st.typeNames[t], 40).trim() || DEFAULT_TYPE_NAMES[t]])) };
   const c = r.camera || {};
   s.camera = { x: num(c.x, d.camera.x), y: num(c.y, d.camera.y), z: clamp(num(c.z, 1), MIN_Z, MAX_Z) };
   return s;

@@ -1,8 +1,8 @@
 /* =========================================================
    11. Popover y menús
    ========================================================= */
-import { $, clamp, esc, MOD, KIND_LABEL } from '../core/utils.js';
-import { S, nodeById, isContainer, isExternalDs } from '../core/state.js';
+import { $, clamp, esc, MOD } from '../core/utils.js';
+import { S, nodeById, isContainer, isExternalDs, typeName, kindLabel } from '../core/state.js';
 import { toWorld, fitToScreen } from '../canvas/camera.js';
 import { sel } from '../canvas/render-nodes.js';
 import { edgeTitle } from '../canvas/render-edges.js';
@@ -43,19 +43,19 @@ export function addItems(parentId) {
   const p = nodeById(parentId);
   return [
     { title: `Agregar dentro de ${p.name}` },
-    { label: 'Feature / software anidado', ico: '▣', action: () => openEditor(null, { type: 'software', parentId }) },
-    { label: 'Design System', ico: '◈', action: () => openEditor(null, { type: 'ds', parentId }) },
-    { label: 'UI Kit', ico: '◧', action: () => openEditor(null, { type: 'uikit', parentId }) },
+    { label: `${typeName('software')} anidado (Child instance)`, ico: '▣', action: () => openEditor(null, { type: 'software', parentId }) },
+    { label: typeName('ds'), ico: '◈', action: () => openEditor(null, { type: 'ds', parentId }) },
+    { label: typeName('uikit'), ico: '◧', action: () => openEditor(null, { type: 'uikit', parentId }) },
   ];
 }
 export function showAddMenu(parentId, x, y) { menuPopover(x, y, addItems(parentId)); }
 export function showNewMenu(x, y) {
   const center = toWorld(S.vpRect.width / 2, S.vpRect.height / 2);
   const at = { x: center.x - 160 + (Math.random() * 40 - 20), y: center.y - 90 + (Math.random() * 40 - 20) };
-  const items = [{ title: 'Nueva instancia' }, { label: 'Main instance (software raíz)', ico: '▣', action: () => openEditor(null, { type: 'software', ...at }) }];
+  const items = [{ title: 'Nueva instancia' }, { label: `Main instance (${typeName('software')} raíz)`, ico: '▣', action: () => openEditor(null, { type: 'software', ...at }) }];
   const selected = sel.nodes.size === 1 ? nodeById([...sel.nodes][0]) : null;
   if (selected && isContainer(selected)) items.push('-', ...addItems(selected.id));
-  else items.push({ note: 'Las Child instances (features, DS y UI Kits) se crean dentro de una Main instance: selecciona una o usa su botón ＋.' });
+  else items.push({ note: `Las Child instances (${typeName('software')} anidado, ${typeName('ds')} o ${typeName('uikit')}) se crean dentro de una Main instance: selecciona una o usa su botón ＋.` });
   menuPopover(x, y, items);
 }
 export function showNodeMenu(id, x, y) {
@@ -79,7 +79,7 @@ export function showEdgePopover(id, x, y) {
   const e = S.state.edges.find(x => x.id === id); if (!e) return;
   openPopover(x, y, el => {
     const ext = e.kind === 'ds' && isExternalDs(e);
-    el.innerHTML = `<div class="menu-title">${esc(KIND_LABEL[e.kind])}${ext ? ' · externa' : ''}</div><div class="menu-note">${esc(edgeTitle(e))}</div>`;
+    el.innerHTML = `<div class="menu-title">${esc(kindLabel(e.kind))}${ext ? ' · externa' : ''}</div><div class="menu-note">${esc(edgeTitle(e))}</div>`;
     const del = document.createElement('button'); del.className = 'menu-item danger'; del.innerHTML = '<span class="ico">🗑</span><span>Eliminar conexión</span><kbd>Supr</kbd>';
     del.addEventListener('click', () => { closePopover(); deleteEdge(id); });
     el.appendChild(del);

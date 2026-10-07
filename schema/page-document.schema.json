@@ -21,7 +21,8 @@
         "grid": { "type": "boolean", "default": true },
         "minimap": { "type": "boolean", "default": true },
         "theme": { "type": ["string", "null"], "enum": ["light", "dark", null], "default": null },
-        "tool": { "type": "string", "enum": ["select", "hand"], "default": "select" }
+        "tool": { "type": "string", "enum": ["select", "hand"], "default": "select" },
+        "typeNames": { "type": "object", "additionalProperties": false, "description": "Nombres visibles de los tipos (por página); la semántica y las reglas de anidación no cambian", "properties": { "software": { "type": "string", "minLength": 1, "maxLength": 40 }, "ds": { "type": "string", "minLength": 1, "maxLength": 40 }, "uikit": { "type": "string", "minLength": 1, "maxLength": 40 } } }
       }
     },
     "camera": {

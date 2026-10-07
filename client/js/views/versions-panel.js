@@ -1,8 +1,8 @@
 /* =========================================================
    F6a. Historial de versiones de la página: lista, vista previa (solo lectura), diff resumido, crear manual, restaurar
    ========================================================= */
-import { $, esc, TYPE_META } from '../core/utils.js';
-import { S } from '../core/state.js';
+import { $, esc } from '../core/utils.js';
+import { S, typeName } from '../core/state.js';
 import * as api from '../core/api.js';
 import { toast } from '../ui/theme.js';
 import { confirmBox, promptBox } from '../ui/dialogs.js';
@@ -46,7 +46,7 @@ export async function openVersionsPanel() {
 /** Vista previa solo lectura: raíces con sus hijos (sin canvas). */
 function previewHTML(doc) {
   const kids = id => doc.nodes.filter(n => n.parentId === id);
-  const item = (n, depth) => `<li style="margin-left:${depth * 14}px"><span class="type-badge">${TYPE_META[n.type]?.label || n.type}</span> ${esc(n.name)}${n.description ? `<span class="url">${esc(n.description)}</span>` : ''}</li>${kids(n.id).map(k => item(k, depth + 1)).join('')}`;
+  const item = (n, depth) => `<li style="margin-left:${depth * 14}px"><span class="type-badge">${esc(typeName(n.type))}</span> ${esc(n.name)}${n.description ? `<span class="url">${esc(n.description)}</span>` : ''}</li>${kids(n.id).map(k => item(k, depth + 1)).join('')}`;
   const roots = doc.nodes.filter(n => !n.parentId);
   return `<div class="hint">${doc.nodes.length} cards · ${doc.edges.length} conexiones · ${doc.tags.length} etiquetas</div><ul class="ver-tree">${roots.map(r => item(r, 0)).join('') || '<li class="empty">Sin cards.</li>'}</ul>`;
 }

@@ -1,10 +1,10 @@
 /* =========================================================
    16. Ajustes de página (drawer): etiquetas, ramificaciones, responsables, datos, ajustes; F4b: pestaña Página (nombre, visibilidad, células)
    ========================================================= */
-import { $, $$, uid, esc, MOD, TAG_COLORS } from '../core/utils.js';
+import { $, $$, uid, esc, MOD, TAG_COLORS, TYPE_META } from '../core/utils.js';
 import { viewport } from '../core/dom.js';
 import {
-  S, defaultState, demoData, normalizeState, save, nodeById, roots, descendantsOf,
+  S, defaultState, demoData, normalizeState, save, nodeById, roots, descendantsOf, typeName, typeNames,
 } from '../core/state.js';
 import { pushHistory } from '../core/history.js';
 import { applyCamera, nodesBBox, fitToScreen } from '../canvas/camera.js';
@@ -35,7 +35,30 @@ $('#adminTabs').addEventListener('click', e => {
 export function renderAdmin() {
   const body = $('#adminBody');
   body.innerHTML = '';
-  ({ tags: renderTagsTab, edgeTypes: renderEdgeTypesTab, owners: renderOwnersTab, data: renderDataTab, settings: renderSettingsTab, page: renderPageTab })[S.adminTab](body);
+  ({ tags: renderTagsTab, types: renderTypesTab, edgeTypes: renderEdgeTypesTab, owners: renderOwnersTab, data: renderDataTab, settings: renderSettingsTab, page: renderPageTab })[S.adminTab](body);
+}
+/* --- Tipos: nombres visibles de software / ds / uikit por página (la semántica y las reglas de anidación no cambian) --- */
+const typesTabBtn = document.createElement('button'); typesTabBtn.dataset.tab = 'types'; typesTabBtn.textContent = 'Tipos';
+$('#adminTabs [data-tab="edgeTypes"]').before(typesTabBtn); // pestaña insertada por JS (markup legacy intacto)
+export function renderTypesTab(body) {
+  const rules = { software: 'Contenedor (Main instance si es raíz). Puede anidar otros elementos.', ds: `Vive dentro de ${esc(typeName('software'))}; lo usan uno o varios ${esc(typeName('software'))}.`, uikit: `Vive dentro de ${esc(typeName('software'))} y deriva de una fuente (${esc(typeName('ds'))} o ${esc(typeName('software'))}).` };
+  body.innerHTML = `<h3>Nombres de tipo</h3><p>Renombra los tres tipos para adaptar la página a otros usos (p. ej. Producto / Librería / Plantilla). Cambia el nombre en cards, menús, editor y avisos; las reglas de anidación se mantienen.</p><div id="typeRows"></div>
+    <div class="inline-actions"><button class="btn" id="typesReset">Restablecer nombres</button></div>`;
+  const rows = $('#typeRows', body);
+  for (const [k, m] of Object.entries(TYPE_META)) {
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = `<span class="swatch" style="background:${m.color}"></span><div class="grow"><input class="inline" maxlength="40" value="${esc(typeName(k))}" placeholder="${esc(m.label)}" style="width:100%"><div class="hint">${rules[k]}</div></div>`;
+    row.querySelector('input').addEventListener('change', e => { const v = e.target.value.trim().slice(0, 40) || m.label; e.target.value = v; pushHistory(); typeNames()[k] = v; applyTypeNames(); renderAll(); save(); renderAdmin(); toast(`Tipo renombrado a "${v}"`); });
+    rows.appendChild(row);
+  }
+  $('#typesReset', body).addEventListener('click', () => { pushHistory(); for (const k of Object.keys(TYPE_META)) typeNames()[k] = TYPE_META[k].label; applyTypeNames(); renderAll(); save(); renderAdmin(); });
+}
+/** Leyenda del lienzo (markup legacy) con los nombres de tipo vigentes. */
+export function applyTypeNames() {
+  const sp = $$('#legend span');
+  if (sp.length < 4) return;
+  const ds = typeName('ds'), sw = typeName('software'), kit = typeName('uikit');
+  sp[1].lastChild.textContent = ` usa su ${ds}`; sp[2].lastChild.textContent = ` usa ${ds} de otro ${sw}`; sp[3].lastChild.textContent = ` ${kit} deriva de`;
 }
 /** F4b: pestaña Página (metadatos/visibilidad) solo con pages.edit. Se inserta por JS para no tocar el markup legacy. Usuarios/células viven en #/admin. */
 export function enablePageTab() {
@@ -107,7 +130,7 @@ export function renderTagsTab(body) {
 /* --- Tipos de ramificación --- */
 export function renderEdgeTypesTab(body) {
   const usage = id => S.state.nodes.filter(n => n.parentId && n.branchTypeId === id).length;
-  body.innerHTML = `<h3>Tipos de ramificación (${S.state.branchTypes.length})</h3><p>La ramificación es el anidamiento de un software dentro de otro. El tipo se muestra como chip en la cabecera del contenedor anidado.</p><div id="etRows"></div>
+  body.innerHTML = `<h3>Tipos de ramificación (${S.state.branchTypes.length})</h3><p>La ramificación es el anidamiento de ${esc(typeName('software'))} dentro de otro. El tipo se muestra como chip en la cabecera del contenedor anidado.</p><div id="etRows"></div>
     <h3>Nuevo tipo</h3><form class="row" id="newEtForm"><input class="grow" placeholder="Nombre del tipo" required><button class="btn primary" type="submit">Agregar</button></form>`;
   const rows = $('#etRows', body);
   for (const t of S.state.branchTypes) {
@@ -120,7 +143,7 @@ export function renderEdgeTypesTab(body) {
     del.addEventListener('click', async () => {
       if (S.state.branchTypes.length === 1) return toast('Debe existir al menos un tipo', 'error');
       const fallback = S.state.branchTypes.find(x => x !== t);
-      if (u && !(await confirmBox({ title: 'Eliminar tipo', message: `"${t.name}" se usa en ${u} software anidado${u > 1 ? 's' : ''}. Pasarán a "${fallback.name}".`, buttons: [{ label: 'Cancelar', value: '' }, { label: 'Eliminar', value: 'ok', kind: 'danger' }] }))) return;
+      if (u && !(await confirmBox({ title: 'Eliminar tipo', message: `"${t.name}" se usa en ${u} ${typeName('software')} anidado${u > 1 ? 's' : ''}. Pasarán a "${fallback.name}".`, buttons: [{ label: 'Cancelar', value: '' }, { label: 'Eliminar', value: 'ok', kind: 'danger' }] }))) return;
       pushHistory(); S.state.nodes.forEach(n => { if (n.branchTypeId === t.id) n.branchTypeId = fallback.id; }); S.state.branchTypes = S.state.branchTypes.filter(x => x !== t); renderAll(); save();
     });
     rows.appendChild(row);
@@ -227,13 +250,14 @@ export function renderSettingsTab(body) {
     ${sw('snap', 'Ajuste a cuadrícula (8 px)', 'Mantén Alt al arrastrar para desactivarlo temporalmente.')}
     ${sw('grid', 'Fondo de puntos')}
     ${sw('minimap', 'Minimapa')}
-    <h3>Cómo funciona</h3><p>Cada software es un contenedor. Arrastra una card dentro de otro contenedor para anidarla (ramificación), o fuera de todos para convertir un software en raíz. Los DS y UI Kits siempre viven dentro de un software. Arrastra desde un puerto de la cabecera para conectar o anidar.</p>
+    <h3>Cómo funciona</h3><p>Cada ${esc(typeName('software'))} es un contenedor. Arrastra una card dentro de otro contenedor para anidarla (ramificación), o fuera de todos para convertirla en Main instance (raíz). ${esc(typeName('ds'))} y ${esc(typeName('uikit'))} siempre viven dentro de ${esc(typeName('software'))}. Arrastra desde un puerto de la cabecera para conectar o anidar. Los nombres de los tipos se cambian en la pestaña Tipos.</p>
     <p>Rueda / dos dedos: pan · ${MOD} + rueda o pinch: zoom · Espacio + arrastrar, botón central o herramienta Mano (H): pan · Arrastrar en el fondo: selección por recuadro.</p>`;
   $$('#themeSeg button', body).forEach(b => { b.classList.toggle('active', (S.state.settings.theme || '') === b.dataset.t); b.addEventListener('click', () => { S.state.settings.theme = b.dataset.t || null; applyTheme(); save(); renderAdmin(); }); });
   body.querySelectorAll('.switch').forEach(b => b.addEventListener('click', () => { S.state.settings[b.dataset.key] = !S.state.settings[b.dataset.key]; applySettingsUI(); save(); renderAdmin(); }));
 }
 export function applySettingsUI() {
   viewport.classList.toggle('no-grid', !S.state.settings.grid);
+  applyTypeNames();
   drawMinimap();
   setTool(S.state.settings.tool || 'select');
 }

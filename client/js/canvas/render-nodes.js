@@ -6,11 +6,11 @@
    El tamaño de cada contenedor se calcula de abajo hacia arriba para
    envolver siempre a su contenido (nunca recorta).
    ========================================================= */
-import { $, esc, CARD_W, CTR_MIN_W, CTR_MIN_BODY, PAD, HEAD_GAP, GAP, TYPE_META } from '../core/utils.js';
+import { $, esc, CARD_W, CTR_MIN_W, CTR_MIN_BODY, PAD, HEAD_GAP, GAP } from '../core/utils.js';
 import { nodesLayer } from '../core/dom.js';
 import {
   S, nodeById, tagById, branchTypeById, isContainer, childrenOf, roots, sourceEdgeOf, parentOf, depthOf,
-  worldPos, isExternalDs, userName, cellById,
+  worldPos, isExternalDs, userName, cellById, typeName,
 } from '../core/state.js';
 import { updateEdgePaths } from './render-edges.js';
 import { drawMinimap } from './minimap.js';
@@ -36,6 +36,7 @@ export function anchorRect(n) {
 
 export function commonHTML(n) {
   const tags = n.tags.map(tagById).filter(Boolean);
+  const T = { ds: typeName('ds'), uikit: typeName('uikit'), software: typeName('software') };
   let foot = '';
   if (n.ownerUserId) foot += `<span class="owner person" title="Responsable">${esc(userName(n.ownerUserId))}</span>`;
   if (n.staff && n.staff.length) foot += n.staff.slice(0, 3).map(m => `<span class="owner staff" title="${esc(m.role || 'Staff')}">${esc(m.name)}${m.role ? `<span class="role"> · ${esc(m.role)}</span>` : ''}</span>`).join('') + (n.staff.length > 3 ? `<span class="count-ref">+${n.staff.length - 3}</span>` : '');
@@ -46,14 +47,14 @@ export function commonHTML(n) {
   if (n.type === 'software') {
     const ds = S.state.edges.filter(e => e.kind === 'ds' && e.from === n.id).map(e => ({ n: nodeById(e.to), ext: isExternalDs(e) })).filter(x => x.n);
     foot += ds.length
-      ? ds.map(x => `<span class="ds-ref ${x.ext ? 'ext' : ''}" title="${x.ext ? 'Usa un DS de otro software' : 'Usa su propio DS'}">${esc(x.n.name)}</span>`).join('')
-      : `<span class="ds-ref none">Sin DS</span>`;
+      ? ds.map(x => `<span class="ds-ref ${x.ext ? 'ext' : ''}" title="${x.ext ? `Usa ${esc(T.ds)} de otro ${esc(T.software)}` : `Usa su propio ${esc(T.ds)}`}">${esc(x.n.name)}</span>`).join('')
+      : `<span class="ds-ref none">Sin ${esc(T.ds)}</span>`;
     const kids = childrenOf(n.id).length;
     if (kids) foot += `<span class="count-ref">${kids} elemento${kids > 1 ? 's' : ''}</span>`;
   }
   if (n.type !== 'software') {
     const ext = S.state.edges.filter(e => e.kind === 'ds' && e.to === n.id && isExternalDs(e)).map(e => nodeById(e.from)).filter(Boolean);
-    if (ext.length) foot += `<span class="ext-ref" title="Este ${n.type === 'ds' ? 'DS' : 'UI Kit'} nació en una feature y lo consume otro aplicativo">⇢ ${esc(ext.map(x => x.name).join(', '))}</span>`;
+    if (ext.length) foot += `<span class="ext-ref" title="Este ${esc(typeName(n.type))} nació en un ${esc(T.software)} anidado y lo consume otro">⇢ ${esc(ext.map(x => x.name).join(', '))}</span>`;
   }
   if (n.type === 'uikit') {
     const se = sourceEdgeOf(n.id); const src = se && nodeById(se.to);
@@ -79,7 +80,7 @@ export function leafHTML(n) {
   const img = imageSrc(n);
   return `${img ? `<div class="card-img"><img src="${img}" alt="" draggable="false"></div>` : ''}
     <div class="card-body">
-      <div class="card-head"><span class="type-badge">${TYPE_META[n.type].label}</span><button class="icon-btn card-menu" data-action="menu" title="Opciones">⋯</button></div>
+      <div class="card-head"><span class="type-badge">${esc(typeName(n.type))}</span><button class="icon-btn card-menu" data-action="menu" title="Opciones">⋯</button></div>
       ${c.name}${c.desc}${c.tags}${c.foot}
     </div>${PORTS}`;
 }
@@ -89,7 +90,7 @@ export function headHTML(n) {
   const img = imageSrc(n);
   return `${img ? `<div class="card-img"><img src="${img}" alt="" draggable="false"></div>` : ''}
     <div class="head-top">
-      <span class="type-badge">${n.parentId ? 'Software' : 'Software · Raíz'}</span>
+      <span class="type-badge">${esc(typeName('software'))}${n.parentId ? '' : ' · Raíz'}</span>
       ${bt ? `<span class="chip tag-${bt.color}" title="Tipo de ramificación">↳ ${esc(bt.name)}</span>` : (n.parentId ? '<span class="chip tag-gray">↳ sin tipo</span>' : visibilityChip(n))}
       <span class="spacer"></span>
       <span class="head-actions"><button class="icon-btn" data-action="add" title="Agregar dentro">＋</button><button class="icon-btn" data-action="menu" title="Opciones">⋯</button></span>
@@ -111,7 +112,7 @@ export function renderNodes() {
       el.dataset.id = n.id; el._ctr = ctr;
       if (ctr) {
         const head = document.createElement('div'); head.className = 'ctr-head';
-        const empty = document.createElement('div'); empty.className = 'ctr-empty'; empty.textContent = 'Vacío: arrastra aquí una feature, un DS o un UI Kit, o usa ＋';
+        const empty = document.createElement('div'); empty.className = 'ctr-empty'; empty.textContent = `Vacío: arrastra aquí ${typeName('software')}, ${typeName('ds')} o ${typeName('uikit')}, o usa ＋`;
         const rs = document.createElement('div'); rs.className = 'resize'; rs.title = 'Redimensionar';
         el.append(head, empty, rs); el._head = head; el._empty = empty;
       }
@@ -121,7 +122,7 @@ export function renderNodes() {
     if (el.parentElement !== parentEl) parentEl.appendChild(el);
     const html = ctr ? headHTML(n) : leafHTML(n);
     if (el._html !== html) { (ctr ? el._head : el).innerHTML = html; el._html = html; }
-    if (ctr) el._empty.hidden = childrenOf(n.id).length > 0;
+    if (ctr) { el._empty.hidden = childrenOf(n.id).length > 0; el._empty.textContent = `Vacío: arrastra aquí ${typeName('software')}, ${typeName('ds')} o ${typeName('uikit')}, o usa ＋`; }
     el.className = ctr ? `node ctr ${n.parentId ? 'nested' : 'root'} type-software` : `node leaf type-${n.type}`;
     el.style.transform = `translate(${n.x}px, ${n.y}px)`;
   }

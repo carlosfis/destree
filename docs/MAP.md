@@ -73,7 +73,7 @@ Una línea por archivo. Actualizar al crear/mover archivos (protocolo de handoff
 - `js/ui/uploader.js` — F5: `uploadImage(file)`, `bindDropZone(el, onFile)` (drag&drop + pegar), `imageSrc(n, variant)`, `canUpload()`.
 - `js/ui/markdown.js` — F3: `renderMarkdown` (escape total; títulos, listas, enlaces http(s), código, negrita). `js/ui/node-view.js` — F3: `openNodeView` ficha de lectura en el sidebar (mismas pestañas).
 - `js/ui/node-actions.js` — eliminar/duplicar. `js/ui/theme.js` — tema, `toast`, `openShortcuts`.
-- `js/ui/page-settings.js` — drawer de ajustes de página (antes `views/admin.js`): etiquetas, ramificaciones, responsables, datos import/export, ajustes; F4b: `renderPageTab` (nombre, descripción, visibilidad + células → PATCH, archivar), `enablePageTab()`, `colorPicker`.
+- `js/ui/page-settings.js` (pestaña Tipos: `renderTypesTab`, `applyTypeNames` → `settings.typeNames`) — drawer de ajustes de página (antes `views/admin.js`): etiquetas, ramificaciones, responsables, datos import/export, ajustes; F4b: `renderPageTab` (nombre, descripción, visibilidad + células → PATCH, archivar), `enablePageTab()`, `colorPicker`.
 - `js/views/admin-view.js` — F4b: `#/admin` overlay: Usuarios, Células, Páginas borradas (restaurar), F6b: Respaldos (crear/descargar/borrar, export/import org), Audit log paginado con filtro; `adminTabsFor()` por permisos.
 - `js/views/users.js` — pestaña Usuarios: invitar (enlace copiable, sin correo; F3: chips de células del invitado), invitaciones pendientes/revocar, usuarios con rol/activar (admin).
 - `js/views/cells.js` — F3: pestaña Células (admin: CRUD/color/lead; admin o head de la célula: miembros), `refreshCells()` → `S.cellList`.

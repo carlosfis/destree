@@ -3,6 +3,7 @@
 ## Conceptos
 - **Software** (contenedor): aplicación, módulo o feature. Puede ser **raíz** o vivir dentro de otro software (eso es una *ramificación*, con su tipo: feature, fork, versión mobile…).
 - **Design System** y **UI Kit**: viven dentro de un software. Un software *usa* uno o varios DS (línea continua; discontinua si el DS vive en otra raíz). Un UI Kit *deriva de* una fuente (DS u otro software).
+- **Nombres de tipo**: en `Administrar → Tipos` puedes renombrar Software / Design System / UI Kit por página (p. ej. Producto / Librería / Plantilla). El nombre cambia en cards, menús, editor, leyenda y avisos; las reglas de anidación y de fuente se mantienen.
 - **Página**: un lienzo independiente (p. ej. por cliente o área). Cambia de página desde `⌂`.
 
 ## Crear y editar (admin / head)

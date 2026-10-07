@@ -1,8 +1,8 @@
 /* =========================================================
    F3. Ficha de instancia en modo lectura (designer: doble clic / Enter / #/n/<id>) en el sidebar, con las mismas pestañas del editor
    ========================================================= */
-import { $, esc, TYPE_META } from '../core/utils.js';
-import { S, nodeById, tagById, rootOf, userName, cellById } from '../core/state.js';
+import { $, esc } from '../core/utils.js';
+import { S, nodeById, tagById, rootOf, userName, cellById, typeName } from '../core/state.js';
 import { renderMarkdown } from './markdown.js';
 import { pathOf } from './card-editor.js';
 import { imageSrc } from './uploader.js';
@@ -23,7 +23,7 @@ export function openNodeView(id) {
   const panes = {
     general: `${img ? `<div class="hero"><img src="${img}" alt=""></div>` : ''}
       <dl class="meta">
-        <dt>Tipo</dt><dd>${TYPE_META[n.type].label}</dd>
+        <dt>Tipo</dt><dd>${esc(typeName(n.type))}</dd>
         <dt>Nombre</dt><dd>${esc(n.name)}</dd>
         <dt>Contenedor padre</dt><dd>${n.parentId ? esc(pathOf(nodeById(n.parentId))) : '— (raíz)'}</dd>
         ${n.hasExternalRefs ? '<dt>Conexiones</dt><dd class="hint">Tiene conexiones con elementos que no puedes ver.</dd>' : ''}
@@ -39,7 +39,7 @@ export function openNodeView(id) {
     docs: docs ? `<ul class="doc-list">${docs}</ul>` : '<div class="empty">Sin enlaces.</div>',
     notes: n.notes ? `<div class="md">${renderMarkdown(n.notes)}</div>` : '<div class="empty">Sin notas.</div>',
   };
-  const badge = `<span class="type-badge">${TYPE_META[n.type].label}</span>`;
+  const badge = `<span class="type-badge">${esc(typeName(n.type))}</span>`;
   openDrawer(drawerHTML({ title: `${instanceLabel(n.parentId)} · ${esc(n.name)}`, badge, panes, footer: '<button type="button" class="btn" data-cancel>Cerrar</button>', tag: 'div', cls: 'node-view' }));
   $('#nodeDrawer footer .btn').focus();
 }

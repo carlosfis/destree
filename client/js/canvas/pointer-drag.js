@@ -2,8 +2,7 @@
 import { $, MOD, CARD_W, GRID, SNAP_DIST } from '../core/utils.js';
 import { viewport, nodesLayer, guidesSvg } from '../core/dom.js';
 import {
-  S, save, nodeById, isContainer, defaultBranchType, ancestorsOf, descendantsOf, worldPos,
-} from '../core/state.js';
+  S, save, nodeById, isContainer, defaultBranchType, ancestorsOf, descendantsOf, worldPos, typeName } from '../core/state.js';
 import { pushHistory } from '../core/history.js';
 import { toWorld, toScreen, ptrPos, applyCamera, zoomAt, fitToScreen } from './camera.js';
 import { sel, sizes, nodeEls, nodeRect, clampInside } from './render-nodes.js';
@@ -90,7 +89,7 @@ export function endDrag() {
   }
   cleanupDrag();
   renderAll(); save();
-  if (reverted.length) toast(`${reverted.join(', ')}: un DS o UI Kit debe vivir dentro de un software.`, 'error', 3600);
+  if (reverted.length) toast(`${reverted.join(', ')}: ${typeName('ds')} y ${typeName('uikit')} deben vivir dentro de ${typeName('software')}.`, 'error', 3600);
   else if (nested.length) toast(nested.join(' · '));
 }
 

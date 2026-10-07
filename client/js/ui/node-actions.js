@@ -3,8 +3,7 @@
    ========================================================= */
 import { $, uid } from '../core/utils.js';
 import {
-  S, save, nodeById, isContainer, childrenOf, parentOf, descendantsOf, worldPos,
-} from '../core/state.js';
+  S, save, nodeById, isContainer, childrenOf, parentOf, descendantsOf, worldPos, typeName } from '../core/state.js';
 import { pushHistory } from '../core/history.js';
 import { sel, clampInside } from '../canvas/render-nodes.js';
 import { topLevelSelection, renderAll } from '../canvas/selection.js';
@@ -26,10 +25,10 @@ export async function deleteNodes(ids) {
   }
   const names = ids.length === 1 ? `"${nodeById(ids[0]).name}"` : `${ids.length} cards`;
   let message = `Vas a eliminar ${names}.`;
-  if (inside.size) message += `\nContiene ${inside.size} elemento${inside.size > 1 ? 's' : ''} (features, DS o UI Kits).`;
+  if (inside.size) message += `\nContiene ${inside.size} elemento${inside.size > 1 ? 's' : ''} (${typeName('software')}, ${typeName('ds')} o ${typeName('uikit')}).`;
   message += connected.length ? `\nHay ${connected.length} ${connected.length > 1 ? 'conexiones' : 'conexión'} involucrada${connected.length > 1 ? 's' : ''}.` : '\nNo hay conexiones involucradas.';
   if (keep) message += `\nPuedes conservar su contenido moviéndolo a ${keep.node.parentId ? `"${parentOf(keep.node).name}"` : 'la raíz'}.`;
-  if (orphanKits.length) message += `\n⚠ ${orphanKits.length} UI Kit${orphanKits.length > 1 ? 's' : ''} (${orphanKits.map(k => k.name).join(', ')}) quedará${orphanKits.length > 1 ? 'n' : ''} sin fuente.`;
+  if (orphanKits.length) message += `\n⚠ ${orphanKits.length} ${typeName('uikit')} (${orphanKits.map(k => k.name).join(', ')}) quedará${orphanKits.length > 1 ? 'n' : ''} sin fuente.`;
   const buttons = [{ label: 'Cancelar', value: '' }];
   if (keep) buttons.push({ label: 'Eliminar y conservar contenido', value: 'keep' });
   buttons.push({ label: inside.size ? 'Eliminar con todo su contenido' : connected.length ? 'Eliminar con sus conexiones' : 'Eliminar', value: 'all', kind: 'danger' });

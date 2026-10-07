@@ -181,6 +181,17 @@ await step('F3: célula + editor raíz (visibilidad, 2 enlaces, notas, asignado)
   if (server.staff?.[0]?.name !== '@lorena' || server.staff[0].role !== 'UX Designer' || n.ownerLegacy !== '@lorena' || r.title !== 'Main instance') throw new Error('staff/título: ' + JSON.stringify({ server: server.staff, n, r }));
   return { ...n, cellName: cell.name, ...r, serverRefs: server.refs };
 });
+await step('Tipos: renombrar DS → "Librería" se refleja en cards, menú, editor, leyenda y servidor', async () => {
+  await ev(`(async () => { S.state.settings.typeNames.ds = 'Librería'; const ps = await import('/js/ui/page-settings.js'); ps.applyTypeNames(); (await import('/js/canvas/selection.js')).renderAll(); (await import('/js/core/state.js')).persist(); return true; })()`); await sleep(1000);
+  const dsId = await ev(`S.state.nodes.find(n => n.type === 'ds').id`);
+  await ev(`import('/js/ui/card-editor.js').then(m => m.openEditor(${JSON.stringify(dsId)}))`); await sleep(150);
+  const r = await ev(`({ badge: document.querySelector('.node[data-id="' + ${JSON.stringify(dsId)} + '"] .type-badge').textContent, picker: document.querySelector('#fType [data-v=ds] .t').textContent.trim(), legend: document.querySelectorAll('#legend span')[1].textContent.trim(), empty: document.querySelector('.ctr-empty')?.textContent })`);
+  await ev(`document.querySelector('#nodeDrawer [data-cancel]').click(); true`);
+  const srv = await ev(`fetch('/api/pages/' + S.pageId).then(r => r.json()).then(d => d.settings.typeNames)`);
+  await ev(`(async () => { S.state.settings.typeNames.ds = 'Design System'; (await import('/js/ui/page-settings.js')).applyTypeNames(); (await import('/js/canvas/selection.js')).renderAll(); (await import('/js/core/state.js')).persist(); return true; })()`); await sleep(1000);
+  if (r.badge !== 'Librería' || r.picker !== 'Librería' || !/Librería/.test(r.legend) || !/Librería/.test(r.empty || 'Librería') || srv.ds !== 'Librería') throw new Error(JSON.stringify({ r, srv }));
+  return { ...r, srv };
+});
 await step('F3: ficha (Ver ficha) con markdown escapado + #/me con deep-link', async () => {
   const rootId = await ev(`S.state.nodes.find(n => !n.parentId).id`);
   await ev(`import('/js/ui/node-view.js').then(m => m.openNodeView(${JSON.stringify(rootId)}))`); await sleep(100);

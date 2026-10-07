@@ -3,7 +3,7 @@
    ========================================================= */
 import { $, clamp } from '../core/utils.js';
 import { edgeLayer } from '../core/dom.js';
-import { S, nodeById, childrenOf, parentOf, rootOf, isAncestor, isExternalDs } from '../core/state.js';
+import { S, nodeById, childrenOf, parentOf, rootOf, isAncestor, isExternalDs, typeName } from '../core/state.js';
 import { edgeEls, nodeRect, anchorRect } from './render-nodes.js';
 export function portPoint(r, side) {
   switch (side) {
@@ -46,7 +46,7 @@ export function hostLabel(n) { const h = parentOf(n); if (!h) return n.name; con
 export function edgeTitle(e) {
   const a = nodeById(e.from), b = nodeById(e.to); if (!a || !b) return '';
   if (e.kind === 'source') return `${a.name} deriva de ${b.name}`;
-  return isExternalDs(e) ? `${a.name} usa ${b.name} (DS nacido en ${hostLabel(b)})` : `${a.name} usa ${b.name}`;
+  return isExternalDs(e) ? `${a.name} usa ${b.name} (${typeName(b.type)} nacido en ${hostLabel(b)})` : `${a.name} usa ${b.name}`;
 }
 export function renderEdges() {
   const seen = new Set();
@@ -67,7 +67,7 @@ export function renderEdges() {
     edgeLayer.appendChild(g);
     const ext = e.kind === 'ds' && isExternalDs(e);
     g.setAttribute('class', `edge kind-${e.kind}${ext ? ' external' : ''}`);
-    g.children[2].textContent = ext ? `DS nacido en ${hostLabel(nodeById(e.to))}` : '';
+    g.children[2].textContent = ext ? `${typeName(nodeById(e.to).type)} nacido en ${hostLabel(nodeById(e.to))}` : '';
     g.children[0].setAttribute('aria-label', edgeTitle(e));
   }
   for (const [id, g] of edgeEls) if (!seen.has(id)) { g.remove(); edgeEls.delete(id); }

@@ -27,10 +27,9 @@ export const MIN_Z = N.MIN_Z, MAX_Z = N.MAX_Z;
 export const HISTORY_MAX = 60;
 
 export const TYPE_META = {
-  software: { label: 'Software', desc: 'Contenedor: app, módulo o feature', color: 'var(--c-software)' },
-  ds:       { label: 'Design System', desc: 'Vive dentro de un software', color: 'var(--c-ds)' },
-  uikit:    { label: 'UI Kit', desc: 'Derivado de una fuente; vive dentro de un software', color: 'var(--c-uikit)' },
-};
+  software: { label: N.DEFAULT_TYPE_NAMES.software, desc: 'Contenedor: puede anidar otros elementos', color: 'var(--c-software)' },
+  ds:       { label: N.DEFAULT_TYPE_NAMES.ds, desc: 'Vive dentro de un contenedor', color: 'var(--c-ds)' },
+  uikit:    { label: N.DEFAULT_TYPE_NAMES.uikit, desc: 'Deriva de una fuente; vive dentro de un contenedor', color: 'var(--c-uikit)' },
+}; // label = nombre por defecto; el visible por página sale de typeName() (settings.typeNames)
 export const TAG_COLORS = N.TAG_COLORS;
-export const KIND_LABEL = { ds: 'Dependencia de sistema de diseño', source: 'Fuente de UI Kit' };
 
