@@ -52,10 +52,10 @@ export function showAddMenu(parentId, x, y) { menuPopover(x, y, addItems(parentI
 export function showNewMenu(x, y) {
   const center = toWorld(S.vpRect.width / 2, S.vpRect.height / 2);
   const at = { x: center.x - 160 + (Math.random() * 40 - 20), y: center.y - 90 + (Math.random() * 40 - 20) };
-  const items = [{ title: 'Nueva card' }, { label: 'Software raíz (contenedor maestro)', ico: '▣', action: () => openEditor(null, { type: 'software', ...at }) }];
+  const items = [{ title: 'Nueva instancia' }, { label: 'Main instance (software raíz)', ico: '▣', action: () => openEditor(null, { type: 'software', ...at }) }];
   const selected = sel.nodes.size === 1 ? nodeById([...sel.nodes][0]) : null;
   if (selected && isContainer(selected)) items.push('-', ...addItems(selected.id));
-  else items.push({ note: 'Los DS y UI Kits se crean dentro de un software: selecciona uno o usa su botón ＋.' });
+  else items.push({ note: 'Las Child instances (features, DS y UI Kits) se crean dentro de una Main instance: selecciona una o usa su botón ＋.' });
   menuPopover(x, y, items);
 }
 export function showNodeMenu(id, x, y) {

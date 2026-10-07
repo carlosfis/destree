@@ -89,7 +89,7 @@ export function openEditor(id, preset = {}) {
     // Contenedores válidos: software que no sea el propio nodo ni un descendiente suyo
     const parents = S.state.nodes.filter(n => isContainer(n) && n.id !== draft.id && !(draft.id && isAncestor(draft.id, n.id))).sort(sortByPath);
     const current = form.parent.value !== undefined && form.parent.options.length ? form.parent.value : (draft.parentId || '');
-    form.parent.innerHTML = (soft ? '<option value="">— Raíz (contenedor maestro) —</option>' : '<option value="">— Selecciona un software —</option>') +
+    form.parent.innerHTML = (soft ? '<option value="">— Ninguno: Main instance (raíz) —</option>' : '<option value="">— Selecciona un software —</option>') +
       parents.map(n => `<option value="${n.id}" ${n.id === current ? 'selected' : ''}>${esc(pathOf(n))}</option>`).join('');
     refreshBranch();
     const srcSel = form.source;

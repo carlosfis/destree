@@ -6,7 +6,7 @@
 - **Página**: un lienzo independiente (p. ej. por cliente o área). Cambia de página desde `⌂`.
 
 ## Crear y editar (admin / head)
-- `＋ Nueva card` o clic derecho en el fondo → software raíz. Dentro de un contenedor: botón `＋` o menú `⋯` → feature, DS o UI Kit.
+- `＋ Nueva card` o clic derecho en el fondo → **Main instance** (software raíz). Dentro de un contenedor: botón `＋` o menú `⋯` → Child instance (feature, DS o UI Kit).
 - Doble clic / Enter / `⋯ → Editar` abre el **sidebar** de la instancia (**Main instance** si es raíz, **Child instance** si vive dentro de un contenedor), con pestañas: **General** (tipo, nombre, contenedor padre, descripción, imagen, etiquetas, DS que usa / fuente), **Staff** (usuario `@nombre` + rol, p. ej. `@Lorena / UX Designer`; responsable, asignados y **visibilidad de la raíz**), **Documentación** (enlaces) y **Notas** (markdown: títulos, listas, enlaces, código, negrita).
 - Si la card tiene imagen se muestra arriba como **hero** (también en la cabecera de los contenedores).
 - Arrastra una card dentro de otro contenedor para anidarla, o fuera para sacarla a raíz. Arrastra desde un puerto para conectar.

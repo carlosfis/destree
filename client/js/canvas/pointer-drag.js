@@ -186,7 +186,7 @@ viewport.addEventListener('contextmenu', e => {
   const w = toWorld(...Object.values(ptrPos(e)));
   menuPopover(e.clientX, e.clientY, [
     { title: 'Lienzo' },
-    { label: 'Nuevo software raíz aquí', ico: '▣', action: () => openEditor(null, { type: 'software', x: w.x, y: w.y }) },
+    { label: 'Nueva Main instance aquí', ico: '▣', action: () => openEditor(null, { type: 'software', x: w.x, y: w.y }) },
     '-',
     { label: 'Seleccionar todo', kbd: `${MOD}+A`, action: selectAll },
     { label: 'Ajustar a pantalla', kbd: 'Shift+1', action: () => fitToScreen() },
