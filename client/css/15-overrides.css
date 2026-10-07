@@ -10,3 +10,7 @@
   --ctr-root-bg: #222222;
   --ctr-bg: #282828;
 }
+
+/* Las aristas (#edges) se dibujan encima de los nodos: con contenedores opacos quedaban ocultas.
+   Los nodos en arrastre (z 1000) o elevados (z 900) siguen por encima; el hit-stroke de la arista sigue siendo clicable. */
+#edges { z-index: 2; }
