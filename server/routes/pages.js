@@ -3,6 +3,7 @@ import { listPages, getDocument, saveDocument, createPage, importDocument, updat
 import { DEFAULT_PAGE_ID } from '../db/sqlite.js';
 import { audit } from '../lib/audit.js';
 import { visibilityCtx } from '../lib/cells.js';
+import { ingestDataUrls, embedImages } from '../lib/images.js';
 
 const idParam = { type: 'object', required: ['id'], properties: { id: { type: 'string', minLength: 1, maxLength: 64 } } };
 const parseIfMatch = h => { if (h == null) return null; const m = String(h).trim().match(/^(?:W\/)?"?(\d+)"?$/); if (!m) throw new HttpError(400, 'If-Match inválido: se espera la versión numérica'); return Number(m[1]); };
@@ -28,9 +29,10 @@ export default async function pageRoutes(app) {
     return doc;
   });
 
-  app.get('/api/pages/:id', { onRequest: app.guard('pages.read'), schema: { params: idParam } }, async (req, reply) => {
+  app.get('/api/pages/:id', { onRequest: app.guard('pages.read'), schema: { params: idParam, querystring: { type: 'object', properties: { embedImages: { enum: ['1', 'true'] } } } } }, async (req, reply) => {
     visibleOr404(req, req.params.id);
     const doc = getDocument(app.db, req.params.id, visibilityCtx(req));
+    if (req.query.embedImages) embedImages(app.db, app.uploadsDir, doc); // F5: export portable
     reply.header('ETag', `"${doc.page.version}"`).header('Cache-Control', 'no-store');
     return doc;
   });
@@ -41,6 +43,7 @@ export default async function pageRoutes(app) {
   }, async (req, reply) => {
     const expected = parseIfMatch(req.headers['if-match']);
     if (expected == null) throw new HttpError(428, 'Falta la cabecera If-Match con la versión de la página');
+    await ingestDataUrls(app.db, app.uploadsDir, req.body, { orgId: req.orgId, createdBy: req.user.id }); // F5: dataURL → archivo
     const res = saveDocument(app.db, req.params.id, req.body, expected);
     log(req, 'page.save', req.params.id, { version: res.version, nodes: res.nodes });
     reply.header('ETag', `"${res.version}"`);
@@ -85,7 +88,9 @@ export default async function pageRoutes(app) {
     bodyLimit: 32 * 1024 * 1024,
   }, async (req) => {
     const pageId = req.query.pageId || DEFAULT_PAGE_ID;
+    const images = await ingestDataUrls(app.db, app.uploadsDir, req.body, { orgId: req.orgId, createdBy: req.user.id }); // F5
     const res = importDocument(app.db, pageId, req.body);
+    res.images = images;
     log(req, 'page.import', pageId, { version: res.version, nodes: res.nodes });
     return { pageId, ...res };
   });

@@ -263,15 +263,15 @@ Cada fase cierra con handoff + commit + tag y encadena la siguiente en la misma 
 - **Handoff:** `F4b.md`.
 - **Verificación:** `npm test`.
 
-### F5 — Imágenes (upload seguro)
+### F5 — Imágenes (upload seguro) ✅
 - **Objetivo:** Thumbnails en disco con control de acceso, sin dataURL en el documento.
 - **Entregables:**
-  - [ ] `005_images.sql`; nodes.image_id, pages.cover_image_id
-  - [ ] `POST /api/images` (multipart ≤5 MB; magic bytes png/jpg/webp/svg; SVG sanitizado; sharp re-encode webp original ≤1600 + thumb 320; sha256 dedupe)
-  - [ ] `GET /uploads/:id(/thumb)` con check de visibilidad + cache headers; `DELETE` con comprobación de uso; job de huérfanas
-  - [ ] `ui/uploader.js`: drag&drop/pegar en card-editor; migración automática dataURL → archivo en import/guardado
-  - [ ] Export con flag `embedImages` para portabilidad
-  - [ ] `tests/images.test.js`
+  - [x] `005_images.sql`; nodes.image_id, pages.cover_image_id
+  - [x] `POST /api/images` (cuerpo binario ≤5 MB; magic bytes png/jpg/webp/svg; SVG rasterizado; sharp re-encode webp original ≤1600 + thumb 320; sha256 dedupe)
+  - [x] `GET /uploads/:id(/thumb)` con check de visibilidad + cache headers; `DELETE` con comprobación de uso; purga de huérfanas al arrancar
+  - [x] `ui/uploader.js`: drag&drop/pegar en card-editor; migración automática dataURL → archivo en import/guardado
+  - [x] Export con flag `embedImages` para portabilidad
+  - [x] `tests/images.test.js`
 - **Aceptación:** PNG 3 MB → nodo muestra webp; documento guarda solo imageId · `.exe` renombrado `.png` → 415 · designer sin acceso → 403 en `/uploads/:id` · import legacy con dataURLs crea archivos.
 - **Riesgos:** sharp en alpine → base `bookworm-slim` por defecto.
 - **Handoff:** `F5.md`.

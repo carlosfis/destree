@@ -161,8 +161,10 @@ async function pushRemote(keepalive) {
   if (S.saving) { S.dirty = true; return; }
   S.saving = true; S.dirty = false; setSaveStatus('Guardando…');
   try {
+    const hadDataUrls = S.state.nodes.some(n => n.image); // F5: el servidor convierte dataURLs en archivos
     const res = await api.putPage(S.pageId, toDocument(), S.version, { keepalive });
     S.version = res.version; setSaveStatus('Guardado');
+    if (hadDataUrls && !S.dirty) await reloadFromServer().catch(() => {});
   } catch (err) {
     if (err.status === 409) { setSaveStatus('Conflicto'); await reloadFromServer().catch(() => {}); toast('La página cambió en el servidor: se recargó la última versión.', 'error', 6000); }
     else if (err.status === 400) { setSaveStatus('Sin guardar'); toast('El servidor rechazó el documento: ' + err.message, 'error', 8000); }

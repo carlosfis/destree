@@ -239,6 +239,29 @@ await step('F4b: #/admin (usuarios/células/borradas/audit) + pestaña Página d
   await ev(`document.querySelector('#closeAdmin').click(); true`);
   return { admin, audit, deleted, page };
 });
+// F5: subir imagen desde el editor (input file vía CDP) → preview /uploads → card con thumb webp; import con dataURL → archivo.
+await step('F5: upload en editor → imageId + thumb /uploads; dataURL importada → archivo', async () => {
+  const sharp = (await import('sharp')).default;
+  const pngPath = path.join(os.tmpdir(), `destree-smoke-${process.pid}.png`);
+  fs.writeFileSync(pngPath, await sharp({ create: { width: 640, height: 400, channels: 3, background: '#3366cc' } }).png().toBuffer());
+  const nodeId = await ev(`S.state.nodes.find(n => n.type !== 'software')?.id || S.state.nodes[0].id`);
+  await ev(`import('/js/ui/card-editor.js').then(m => m.openEditor(${JSON.stringify(nodeId)}))`); await sleep(150);
+  const { root } = await send('DOM.getDocument', { depth: 1 });
+  const { nodeId: inputNode } = await send('DOM.querySelector', { nodeId: root.nodeId, selector: '#fImgInput' });
+  await send('DOM.setFileInputFiles', { nodeId: inputNode, files: [pngPath] }); await sleep(1500);
+  const preview = await ev(`document.querySelector('#fImgPreview img')?.getAttribute('src') || document.querySelector('#fImgPreview').textContent`);
+  await ev(`document.querySelector('#editorForm').requestSubmit(); true`); await sleep(1000);
+  const node = await ev(`(() => { const n = S.state.nodes.find(n => n.id === ${JSON.stringify(nodeId)}); const img = document.querySelector('.node[data-id="' + n.id + '"] img'); return { imageId: !!n.imageId, image: n.image, src: img?.getAttribute('src'), w: img?.naturalWidth, h: img?.naturalHeight, status: document.querySelector('#saveStatus').textContent }; })()`);
+  if (!/^\/uploads\/.+\/thumb$/.test(preview) || !node.imageId || node.image) throw new Error('upload: ' + JSON.stringify({ preview, node }));
+  const srv = await ev(`fetch('/api/pages/' + S.pageId).then(r => r.json()).then(d => { const n = d.nodes.find(n => n.id === ${JSON.stringify(nodeId)}); return { imageId: !!n.imageId, image: n.image }; })`);
+  // dataURL en el documento (import legado) → el servidor crea el archivo y el cliente recarga con imageId
+  const dataUrl = 'data:image/png;base64,' + fs.readFileSync(pngPath).toString('base64');
+  const other = await ev(`S.state.nodes.find(n => n.id !== ${JSON.stringify(nodeId)} && !n.imageId).id`);
+  await ev(`(() => { const n = S.state.nodes.find(n => n.id === ${JSON.stringify(other)}); n.image = ${JSON.stringify(dataUrl)}; n.imageId = null; return import('/js/core/state.js').then(m => m.persist()); })()`); await sleep(1500);
+  const ingested = await ev(`(() => { const n = S.state.nodes.find(n => n.id === ${JSON.stringify(other)}); return { imageId: !!n.imageId, image: n.image, src: document.querySelector('.node[data-id="' + n.id + '"] img')?.getAttribute('src')?.slice(0, 9) }; })()`);
+  fs.rmSync(pngPath, { force: true });
+  return { preview: preview.slice(0, 9), node, srv, ingested };
+});
 await step('recarga: persistencia SQLite vía API', async () => { await send('Page.reload'); await sleep(1200); return ev(`({ nodes: S.state.nodes.length, theme: document.documentElement.dataset.theme })`); });
 // F2: invitación (enlace copiable) → alta de designer → modo lectura; PUT → 403; logout → login.
 await step('invitación → designer en modo lectura (403 en PUT)', async () => {

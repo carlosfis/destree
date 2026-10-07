@@ -14,6 +14,7 @@ import {
 } from '../core/state.js';
 import { updateEdgePaths } from './render-edges.js';
 import { drawMinimap } from './minimap.js';
+import { imageSrc } from '../ui/uploader.js'; // F5
 export const sel = { nodes: new Set(), edge: null };
 export const sizes = new Map();     // id -> { w, h, headH? } tamaño efectivo
 export const measured = new Map();  // id -> alto medido: card hoja completa o cabecera de contenedor
@@ -74,7 +75,8 @@ export const PORTS = `<div class="port port-t" data-port="t"></div><div class="p
 
 export function leafHTML(n) {
   const c = commonHTML(n);
-  return `${n.image ? `<div class="card-img"><img src="${n.image}" alt="" draggable="false"></div>` : ''}
+  const img = imageSrc(n);
+  return `${img ? `<div class="card-img"><img src="${img}" alt="" draggable="false"></div>` : ''}
     <div class="card-body">
       <div class="card-head"><span class="type-badge">${TYPE_META[n.type].label}</span><button class="icon-btn card-menu" data-action="menu" title="Opciones">⋯</button></div>
       ${c.name}${c.desc}${c.tags}${c.foot}
@@ -89,7 +91,7 @@ export function headHTML(n) {
       <span class="spacer"></span>
       <span class="head-actions"><button class="icon-btn" data-action="add" title="Agregar dentro">＋</button><button class="icon-btn" data-action="menu" title="Opciones">⋯</button></span>
     </div>
-    <div class="head-main">${n.image ? `<img class="thumb" src="${n.image}" alt="" draggable="false">` : ''}<div class="texts">${c.name}${c.desc}</div></div>
+    <div class="head-main">${imageSrc(n) ? `<img class="thumb" src="${imageSrc(n)}" alt="" draggable="false">` : ''}<div class="texts">${c.name}${c.desc}</div></div>
     ${c.tags}${c.foot}${PORTS}`;
 }
 

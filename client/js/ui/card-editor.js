@@ -13,6 +13,7 @@ import { wouldCycle } from './connections.js';
 import { deleteNodes } from './node-actions.js';
 import { toast } from './theme.js';
 import { docsSection, teamSection, visibilitySection } from './card-editor-docs.js';
+import { uploadImage, bindDropZone, imageSrc, canUpload } from './uploader.js'; // F5
 export const editorDialog = $('#editorDialog');
 export const normalizeOwner = s => { s = String(s || '').trim().replace(/\s+/g, ''); return s ? (s.startsWith('@') ? s : '@' + s) : ''; };
 
@@ -42,7 +43,7 @@ export function openEditor(id, preset = {}) {
   if (S.readonly) return; // F2: designer no edita
   const node = id ? nodeById(id) : null;
   if (id && !node) return;
-  const draft = node ? { ...node, tags: [...node.tags], docs: (node.docs || []).map(d => ({ ...d })) } : { id: null, type: preset.type || 'software', name: '', description: '', image: null, tags: [], owner: '', parentId: preset.parentId || null, branchTypeId: null, x: preset.x ?? 0, y: preset.y ?? 0, notes: '', docs: [], ownerUserId: null, assigneeIds: [], visibility: 'org', cellIds: [] };
+  const draft = node ? { ...node, tags: [...node.tags], docs: (node.docs || []).map(d => ({ ...d })) } : { id: null, type: preset.type || 'software', name: '', description: '', image: null, tags: [], owner: '', parentId: preset.parentId || null, branchTypeId: null, x: preset.x ?? 0, y: preset.y ?? 0, notes: '', docs: [], ownerUserId: null, assigneeIds: [], visibility: 'org', cellIds: [], imageId: null };
   const docsSec = docsSection(draft), teamSec = teamSection(draft), visSec = visibilitySection(draft); // F3
   draft.sourceId = node ? (sourceEdgeOf(node.id)?.to || '') : '';
   draft.dsIds = node ? new Set(dsOf(node.id).map(n => n.id)) : new Set();
@@ -62,7 +63,7 @@ export function openEditor(id, preset = {}) {
       <div class="field"><label>Imagen</label>
         <div class="img-field"><div class="img-preview" id="fImgPreview"></div>
           <div class="img-actions"><label class="btn">Subir imagen<input type="file" accept="image/*" hidden id="fImgInput"></label><button type="button" class="btn ghost" id="fImgRemove">Quitar</button></div></div>
-        <div class="hint">Se recorta a 16:9 (320×180) y se comprime a ~100 KB para caber en localStorage.</div></div>
+        <div class="hint" id="fImgHint">${canUpload() ? 'PNG, JPEG, WebP o SVG hasta 5 MB. Arrastra, pega (Ctrl/⌘+V) o sube; se guarda como WebP con miniatura 16:9.' : 'Sin servidor: se recorta a 16:9 (320×180) y se comprime para caber en localStorage.'}</div></div>
       <div class="field"><label>Etiquetas</label><div class="chips-select" id="fTags"></div></div>
       <div class="field"><label>Responsable</label><input name="owner" value="${esc(draft.owner)}" placeholder="@nombre" autocomplete="off"><div class="hint">Texto libre con formato @nombre; no se vincula a ningún usuario.</div></div>
       ${teamSec.html}${visSec.html}
@@ -110,7 +111,14 @@ export function openEditor(id, preset = {}) {
       refreshTags(); $('#fNewTag').focus();
     });
   };
-  const refreshImg = () => { $('#fImgPreview').innerHTML = draft.image ? `<img src="${draft.image}" alt="">` : 'Sin imagen'; $('#fImgRemove').hidden = !draft.image; };
+  const refreshImg = () => { const src = imageSrc(draft); $('#fImgPreview').innerHTML = src ? `<img src="${src}" alt="">` : 'Sin imagen'; $('#fImgRemove').hidden = !src; };
+  const setImageFile = async f => { // F5: con servidor → upload (imageId); sin servidor → dataURL local
+    $('#fImgPreview').textContent = 'Subiendo…';
+    try { if (canUpload()) { const img = await uploadImage(f); draft.imageId = img.id; draft.image = null; } else { draft.image = await processImage(f); draft.imageId = null; } } catch (err) { toast(err.message, 'error', 5000); }
+    refreshImg();
+  };
+  const unbindDrop = bindDropZone($('#fImgPreview'), setImageFile);
+  editorDialog.addEventListener('close', unbindDrop, { once: true });
   refreshType(); refreshTags(); refreshImg(); docsSec.bind(form); visSec.bind(form);
 
   $('#fType').addEventListener('click', e => {
@@ -121,12 +129,8 @@ export function openEditor(id, preset = {}) {
   form.parent.addEventListener('change', refreshBranch);
   form.description.addEventListener('input', () => { const c = $('#fCounter'); c.textContent = `${form.description.value.length}/140`; c.classList.toggle('over', form.description.value.length >= 140); });
   form.owner.addEventListener('blur', () => form.owner.value = normalizeOwner(form.owner.value));
-  $('#fImgInput').addEventListener('change', async e => {
-    const f = e.target.files[0]; if (!f) return;
-    try { draft.image = await processImage(f); refreshImg(); } catch (err) { toast(err.message, 'error'); }
-    e.target.value = '';
-  });
-  $('#fImgRemove').addEventListener('click', () => { draft.image = null; refreshImg(); });
+  $('#fImgInput').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await setImageFile(f); });
+  $('#fImgRemove').addEventListener('click', () => { draft.image = null; draft.imageId = null; refreshImg(); });
   form.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => editorDialog.close()));
   if (node) $('#fDelete').addEventListener('click', () => { editorDialog.close(); deleteNodes([node.id]); });
 
@@ -145,7 +149,7 @@ export function openEditor(id, preset = {}) {
     if (parentId && (parentId === draft.id || (draft.id && isAncestor(draft.id, parentId)))) return toast('No se puede anidar dentro de sí mismo', 'error');
     pushHistory();
     const isRoot = draft.type === 'software' && !parentId;
-    const data = { type: draft.type, name, description: form.description.value.trim().slice(0, 140), image: draft.image, tags: draft.tags.filter(tagById), owner: normalizeOwner(form.owner.value), ...docsSec.read(form), ...teamSec.read(form), ...visSec.read(form, isRoot) };
+    const data = { type: draft.type, name, description: form.description.value.trim().slice(0, 140), image: draft.image, imageId: draft.imageId || null, tags: draft.tags.filter(tagById), owner: normalizeOwner(form.owner.value), ...docsSec.read(form), ...teamSec.read(form), ...visSec.read(form, isRoot) };
     let target = node;
     if (node) {
       Object.assign(node, data);

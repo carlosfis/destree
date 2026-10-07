@@ -1,4 +1,4 @@
-# API (F4b)
+# API (F5)
 
 Base `/api`. JSON. Errores: `{ error, message, errors?, version?, setup? }` con `error` ∈ `validation|unauthorized|forbidden|not_found|conflict|gone|rate_limited|error`.
 Auth: cookie `destree_sid` (HttpOnly, SameSite=Lax, `Secure` si `TRUST_PROXY`), 30 días. Sin sesión → 401 (`setup:true` si aún no hay usuarios). Rol sin la acción → 403.
@@ -32,6 +32,9 @@ Validación: JSON Schema de `/schema` vía Ajv (`strict:false`, `allErrors`, ajv
 | PATCH | `/api/pages/:pageId/nodes/:nodeId/visibility` | pages.edit | `{ visibility:'org'\|'cells', cellIds? }` | `{ version, node, updatedAt }` · 400 si no es raíz · 404 |
 | PUT | `/api/pages/:pageId/nodes/:nodeId/assignees` | pages.edit | `{ assigneeIds[] }` | `{ version, node, updatedAt }` |
 | PATCH | `/api/pages/:pageId/nodes/:nodeId/owner` | pages.edit | `{ ownerUserId\|null }` | `{ version, node, updatedAt }` · 400 usuario desconocido |
+| POST | `/api/images?kind=node\|page&filename=` | pages.edit | cuerpo binario `image/png\|jpeg\|webp\|svg+xml` ≤5 MB (tipo real por magic bytes) | 201 `{ id, kind, filename, mime:'image/webp', width, height, bytes, sha256, url, thumbUrl }` · 413 · 415 |
+| DELETE | `/api/images/:id` | pages.edit | — | 204 · 409 en uso |
+| GET | `/uploads/:id` · `/uploads/:id/thumb` | sesión + visibilidad (regla 5) | `If-None-Match` | `image/webp`, `Cache-Control: private, max-age=86400`, ETag · 304 · 401 · 403 · 404 |
 | GET | `/api/audit?limit&before&action` | audit.read (admin) | `limit` 1–200 (defecto 50), `before` id, `action` prefijo | `{ items: [{ id, userId, userName, action, entity, entityId, meta, createdAt }], next }` (más recientes primero) |
 | GET | `/api/me/assignments` | pages.read | — | `{ items: [{ pageId, pageName, pageStatus, nodeId, name, type, isRoot, role:'owner'\|'assignee' }] }` en páginas visibles (no borradas) |
 | GET | `/api/pages?status=` | pages.read | `status` active (defecto) \| archived \| deleted (admin) \| all | `{ pages: [{ id, name, description, visibility, cellIds, status, version, createdAt, updatedAt, archivedAt, deletedAt, nodeCount, rootCount }] }` (designer: solo visibles, regla 2) |
@@ -41,11 +44,12 @@ Validación: JSON Schema de `/schema` vía Ajv (`strict:false`, `allErrors`, ajv
 | POST | `/api/pages/:id/restore-deleted` | pages.delete (admin) | — | page meta (status active) |
 | POST | `/api/pages/:id/duplicate` | pages.create | `{ name? }` \| null | 201 page-document nuevo (copia contenido, células, asignados) |
 | POST | `/api/pages` | pages.create | `{ name, description?, visibility?, cellIds? }` | 201 + page-document (versión 1), `ETag` |
-| GET | `/api/pages/:id` | pages.read | — | page-document v3 + `refs { users[{id,name}], cells[{id,name,color}] }`; `ETag: "<version>"`. Designer: filtrado por `lib/visibility.js` (raíces org / de sus células / donde está asignado o es responsable; aristas solo con ambos extremos; `hasExternalRefs`); 403 si la página es solo-células ajena |
+| GET | `/api/pages/:id?embedImages=1` | pages.read | `embedImages` incrusta `image` como dataURL webp (export portable) | page-document v3 + `refs { users[{id,name}], cells[{id,name,color}] }`; `ETag: "<version>"`. Designer: filtrado por `lib/visibility.js` (raíces org / de sus células / donde está asignado o es responsable; aristas solo con ambos extremos; `hasExternalRefs`); 403 si la página es solo-células ajena |
 | PUT | `/api/pages/:id` | pages.edit | page-document v3 · `If-Match: "<version>"` | `{ version, nodes, edges, updatedAt }` + `ETag`. 400 schema · 409 `{ error:'conflict', version }` o página archivada/borrada · 428 sin If-Match |
 | POST | `/api/import?pageId=` | pages.import | JSON v1/v2/v3 (`nodes[]`, `edges[]`) | `{ pageId, version, nodes, edges, updatedAt }`. Sin If-Match: sustituye el contenido |
 
 Notas
+- F5: PUT e import convierten `nodes[].image` (dataURL) en archivos (`imageId`); el servidor nunca persiste dataURL; `imageId` desconocido se descarta.
 - PUT reemplaza el contenido completo en una transacción (tags, branch_types, nodes, node_tags, edges, node_cells, node_assignees) y `version += 1`. `cellIds` solo cuenta en raíces `visibility:'cells'`; ids de célula/usuario desconocidos se descartan.
 - El servidor normaliza (`server/lib/normalize.js`) tras validar; `page.name/description/visibility` solo cambian si vienen en `page`.
 - `settings` persiste `{ snap, grid, minimap }`; `theme`/`tool` son preferencias del navegador.

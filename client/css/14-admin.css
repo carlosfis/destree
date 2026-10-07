@@ -12,3 +12,5 @@
 #pageMetaForm textarea, #pageMetaForm input { width: 100%; }
 #btnOrg { white-space: nowrap; }
 @media (max-width: 720px) { .audit-table th:nth-child(4), .audit-table td:nth-child(4) { display: none; } }
+/* F5: zona de arrastre del editor */
+.img-preview.drop-over { border-color: var(--accent); background: var(--accent-soft); }

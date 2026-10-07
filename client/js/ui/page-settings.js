@@ -156,9 +156,9 @@ export function renderOwnersTab(body) {
 export function renderDataTab(body) {
   const bytes = JSON.stringify(S.state).length;
   const demoCount = S.state.nodes.filter(n => n.demo).length;
-  body.innerHTML = `<h3>Respaldo</h3><p>localStorage es frágil (se borra al limpiar el navegador). Exporta un JSON periódicamente. Importar reemplaza todo el estado actual.</p>
+  body.innerHTML = `<h3>Respaldo</h3><p>${S.offline ? 'localStorage es frágil (se borra al limpiar el navegador). Exporta un JSON periódicamente.' : 'El JSON exportado incrusta las imágenes (portable entre instalaciones).'} Importar reemplaza todo el estado actual.</p>
     <div class="inline-actions"><button class="btn primary" id="btnExport">⤓ Exportar JSON</button><button class="btn" id="btnCopy">Copiar JSON</button><button class="btn" id="btnImport">⤒ Importar JSON</button></div>
-    <p style="margin-top:10px">Tamaño actual: <b>${(bytes / 1024).toFixed(1)} KB</b> · ${roots().length} raíces · ${S.state.nodes.length} cards · ${S.state.edges.length} conexiones · ${S.state.nodes.filter(n => n.image).length} con imagen.</p>
+    <p style="margin-top:10px">Tamaño actual: <b>${(bytes / 1024).toFixed(1)} KB</b> · ${roots().length} raíces · ${S.state.nodes.length} cards · ${S.state.edges.length} conexiones · ${S.state.nodes.filter(n => n.image || n.imageId).length} con imagen.</p>
     <h3>Datos de ejemplo</h3><p>${demoCount ? `Hay ${demoCount} cards de ejemplo en el lienzo.` : 'No hay cards de ejemplo cargadas.'}</p>
     <div class="inline-actions"><button class="btn" id="btnLoadDemo">Cargar ejemplos</button><button class="btn danger" id="btnClearDemo" ${demoCount ? '' : 'disabled'}>Borrar ejemplos</button></div>
     <h3>Zona de peligro</h3><p>Elimina todas las cards, conexiones, etiquetas y tipos, y restaura los valores iniciales.</p>
@@ -191,8 +191,11 @@ export function removeDemo() {
   demoIds.forEach(id => sel.nodes.delete(id));
 }
 export function exportString() { S.state.camera = { ...S.cam }; return JSON.stringify({ ...S.state, exportedAt: new Date().toISOString() }, null, 2); }
-export function exportJSON() {
-  const blob = new Blob([exportString()], { type: 'application/json' });
+/** F5: con servidor, exporta el documento con imágenes incrustadas (`?embedImages=1`). */
+export async function exportJSON() {
+  let text = exportString();
+  if (!S.offline && S.pageId) { try { const doc = await api.getPage(S.pageId, { embedImages: true }); delete doc.refs; text = JSON.stringify({ ...doc, exportedAt: new Date().toISOString() }, null, 2); } catch (err) { toast('Exportando copia local: ' + err.message, 'error'); } }
+  const blob = new Blob([text], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = `arbol-sistemas-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a); a.click(); a.remove();

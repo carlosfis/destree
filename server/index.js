@@ -3,6 +3,8 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import ajvFormats from 'ajv-formats';
 import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
 import { config } from './config.js';
 import { openReady } from './db/sqlite.js';
 import { loadSchemas, AJV_OPTIONS, formatErrors } from './lib/schemas.js';
@@ -18,6 +20,8 @@ import pageRoutes from './routes/pages.js';
 import cellRoutes from './routes/cells.js';
 import nodeRoutes from './routes/nodes.js';
 import auditRoutes from './routes/audit.js';
+import imageRoutes from './routes/images.js';
+import { migrateLegacyImages, purgeOrphans } from './lib/images.js';
 
 export async function buildApp({ dbPath = config.dbPath, logger = { level: config.logLevel } } = {}) {
   const app = Fastify({
@@ -29,13 +33,16 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   const db = openReady(dbPath);
   app.decorate('db', db);
   app.decorate('deletedDir', dbPath === ':memory:' ? null : path.join(path.dirname(dbPath), 'deleted')); // F4a: export JSON al borrar (hasta F6a)
+  app.decorate('uploadsDir', config.uploadsDir || (dbPath === ':memory:' ? fs.mkdtempSync(path.join(os.tmpdir(), 'destree-uploads-')) : path.join(path.dirname(dbPath), 'uploads'))); // F5
+  const migrated = await migrateLegacyImages(db, app.uploadsDir); // F5: dataURLs heredadas → archivos
+  if (migrated && logger) app.log.info(`imágenes legadas migradas: ${migrated}`);
   app.addHook('onClose', async () => db.close());
   for (const s of loadSchemas()) app.addSchema(s);
 
   app.setErrorHandler((err, req, reply) => {
     if (err.validation) return reply.code(400).send({ error: 'validation', message: err.message, errors: formatErrors(err.validation) });
     if (err instanceof HttpError) {
-      const code = { 401: 'unauthorized', 403: 'forbidden', 409: 'conflict', 410: 'gone', 429: 'rate_limited' }[err.status] || 'error';
+      const code = { 401: 'unauthorized', 403: 'forbidden', 409: 'conflict', 410: 'gone', 413: 'too_large', 415: 'unsupported', 429: 'rate_limited' }[err.status] || 'error';
       return reply.code(err.status).send({ error: code, message: err.message, ...(err.version != null ? { version: err.version } : {}), ...(err.setup != null ? { setup: err.setup } : {}) });
     }
     if (err.statusCode && err.statusCode < 500) return reply.code(err.statusCode).send({ error: 'error', message: err.message });
@@ -58,6 +65,8 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   await app.register(cellRoutes);
   await app.register(nodeRoutes);
   await app.register(auditRoutes);
+  await app.register(imageRoutes);
+  app.addHook('onReady', async () => { try { purgeOrphans(db, app.uploadsDir); } catch (err) { app.log.warn(err, 'purga de imágenes huérfanas'); } });
   // Cliente estático. normalize.js llega vía symlink client/js/core/normalize.js → server/lib/normalize.js.
   await app.register(fastifyStatic, { root: config.clientDir, prefix: '/', index: ['index.html'], cacheControl: false, decorateReply: false });
   app.get('/favicon.ico', (req, reply) => reply.code(204).send());

@@ -39,4 +39,9 @@
 - 2026-10-06 F4a: página archivada sigue legible (GET) y aparece en asignaciones marcada; PUT sobre archivada/borrada → 409. Borrada: 404 para no-admin.
 - 2026-10-06 F4b: el drawer legacy (`#adminPanel`) pasa a ser ajustes de página (`ui/page-settings.js`, pestaña "Página" inyectada por JS); la administración de organización vive en `#/admin` (`views/admin-view.js`) con pestañas por permiso. `#btnAdmin` se reetiqueta por JS ("⚙ Página") para no tocar el markup.
 - 2026-10-06 F4b: `GET /api/audit` pagina por `id` ULID (`before`), `limit` llega como string (Ajv `coerceTypes:false`); filtro `action` por prefijo (LIKE).
+- 2026-10-06 F5: imágenes siempre re-codificadas con sharp a WebP (≤1600 px) + miniatura 320×180; SVG se rasteriza (nunca se sirve SVG → sin sanitizador XML). Dedupe por sha256 del archivo original por org.
+- 2026-10-06 F5: `POST /api/images` recibe el `File` como cuerpo binario (`Content-Type: image/*`, ≤5 MB) en vez de multipart: sin dependencia extra; el tipo real se decide por magic bytes, no por cabecera ni extensión.
+- 2026-10-06 F5: `/uploads/:id` exige sesión (plugin session también cubre `/uploads/`) y aplica la regla 5 reconstruyendo el documento filtrado del nodo dueño; sin usos solo la ve quien la subió. `Cache-Control: private` + ETag.
+- 2026-10-06 F5: `nodes.image_legacy` se migra a archivos en JS al arrancar (`migrateLegacyImages`, sharp es async) y queda NULL; la columna se elimina en una migración posterior. PUT/import ingieren dataURLs (`ingestDataUrls`) antes de `saveDocument`, que nunca persiste dataURL.
+- 2026-10-06 F5: sin servidor el cliente conserva el flujo legado (dataURL recortada en canvas); con servidor sube y usa `imageId`. Export JSON con servidor incrusta las imágenes (`?embedImages=1`).
 - 2026-10-06 F3: markdown propio (`ui/markdown.js`): escape total antes de marcar; solo enlaces `http(s)`; sin HTML crudo, imágenes ni tablas. La ficha de lectura reutiliza `#editorDialog`.

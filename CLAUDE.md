@@ -3,9 +3,9 @@
 Fuente única de verdad para agencias: árbol de software → Design Systems / UI Kits, responsables, documentación y métricas Figma. Autoalojado, multi-página, roles admin/head/designer.
 
 ## Estado actual
-- Fase hecha: F4b (`#/admin` usuarios/células/borradas/audit, drawer → `ui/page-settings.js` con pestaña Página, `GET /api/audit`; `docs/handoff/F4b.md`).
-- Próxima: F5 (imágenes: `005_images.sql`, `POST /api/images`, `/uploads/:id` con visibilidad, uploader, migración dataURL; `PLAN.md` §5 F5).
-- Deuda crítica: ninguna. `npm test` 18/18; `node scripts/smoke.js` 22/22 (Chrome headless, consola limpia).
+- Fase hecha: F5 (imágenes: `images` + sharp → webp/thumb, `POST /api/images`, `/uploads/:id` con visibilidad, uploader, dataURL → archivo; `docs/handoff/F5.md`).
+- Próxima: F6a (versiones: `page_versions`, snapshots auto/manual/restore, retención, UI historial; `PLAN.md` §5 F6a).
+- Deuda crítica: ninguna. `npm test` 21/21; `node scripts/smoke.js` 23/23 (Chrome headless, consola limpia).
 
 ## Comandos (fijos desde F0a)
 ```
@@ -21,7 +21,7 @@ node scripts/smoke.js  # checklist de paridad en Chrome headless (requiere Chrom
 - `PLAN.md` — plan por fases, prompts y protocolo de handoff. Leer solo la sección de la fase activa.
 - `FIGMA` — ¡IMPORTANTE! No continuar con nada de Figma, el MVP se quedará sin esa función, mantenerlo funcional sin depender en absoluto de ninguna función relacionada a Figma. Esta es una nueva instrucción.
 - `schema/` — JSON Schema draft-07 (desde F1). Fuente de verdad del modelo; valida API, import/export y tests.
-- `server/` — Fastify 5 (JS ESM), SQLite vía `node:sqlite` (`db/sqlite.js`, sin binarios), `lib/normalize.js` (compartido: symlink en `client/js/core/`), `lib/pages.js`, `lib/{auth,permissions,audit}.js`, `plugins/{session,guard,origin-check}.js`; `lib/visibility.js` + `lib/cells.js` (F3), `lib/figma/` (fases siguientes).
+- `server/` — Fastify 5 (JS ESM), SQLite vía `node:sqlite` (`db/sqlite.js`, sin binarios; `sharp` es la única dep nativa, F5), `lib/normalize.js` (compartido: symlink en `client/js/core/`), `lib/pages.js`, `lib/{auth,permissions,audit}.js`, `plugins/{session,guard,origin-check}.js`; `lib/visibility.js` + `lib/cells.js` (F3), `lib/images.js` (F5), `lib/figma/` (fases siguientes).
 - `client/` — vanilla JS ESM + CSS sin bundler. `js/core/state.js` exporta `S` (estado mutable compartido), `bootstrap()`/`persist()` vía `core/api.js`; `js/core/dom.js` nodos DOM; `js/canvas` lienzo; `js/ui` (incl. `page-settings.js`, drawer); `js/views` (`lobby`, `admin-view`, `users`, `cells`, `me`, `auth-views`); `js/main.js` entrada única.
 - `figma-plugin/` — DesTree Companion (desde F10).
 - `legacy/arbol.html` — original. NUNCA leerlo entero: `grep -n` + `sed -n A,Bp`.

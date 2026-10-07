@@ -26,9 +26,17 @@ export const deletePage = id => req('DELETE', `/pages/${encodeURIComponent(id)}`
 export const restorePage = id => req('POST', `/pages/${encodeURIComponent(id)}/restore-deleted`);
 export const duplicatePage = (id, name) => req('POST', `/pages/${encodeURIComponent(id)}/duplicate`, name ? { name } : null);
 export const myAssignments = () => req('GET', '/me/assignments').then(r => r.items);
+/* --- F5: imágenes (cuerpo binario, no JSON) --- */
+export async function uploadImage(file, { kind = 'node', filename = '' } = {}) {
+  const res = await fetch(`${BASE}/images?` + new URLSearchParams({ kind, filename: filename.slice(0, 200) }), { method: 'POST', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file, cache: 'no-store' });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) { const err = new Error((data && data.message) || res.statusText); err.status = res.status; if (res.status === 401) document.dispatchEvent(new CustomEvent('destree:unauthorized')); throw err; }
+  return data;
+}
+export const deleteImage = id => req('DELETE', `/images/${encodeURIComponent(id)}`);
 /* --- F4b --- */
 export const listAudit = params => req('GET', '/audit?' + new URLSearchParams(Object.fromEntries(Object.entries(params || {}).filter(([, v]) => v != null && v !== ''))));
-export const getPage = id => req('GET', `/pages/${encodeURIComponent(id)}`);
+export const getPage = (id, opts = {}) => req('GET', `/pages/${encodeURIComponent(id)}` + (opts.embedImages ? '?embedImages=1' : ''));
 /** PUT del documento completo con If-Match; 409 si `ver` es vieja. */
 export const putPage = (id, doc, ver, opts) => req('PUT', `/pages/${encodeURIComponent(id)}`, doc, { ...opts, headers: { 'If-Match': `"${ver}"` } });
 export const importDocument = (raw, pid) => req('POST', '/import?' + new URLSearchParams({ pageId: pid }), raw);

@@ -18,7 +18,7 @@ function sessionPlugin(app, opts, done) {
   app.decorateRequest('orgId', null);
   app.decorateRequest('sessionToken', null);
   app.addHook('onRequest', async (req) => {
-    if (!req.url.startsWith('/api/')) return;
+    if (!req.url.startsWith('/api/') && !req.url.startsWith('/uploads/')) return; // F5: /uploads también exige sesión
     const token = parseCookies(req.headers.cookie)[SESSION_COOKIE] || null;
     req.sessionToken = token;
     const r = resolveSession(app.db, token);

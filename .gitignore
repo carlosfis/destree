@@ -1,5 +1,7 @@
 node_modules/
 data/
+# F5: imágenes subidas viven junto a la BD (data/uploads); si UPLOADS_DIR apunta fuera, ignorar allí
+uploads/
 .env
 .DS_Store
 *.log

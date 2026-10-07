@@ -80,8 +80,9 @@ export function saveDocument(db, pageId, doc, expected) {
     const insNode = db.prepare(`INSERT INTO nodes (id, page_id, type, name, description, notes, docs_json, image_id, image_legacy, owner_user_id, owner_label, parent_id, branch_type_id, x, y, w, h, demo, visibility, status, position, updated_at)
       VALUES (@id, @pageId, @type, @name, @description, @notes, @docs, @imageId, @image, @ownerUserId, @owner, @parentId, @branchTypeId, @x, @y, @w, @h, @demo, @visibility, @status, @position, @now)`);
     const insNodeTag = db.prepare('INSERT INTO node_tags (page_id, node_id, tag_id, position) VALUES (?, ?, ?, ?)');
+    const imageIds = new Set(db.prepare('SELECT id FROM images').all().map(r => r.id));
     d.nodes.forEach((n, i) => {
-      insNode.run({ id: n.id, pageId, type: n.type, name: n.name, description: n.description, notes: n.notes, docs: j(n.docs), imageId: n.imageId, image: n.image, ownerUserId: n.ownerUserId, owner: n.owner, parentId: n.parentId, branchTypeId: n.branchTypeId, x: n.x, y: n.y, w: n.w, h: n.h, demo: n.demo ? 1 : 0, visibility: n.visibility, status: n.status, position: i, now });
+      insNode.run({ id: n.id, pageId, type: n.type, name: n.name, description: n.description, notes: n.notes, docs: j(n.docs), imageId: n.imageId && imageIds.has(n.imageId) ? n.imageId : null, image: null /* F5: dataURL ya ingerida en la ruta; nunca se persiste */, ownerUserId: n.ownerUserId, owner: n.owner, parentId: n.parentId, branchTypeId: n.branchTypeId, x: n.x, y: n.y, w: n.w, h: n.h, demo: n.demo ? 1 : 0, visibility: n.visibility, status: n.status, position: i, now });
       n.tags.forEach((t, k) => insNodeTag.run(pageId, n.id, t, k));
     });
     const insEdge = db.prepare('INSERT INTO edges (id, page_id, kind, from_node_id, to_node_id, demo, position) VALUES (?, ?, ?, ?, ?, ?, ?)');
