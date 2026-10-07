@@ -1,5 +1,5 @@
 # Handoff F6b — Respaldos + export/import org   [✅ completa]
-Commit: (hash en el commit siguiente) · Tag: f6b (f6a → 19186da)
+Commit: 02da222 · Tag: f6b (f6a → 19186da)
 ## Hecho
 - `007_backups.sql` (`backups`: filename único, bytes, sha256, kind manual|scheduled, status). `lib/backup.js`: `createBackup` (`node:sqlite` `backup()` → copia consistente + `uploads/` + `MANIFEST.json` → `tar -czf`; registro + retención `BACKUP_KEEP`=10 solo programados), `listBackups`/`getBackup`/`deleteBackup`, cron mínimo (`cronMatches`, `scheduleBackups` cada 30 s; `BACKUP_CRON` vacío = off), lock `.server.lock` (onListen/onClose), `restoreBackup` (exige servidor parado; mueve lo actual a `restore-prev-<ts>/`).
 - Rutas (`backups`, admin): `GET/POST /api/backups`, `GET /api/backups/:id/download` (stream gzip), `DELETE`. `GET /api/org/export?images=manifest|embed`, `POST /api/org/import` (valida `schema/org-export.schema.json`, ≤512 MB).
