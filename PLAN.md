@@ -170,7 +170,7 @@ Cada fase = 1 sesión de Claude Code. Regla de corte: si se alarga, handoff ⚠�
 
 ### Paso previo (manual, antes de pegar el prompt F0a)
 - [x] `PLAN.md`, `CLAUDE.md` y `docs/handoff/TEMPLATE.md` ya están en disco
-- [ ] `gh auth status` OK · `node -v` ≥ 22 · `git --version`
+- [x] `gh auth status` OK · `node -v` ≥ 22 · `git --version`
 - [x] Abrir `arbol.html` en navegador → Exportar JSON → guardar como `/Users/carlosalfredofisherchavarria/Desktop/DesTree/export-actual.json` (respaldo de `localStorage systree:v2`; fixture `legacy-v2.json` en F1 e import de datos reales)
 
 ### F0a — Legacy + split en scripts clásicos + paridad ✅
@@ -185,13 +185,13 @@ Cada fase = 1 sesión de Claude Code. Regla de corte: si se alarga, handoff ⚠�
 - **Handoff:** `docs/handoff/F0a.md`.
 - **Verificación:** `npm run dev` + checklist manual; `cat client/js/*.js | diff - <(sed -n A,Bp legacy/arbol.html)` por bloque.
 
-### F0b — ESM + scaffolding docs + GitHub
+### F0b — ESM + scaffolding docs + GitHub ✅
 - **Objetivo:** Módulos ESM reales; repo público.
 - **Entregables:**
-  - [ ] `core/state.js` exporta un único objeto mutable `S` (`S.state`, `S.cam`, `S.ptr`, `S.vpRect`, `S.popoverOpen`, `S.adminTab`, `S.firstRun`, …); `grep -nE "^(let|var) " client/js/*.js` lista todos los top-level; cada reasignación `x = …` entre módulos → `S.x = …` (`sed -i` por símbolo + revisión por grep de resultado 0)
-  - [ ] `<script type="module" src="js/main.js">`; imports explícitos; sin globales `window.*` salvo `S` en dev para depurar
-  - [ ] Actualizar `CLAUDE.md` (ya existe; mantener ≤60 líneas: comandos, mapa, reglas, estado actual), `docs/MAP.md`, `docs/DECISIONS.md`, LICENSE MIT, README stub, `PLAN.md` ya en disco
-  - [ ] `git init`, commit `F0a: …` (estado F0a) y `F0b: …`, `gh repo create destree --public --source=. --push`, tags `f0a`, `f0b`
+  - [x] `core/state.js` exporta un único objeto mutable `S` (`S.state`, `S.cam`, `S.ptr`, `S.vpRect`, `S.popoverOpen`, `S.adminTab`, `S.firstRun`, …); `grep -nE "^(let|var) " client/js/*.js` lista todos los top-level; cada reasignación `x = …` entre módulos → `S.x = …` (`sed -i` por símbolo + revisión por grep de resultado 0)
+  - [x] `<script type="module" src="js/main.js">`; imports explícitos; sin globales `window.*` salvo `S` en dev para depurar
+  - [x] Actualizar `CLAUDE.md` (ya existe; mantener ≤60 líneas: comandos, mapa, reglas, estado actual), `docs/MAP.md`, `docs/DECISIONS.md`, LICENSE MIT, README stub, `PLAN.md` ya en disco
+  - [x] `git init`, commit `F0a: …` (estado F0a) y `F0b: …`, `gh repo create destree --public --source=. --push`, tags `f0a`, `f0b`
 - **Aceptación:** misma checklist de paridad de F0a en ESM · consola sin `ReferenceError`/`TypeError` tras recorrer la checklist · `gh repo view` muestra repo público.
 - **Riesgos:** reasignaciones olvidadas → test manual con consola abierta; `grep -n "= " ` de cada símbolo listado.
 - **Handoff:** `F0b.md` con lista de símbolos migrados a `S`.

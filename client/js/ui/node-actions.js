@@ -1,14 +1,23 @@
-'use strict';
 /* =========================================================
    15. Eliminar y duplicar
    ========================================================= */
-async function deleteNodes(ids) {
+import { $, uid } from '../core/utils.js';
+import {
+  S, save, nodeById, isContainer, childrenOf, parentOf, descendantsOf, worldPos,
+} from '../core/state.js';
+import { pushHistory } from '../core/history.js';
+import { sel, clampInside } from '../canvas/render-nodes.js';
+import { topLevelSelection, renderAll } from '../canvas/selection.js';
+import { deleteEdge } from './connections.js';
+import { confirmBox } from './dialogs.js';
+import { toast } from './theme.js';
+export async function deleteNodes(ids) {
   ids = ids.filter(nodeById); if (!ids.length) return;
   const set = new Set(ids);
   const inside = new Set(); ids.forEach(id => descendantsOf(id).forEach(d => { if (!set.has(d)) inside.add(d); }));
   const all = new Set([...set, ...inside]);
-  const connected = state.edges.filter(e => all.has(e.from) || all.has(e.to));
-  const orphanKits = state.nodes.filter(n => n.type === 'uikit' && !all.has(n.id) && state.edges.some(e => e.kind === 'source' && e.from === n.id && all.has(e.to)));
+  const connected = S.state.edges.filter(e => all.has(e.from) || all.has(e.to));
+  const orphanKits = S.state.nodes.filter(n => n.type === 'uikit' && !all.has(n.id) && S.state.edges.some(e => e.kind === 'source' && e.from === n.id && all.has(e.to)));
   // Opción de conservar el contenido: solo con una card, si tiene hijos y estos pueden vivir en el nuevo lugar
   let keep = null;
   if (ids.length === 1) {
@@ -33,17 +42,17 @@ async function deleteNodes(ids) {
     for (const k of keep.kids) { const w = worldPos(k); k.parentId = newParent; k.x = w.x - base.x; k.y = w.y - base.y; if (!newParent) k.branchTypeId = null; else clampInside(k); }
     toDelete = set;
   }
-  state.nodes = state.nodes.filter(n => !toDelete.has(n.id));
-  state.edges = state.edges.filter(e => !toDelete.has(e.from) && !toDelete.has(e.to));
+  S.state.nodes = S.state.nodes.filter(n => !toDelete.has(n.id));
+  S.state.edges = S.state.edges.filter(e => !toDelete.has(e.from) && !toDelete.has(e.to));
   toDelete.forEach(id => sel.nodes.delete(id));
   renderAll(); save();
   toast(`${names.replace(/"/g, '')} eliminad${ids.length === 1 ? 'a' : 'as'}`);
 }
-function deleteSelection() {
+export function deleteSelection() {
   if (sel.edge) return deleteEdge(sel.edge);
   if (sel.nodes.size) deleteNodes(topLevelSelection());
 }
-function duplicateSelection() {
+export function duplicateSelection() {
   const tops = topLevelSelection(); if (!tops.length) return;
   pushHistory();
   const map = new Map(); const copies = [];
@@ -52,11 +61,11 @@ function duplicateSelection() {
     childrenOf(n.id).forEach(k => cloneTree(k, c.id));
   };
   for (const id of tops) { const n = nodeById(id); cloneTree(n, n.parentId || null); const c = copies.find(x => x.id === map.get(id)); c.x += 24; c.y += 24; }
-  state.nodes.push(...copies);
-  for (const e of [...state.edges]) {
+  S.state.nodes.push(...copies);
+  for (const e of [...S.state.edges]) {
     const f = map.get(e.from), t = map.get(e.to);
-    if (f && t) state.edges.push({ ...e, id: uid(), from: f, to: t, demo: false });
-    else if (f) state.edges.push({ ...e, id: uid(), from: f, demo: false });
+    if (f && t) S.state.edges.push({ ...e, id: uid(), from: f, to: t, demo: false });
+    else if (f) S.state.edges.push({ ...e, id: uid(), from: f, demo: false });
   }
   sel.nodes = new Set(tops.map(id => map.get(id))); sel.edge = null;
   renderAll(); save();

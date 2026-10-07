@@ -1,10 +1,9 @@
-'use strict';
 // Servidor estático mínimo para client/ (F0a). Sustituido por Fastify en F1.
-const http = require('node:http');
-const fs = require('node:fs');
-const path = require('node:path');
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
 
-const ROOT = path.resolve(__dirname, '..', 'client');
+const ROOT = path.resolve(import.meta.dirname, '..', 'client');
 const PORT = Number(process.env.PORT || 5173);
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -25,6 +24,7 @@ function send(res, status, body, type) {
 const server = http.createServer((req, res) => {
   let urlPath = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
   if (urlPath.endsWith('/')) urlPath += 'index.html';
+  if (urlPath === '/favicon.ico') return send(res, 204, '');
   const file = path.normalize(path.join(ROOT, urlPath));
   if (!file.startsWith(ROOT)) return send(res, 403, 'Forbidden');
   fs.readFile(file, (err, data) => {
@@ -34,5 +34,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`DesTree (F0a) → http://localhost:${PORT}/`);
+  console.log(`DesTree → http://localhost:${PORT}/`);
 });

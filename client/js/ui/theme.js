@@ -1,21 +1,24 @@
-'use strict';
 /* =========================================================
    18. Tema, toasts, atajos
    ========================================================= */
-const mql = window.matchMedia('(prefers-color-scheme: dark)');
-function applyTheme() {
-  const dark = state.settings.theme ? state.settings.theme === 'dark' : mql.matches;
+import { $, esc, MOD } from '../core/utils.js';
+import { S, save } from '../core/state.js';
+import { drawMinimap } from '../canvas/minimap.js';
+import { adminPanel, renderAdmin } from '../views/admin.js';
+export const mql = window.matchMedia('(prefers-color-scheme: dark)');
+export function applyTheme() {
+  const dark = S.state.settings.theme ? S.state.settings.theme === 'dark' : mql.matches;
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   drawMinimap();
 }
-mql.addEventListener('change', () => { if (!state.settings.theme) applyTheme(); });
+mql.addEventListener('change', () => { if (!S.state.settings.theme) applyTheme(); });
 $('#themeSwitch').addEventListener('click', () => {
   const dark = document.documentElement.dataset.theme === 'dark';
-  state.settings.theme = dark ? 'light' : 'dark'; applyTheme(); save();
-  if (adminPanel.classList.contains('open') && adminTab === 'settings') renderAdmin();
+  S.state.settings.theme = dark ? 'light' : 'dark'; applyTheme(); save();
+  if (adminPanel.classList.contains('open') && S.adminTab === 'settings') renderAdmin();
 });
 
-function toast(msg, kind = 'info', ms = 2600) {
+export function toast(msg, kind = 'info', ms = 2600) {
   const box = $('#toasts'); if (!box) return;
   const el = document.createElement('div'); el.className = 'toast ' + kind; el.textContent = msg;
   box.appendChild(el);
@@ -23,7 +26,7 @@ function toast(msg, kind = 'info', ms = 2600) {
   while (box.children.length > 4) box.firstChild.remove();
 }
 
-function openShortcuts() {
+export function openShortcuts() {
   const K = (...ks) => ks.map(k => `<kbd>${esc(k)}</kbd>`).join('');
   const row = (l, ...ks) => `<div class="sc"><span>${l}</span><span>${K(...ks)}</span></div>`;
   $('#shortcutsDialog').innerHTML = `<div class="dialog-inner"><header><h2>Atajos de teclado</h2><button class="icon-btn" id="closeSc">✕</button></header>

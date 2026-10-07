@@ -1,11 +1,21 @@
-'use strict';
 /* =========================================================
    14. Editor de card (crear / editar)
    ========================================================= */
-const editorDialog = $('#editorDialog');
-const normalizeOwner = s => { s = String(s || '').trim().replace(/\s+/g, ''); return s ? (s.startsWith('@') ? s : '@' + s) : ''; };
+import { $, $$, uid, esc, TYPE_META, TAG_COLORS } from '../core/utils.js';
+import {
+  S, save, nodeById, tagById, isContainer, childrenOf, sourceEdgeOf, dsOf, defaultBranchType, parentOf,
+  rootOf, isAncestor, worldPos,
+} from '../core/state.js';
+import { pushHistory } from '../core/history.js';
+import { freeSpot } from '../canvas/render-nodes.js';
+import { selectOnly, renderAll } from '../canvas/selection.js';
+import { wouldCycle } from './connections.js';
+import { deleteNodes } from './node-actions.js';
+import { toast } from './theme.js';
+export const editorDialog = $('#editorDialog');
+export const normalizeOwner = s => { s = String(s || '').trim().replace(/\s+/g, ''); return s ? (s.startsWith('@') ? s : '@' + s) : ''; };
 
-function processImage(file) {
+export function processImage(file) {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) return reject(new Error('El archivo no es una imagen'));
     if (file.size > 10 * 1024 * 1024) return reject(new Error('Imagen demasiado grande (máx. 10 MB)'));
@@ -25,9 +35,9 @@ function processImage(file) {
   });
 }
 /** Ruta legible de un contenedor: Raíz › Hijo › Nieto */
-function pathOf(n) { const parts = [n.name]; let p = parentOf(n), g = 0; while (p && g++ < 100) { parts.unshift(p.name); p = parentOf(p); } return parts.join(' › '); }
+export function pathOf(n) { const parts = [n.name]; let p = parentOf(n), g = 0; while (p && g++ < 100) { parts.unshift(p.name); p = parentOf(p); } return parts.join(' › '); }
 
-function openEditor(id, preset = {}) {
+export function openEditor(id, preset = {}) {
   const node = id ? nodeById(id) : null;
   if (id && !node) return;
   const draft = node ? { ...node, tags: [...node.tags] } : { id: null, type: preset.type || 'software', name: '', description: '', image: null, tags: [], owner: '', parentId: preset.parentId || null, branchTypeId: null, x: preset.x ?? 0, y: preset.y ?? 0 };
@@ -43,7 +53,7 @@ function openEditor(id, preset = {}) {
       <div class="field" id="fNameField"><label>Nombre *</label><input name="name" maxlength="80" value="${esc(draft.name)}" placeholder="Nombre del software, DS o kit" autocomplete="off"><div class="error" hidden>El nombre es obligatorio.</div></div>
       <div class="field-row">
         <div class="field" id="fParentField"><label id="fParentLabel">Contenedor</label><select name="parent"></select><div class="error" hidden>Un DS o UI Kit debe vivir dentro de un software.</div></div>
-        <div class="field" id="fBranchField"><label>Tipo de ramificación</label><select name="branchType">${state.edgeTypes.map(t => `<option value="${t.id}" ${t.id === (draft.branchTypeId || defaultBranchType()) ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>
+        <div class="field" id="fBranchField"><label>Tipo de ramificación</label><select name="branchType">${S.state.edgeTypes.map(t => `<option value="${t.id}" ${t.id === (draft.branchTypeId || defaultBranchType()) ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>
       </div>
       <div class="field"><label>Descripción breve <span class="counter" id="fCounter">${draft.description.length}/140</span></label><textarea name="description" maxlength="140" rows="2" placeholder="¿Qué es y para qué sirve?">${esc(draft.description)}</textarea></div>
       <div class="field"><label>Imagen</label>
@@ -67,30 +77,30 @@ function openEditor(id, preset = {}) {
     $('#fDSField').hidden = !soft;
     $('#fParentLabel').textContent = soft ? 'Contenedor (vacío = raíz)' : 'Contenedor *';
     // Contenedores válidos: software que no sea el propio nodo ni un descendiente suyo
-    const parents = state.nodes.filter(n => isContainer(n) && n.id !== draft.id && !(draft.id && isAncestor(draft.id, n.id))).sort(sortByPath);
+    const parents = S.state.nodes.filter(n => isContainer(n) && n.id !== draft.id && !(draft.id && isAncestor(draft.id, n.id))).sort(sortByPath);
     const current = form.parent.value !== undefined && form.parent.options.length ? form.parent.value : (draft.parentId || '');
     form.parent.innerHTML = (soft ? '<option value="">— Raíz (contenedor maestro) —</option>' : '<option value="">— Selecciona un software —</option>') +
       parents.map(n => `<option value="${n.id}" ${n.id === current ? 'selected' : ''}>${esc(pathOf(n))}</option>`).join('');
     refreshBranch();
     const srcSel = form.source;
-    const candidates = state.nodes.filter(n => n.id !== draft.id && !(draft.id && wouldCycle('source', draft.id, n.id)))
+    const candidates = S.state.nodes.filter(n => n.id !== draft.id && !(draft.id && wouldCycle('source', draft.id, n.id)))
       .sort((a, b) => (a.type === 'ds' ? 0 : a.type === 'uikit' ? 1 : 2) - (b.type === 'ds' ? 0 : b.type === 'uikit' ? 1 : 2) || a.name.localeCompare(b.name));
     srcSel.innerHTML = `<option value="">— Selecciona la fuente —</option>` + candidates.map(n => `<option value="${n.id}" ${n.id === draft.sourceId ? 'selected' : ''}>${esc(n.name)} · ${TYPE_META[n.type].label}${n.parentId ? ` (en ${esc(rootOf(n).name)})` : ''}</option>`).join('');
-    const dsList = state.nodes.filter(n => (n.type === 'ds' || n.type === 'uikit') && n.id !== draft.id).sort((a, b) => a.name.localeCompare(b.name));
+    const dsList = S.state.nodes.filter(n => (n.type === 'ds' || n.type === 'uikit') && n.id !== draft.id).sort((a, b) => a.name.localeCompare(b.name));
     $('#fDS').innerHTML = dsList.length ? dsList.map(n => `<label><input type="checkbox" value="${n.id}" ${draft.dsIds.has(n.id) ? 'checked' : ''}><span class="t-dot" style="background:${TYPE_META[n.type].color}"></span>${esc(n.name)}<span class="where">${TYPE_META[n.type].label} · en ${esc(rootOf(n).name)}</span></label>`).join('')
       : '<div class="empty">Aún no hay sistemas de diseño ni UI Kits.</div>';
   };
   const refreshBranch = () => { $('#fBranchField').hidden = !(draft.type === 'software' && form.parent.value); };
   const refreshTags = () => {
     const box = $('#fTags');
-    box.innerHTML = state.tags.map(t => `<span class="chip tag-${t.color} ${draft.tags.includes(t.id) ? 'on' : ''}" data-id="${t.id}">${esc(t.name)}</span>`).join('') +
+    box.innerHTML = S.state.tags.map(t => `<span class="chip tag-${t.color} ${draft.tags.includes(t.id) ? 'on' : ''}" data-id="${t.id}">${esc(t.name)}</span>`).join('') +
       `<span class="add-tag"><input placeholder="＋ nueva etiqueta" id="fNewTag"></span>`;
     box.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => { const i = draft.tags.indexOf(c.dataset.id); i >= 0 ? draft.tags.splice(i, 1) : draft.tags.push(c.dataset.id); refreshTags(); }));
     $('#fNewTag').addEventListener('keydown', ev => {
       if (ev.key !== 'Enter') return; ev.preventDefault();
       const name = ev.target.value.trim(); if (!name) return;
-      let t = state.tags.find(x => x.name.toLowerCase() === name.toLowerCase());
-      if (!t) { t = { id: uid(), name, color: TAG_COLORS[state.tags.length % TAG_COLORS.length] }; state.tags.push(t); save(); }
+      let t = S.state.tags.find(x => x.name.toLowerCase() === name.toLowerCase());
+      if (!t) { t = { id: uid(), name, color: TAG_COLORS[S.state.tags.length % TAG_COLORS.length] }; S.state.tags.push(t); save(); }
       if (!draft.tags.includes(t.id)) draft.tags.push(t.id);
       refreshTags(); $('#fNewTag').focus();
     });
@@ -140,24 +150,24 @@ function openEditor(id, preset = {}) {
     } else {
       target = { id: uid(), ...data, parentId: null, branchTypeId: null, x: Math.round(draft.x), y: Math.round(draft.y), w: 0, h: 0, demo: false };
       if (parentId) { const spot = freeSpot(parentId); target.x = spot.x; target.y = spot.y; }
-      state.nodes.push(target);
+      S.state.nodes.push(target);
     }
     target.parentId = parentId;
     target.branchTypeId = data.type === 'software' && parentId ? form.branchType.value : null;
     if (data.type !== 'software') { target.w = 0; target.h = 0; }
     // Sincroniza aristas derivadas del formulario
     const tid = target.id;
-    if (data.type !== 'software') state.edges = state.edges.filter(e => !(e.kind === 'ds' && e.from === tid));
-    if (data.type === 'software') state.edges = state.edges.filter(e => !(e.kind === 'ds' && e.to === tid));
-    if (data.type !== 'uikit') state.edges = state.edges.filter(e => !(e.kind === 'source' && e.from === tid));
+    if (data.type !== 'software') S.state.edges = S.state.edges.filter(e => !(e.kind === 'ds' && e.from === tid));
+    if (data.type === 'software') S.state.edges = S.state.edges.filter(e => !(e.kind === 'ds' && e.to === tid));
+    if (data.type !== 'uikit') S.state.edges = S.state.edges.filter(e => !(e.kind === 'source' && e.from === tid));
     if (data.type === 'uikit') {
-      state.edges = state.edges.filter(e => !(e.kind === 'source' && e.from === tid));
-      if (!wouldCycle('source', tid, sourceId)) state.edges.push({ id: uid(), kind: 'source', from: tid, to: sourceId, demo: false });
+      S.state.edges = S.state.edges.filter(e => !(e.kind === 'source' && e.from === tid));
+      if (!wouldCycle('source', tid, sourceId)) S.state.edges.push({ id: uid(), kind: 'source', from: tid, to: sourceId, demo: false });
     }
     if (data.type === 'software') {
       const chosen = new Set($$('#fDS input:checked').map(i => i.value));
-      state.edges = state.edges.filter(e => !(e.kind === 'ds' && e.from === tid && !chosen.has(e.to)));
-      for (const dsId of chosen) if (!state.edges.some(e => e.kind === 'ds' && e.from === tid && e.to === dsId)) state.edges.push({ id: uid(), kind: 'ds', from: tid, to: dsId, demo: false });
+      S.state.edges = S.state.edges.filter(e => !(e.kind === 'ds' && e.from === tid && !chosen.has(e.to)));
+      for (const dsId of chosen) if (!S.state.edges.some(e => e.kind === 'ds' && e.from === tid && e.to === dsId)) S.state.edges.push({ id: uid(), kind: 'ds', from: tid, to: dsId, demo: false });
     }
     editorDialog.close();
     if (!node) selectOnly(tid);

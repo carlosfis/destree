@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Fuente única de verdad para agencias: árbol de software, Design Systems, UI Kits, responsables y métricas Figma.",
   "private": true,
-  "type": "commonjs",
+  "type": "module",
   "engines": { "node": ">=22" },
   "scripts": {
     "dev": "node scripts/dev-server.js",

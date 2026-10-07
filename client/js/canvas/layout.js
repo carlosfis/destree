@@ -1,11 +1,18 @@
-'use strict';
 /* =========================================================
    17. Auto-layout jerárquico (recursivo por contenedor, animado y deshacible)
    ---------------------------------------------------------
    Dentro de cada contenedor: primero una fila (con salto) de sub-contenedores,
    debajo una fila de DS y UI Kits. Las raíces se acomodan en filas.
    ========================================================= */
-function computeLayout(rootIds) {
+import { clamp, CARD_W, CTR_MIN_W, CTR_MIN_BODY, PAD, HEAD_GAP, GAP } from '../core/utils.js';
+import { S, save, nodeById, isContainer, childrenOf, roots } from '../core/state.js';
+import { pushHistory } from '../core/history.js';
+import { fitToScreen } from './camera.js';
+import { measured, computeSizes, applySizes, updateNodeTransforms } from './render-nodes.js';
+import { updateEdgePaths } from './render-edges.js';
+import { renderAll } from './selection.js';
+import { toast } from '../ui/theme.js';
+export function computeLayout(rootIds) {
   const target = new Map(), tmp = new Map();
   const byName = (a, b) => a.name.localeCompare(b.name);
   const typeOrder = { software: 0, ds: 1, uikit: 2 };
@@ -39,14 +46,14 @@ function computeLayout(rootIds) {
   }
   return target;
 }
-function autoLayout() {
-  if (!state.nodes.length) return toast('No hay cards que ordenar');
+export function autoLayout() {
+  if (!S.state.nodes.length) return toast('No hay cards que ordenar');
   pushHistory();
-  for (const n of state.nodes) { n.w = 0; n.h = 0; } // tamaños manuales se descartan
+  for (const n of S.state.nodes) { n.w = 0; n.h = 0; } // tamaños manuales se descartan
   const target = computeLayout();
   animateNodesTo(target, () => { save(); fitToScreen(); toast('Auto-layout aplicado (Ctrl/⌘+Z para deshacer)'); });
 }
-function animateNodesTo(target, done, ms = 450) {
+export function animateNodesTo(target, done, ms = 450) {
   const start = new Map([...target.keys()].map(id => { const n = nodeById(id); return [id, { x: n.x, y: n.y }]; }));
   const t0 = performance.now(); const ease = t => 1 - Math.pow(1 - t, 3);
   const step = now => {

@@ -1,8 +1,11 @@
-'use strict';
 /* =========================================================
    6. Renderizado: aristas SVG
    ========================================================= */
-function portPoint(r, side) {
+import { $, clamp } from '../core/utils.js';
+import { edgeLayer } from '../core/dom.js';
+import { S, nodeById, childrenOf, parentOf, rootOf, isAncestor, isExternalDs } from '../core/state.js';
+import { edgeEls, nodeRect, anchorRect } from './render-nodes.js';
+export function portPoint(r, side) {
   switch (side) {
     case 't': return { x: r.cx, y: r.y };
     case 'b': return { x: r.cx, y: r.y + r.h };
@@ -10,7 +13,7 @@ function portPoint(r, side) {
     default:  return { x: r.x + r.w, y: r.cy };
   }
 }
-function edgeGeometry(e) {
+export function edgeGeometry(e) {
   const a = nodeById(e.from), b = nodeById(e.to);
   if (!a || !b) return null;
   const ra = anchorRect(a), rb = anchorRect(b);
@@ -37,18 +40,18 @@ function edgeGeometry(e) {
   const mid = { x: (p1.x + 3 * c1.x + 3 * c2.x + p2.x) / 8, y: (p1.y + 3 * c1.y + 3 * c2.y + p2.y) / 8 };
   return { d: `M${p1.x.toFixed(1)} ${p1.y.toFixed(1)} C${c1.x.toFixed(1)} ${c1.y.toFixed(1)} ${c2.x.toFixed(1)} ${c2.y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`, mid };
 }
-const SVG_NS = 'http://www.w3.org/2000/svg';
+export const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Dónde nació un DS: «Checkout · Portal Web» (feature + aplicativo raíz). */
-function hostLabel(n) { const h = parentOf(n); if (!h) return n.name; const r = rootOf(h); return r.id === h.id ? h.name : `${h.name} · ${r.name}`; }
-function edgeTitle(e) {
+export function hostLabel(n) { const h = parentOf(n); if (!h) return n.name; const r = rootOf(h); return r.id === h.id ? h.name : `${h.name} · ${r.name}`; }
+export function edgeTitle(e) {
   const a = nodeById(e.from), b = nodeById(e.to); if (!a || !b) return '';
   if (e.kind === 'source') return `${a.name} deriva de ${b.name}`;
   return isExternalDs(e) ? `${a.name} usa ${b.name} (DS nacido en ${hostLabel(b)})` : `${a.name} usa ${b.name}`;
 }
-function renderEdges() {
+export function renderEdges() {
   const seen = new Set();
   const order = { source: 0, ds: 1 };
-  const sorted = [...state.edges].sort((a, b) => order[a.kind] - order[b.kind]);
+  const sorted = [...S.state.edges].sort((a, b) => order[a.kind] - order[b.kind]);
   for (const e of sorted) {
     seen.add(e.id);
     let g = edgeEls.get(e.id);
@@ -71,8 +74,8 @@ function renderEdges() {
   updateEdgePaths();
 }
 /** Actualiza solo la geometría (rápido, se usa durante el arrastre). */
-function updateEdgePaths(nodeIds) {
-  for (const e of state.edges) {
+export function updateEdgePaths(nodeIds) {
+  for (const e of S.state.edges) {
     if (nodeIds && !nodeIds.has(e.from) && !nodeIds.has(e.to)) continue;
     const g = edgeEls.get(e.id); if (!g) continue;
     const geo = edgeGeometry(e); if (!geo) continue;

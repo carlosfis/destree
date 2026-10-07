@@ -4,3 +4,9 @@
 - 2026-10-06 F0a: sección 15 (eliminar/duplicar) → `ui/node-actions.js`; sección 18 (tema+toasts+atajos) → `ui/theme.js`; se separan en `toasts.js` solo cuando se toquen.
 - 2026-10-06 F0a: `export-actual.json` (datos reales) queda gitignored; F1 deriva de él la fixture anonimizada `legacy-v2.json`.
 - 2026-10-06 F0a: `npm test` incluye `tests/split.test.js` (diff de concatenación js/css vs legacy); se retira cuando F0b migre a ESM.
+- 2026-10-06 F0b: estado reasignable del cliente vive en `S` (`core/state.js`), 13 claves; los valores iniciales están solo en la definición de `S` (sin `S.x = …` en el nivel superior de otros módulos) para evitar TDZ en ciclos de import.
+- 2026-10-06 F0b: nodos DOM compartidos (`viewport`, `world`, `nodesLayer`, `edgeLayer`, `guidesSvg`) salen de `camera.js` a `core/dom.js` (módulo hoja) porque `render-nodes.js` y `pointer-drag.js` los usan en el nivel superior.
+- 2026-10-06 F0b: `measureViewport()` pasa a ser la primera línea de `init()` (antes era eager en `camera.js`); `applyTheme → drawMinimap` necesita `S.vpRect`.
+- 2026-10-06 F0b: `package.json` `"type": "module"`; scripts y tests en ESM (`import.meta.dirname`, Node ≥22).
+- 2026-10-06 F0b: `tests/split.test.js` se retira; `tests/client.test.js` mantiene la paridad CSS vs legacy y añade comprobaciones estructurales ESM. La paridad JS se verifica con `scripts/smoke.js` (Chrome headless, CDP), no en `npm test`.
+- 2026-10-06 F0b: `window.S` solo cuando `location.hostname` es localhost/127.0.0.1; ningún otro global.

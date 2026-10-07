@@ -1,20 +1,29 @@
-'use strict';
 /* =========================================================
    12. Conexiones y anidamiento: opciones, validación y alta
    ========================================================= */
+import { $, uid, esc, KIND_LABEL } from '../core/utils.js';
+import {
+  S, save, nodeById, isContainer, sourceEdgeOf, defaultBranchType, rootOf, isAncestor, worldPos,
+  isExternalDs,
+} from '../core/state.js';
+import { pushHistory } from '../core/history.js';
+import { sel, nodeRect, freeSpot } from '../canvas/render-nodes.js';
+import { renderAll } from '../canvas/selection.js';
+import { openPopover, closePopover } from './popover.js';
+import { toast } from './theme.js';
 /** ¿Agregar la arista `kind` from→to crearía un ciclo? */
-function wouldCycle(kind, from, to, ignoreId) {
+export function wouldCycle(kind, from, to, ignoreId) {
   const stack = [to], seen = new Set();
   while (stack.length) {
     const id = stack.pop();
     if (id === from) return true;
-    for (const e of state.edges) if (e.kind === kind && e.from === id && e.id !== ignoreId && !seen.has(e.to)) { seen.add(e.to); stack.push(e.to); }
+    for (const e of S.state.edges) if (e.kind === kind && e.from === id && e.id !== ignoreId && !seen.has(e.to)) { seen.add(e.to); stack.push(e.to); }
   }
   return false;
 }
-const canNest = (childId, parentId) => childId !== parentId && isContainer(nodeById(parentId)) && !isAncestor(childId, parentId) && nodeById(childId).parentId !== parentId;
+export const canNest = (childId, parentId) => childId !== parentId && isContainer(nodeById(parentId)) && !isAncestor(childId, parentId) && nodeById(childId).parentId !== parentId;
 
-function connectionOptions(aId, bId) {
+export function connectionOptions(aId, bId) {
   const a = nodeById(aId), b = nodeById(bId); const opts = [];
   const dsish = t => t === 'ds' || t === 'uikit';
   if (a.type === 'software' && b.type === 'software') {
@@ -27,7 +36,7 @@ function connectionOptions(aId, bId) {
   if (b.type === 'uikit') opts.push({ kind: 'source', from: b.id, to: a.id, label: `${b.name} deriva de ${a.name} (fuente)` });
   return opts;
 }
-function proposeConnection(aId, bId, x, y) {
+export function proposeConnection(aId, bId, x, y) {
   const opts = connectionOptions(aId, bId);
   if (!opts.length) return toast('Dos sistemas de diseño no se conectan directamente: usa un UI Kit como puente.', 'error', 4000);
   if (opts.length === 1 && opts[0].kind !== 'nest') return addEdge(opts[0]);
@@ -36,7 +45,7 @@ function proposeConnection(aId, bId, x, y) {
     let typeSel = null;
     if (opts.some(o => o.kind === 'nest')) {
       const f = document.createElement('div'); f.className = 'menu-field';
-      f.innerHTML = `<label>Tipo de ramificación (al anidar)</label><select>${state.edgeTypes.map(t => `<option value="${t.id}" ${t.id === defaultBranchType() ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>`;
+      f.innerHTML = `<label>Tipo de ramificación (al anidar)</label><select>${S.state.edgeTypes.map(t => `<option value="${t.id}" ${t.id === defaultBranchType() ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>`;
       typeSel = f.querySelector('select'); el.appendChild(f);
     }
     for (const o of opts) {
@@ -49,7 +58,7 @@ function proposeConnection(aId, bId, x, y) {
   });
 }
 /** Anida un software dentro de otro, colocándolo en un hueco libre. */
-function nestNode(childId, parentId, typeId) {
+export function nestNode(childId, parentId, typeId) {
   if (!canNest(childId, parentId)) return toast('No se puede anidar ahí: crearía un ciclo', 'error');
   pushHistory();
   const n = nodeById(childId); const spot = freeSpot(parentId);
@@ -57,7 +66,7 @@ function nestNode(childId, parentId, typeId) {
   renderAll(); save();
   toast(`${n.name} ahora vive dentro de ${nodeById(parentId).name}`);
 }
-function moveToRoot(id) {
+export function moveToRoot(id) {
   const n = nodeById(id); if (!n || !n.parentId) return;
   if (!isContainer(n)) return toast('Un DS o UI Kit debe vivir dentro de un software', 'error');
   pushHistory();
@@ -66,23 +75,23 @@ function moveToRoot(id) {
   renderAll(); save(); toast(`${n.name} ahora es un software raíz`);
 }
 /** Alta de arista con validaciones. Devuelve true si se agregó. */
-function addEdge({ kind, from, to }, silent) {
+export function addEdge({ kind, from, to }, silent) {
   if (from === to) return false;
-  if (state.edges.some(e => e.kind === kind && e.from === from && e.to === to)) { if (!silent) toast('Esa conexión ya existe'); return false; }
+  if (S.state.edges.some(e => e.kind === kind && e.from === from && e.to === to)) { if (!silent) toast('Esa conexión ya existe'); return false; }
   if (kind === 'source' && wouldCycle(kind, from, to)) { toast('No se permite: crearía un ciclo de fuentes', 'error'); return false; }
   pushHistory();
   let note = '';
-  if (kind === 'source') { const prev = sourceEdgeOf(from); if (prev) { state.edges = state.edges.filter(e => e !== prev); note = ' (se reemplazó la fuente anterior)'; } }
+  if (kind === 'source') { const prev = sourceEdgeOf(from); if (prev) { S.state.edges = S.state.edges.filter(e => e !== prev); note = ' (se reemplazó la fuente anterior)'; } }
   const e = { id: uid(), kind, from, to, demo: false };
-  state.edges.push(e);
+  S.state.edges.push(e);
   renderAll(); save();
   if (!silent) toast((kind === 'ds' && isExternalDs(e) ? 'Dependencia externa creada: el DS viene de otro software' : KIND_LABEL[kind] + ' creada') + note);
   return true;
 }
-function deleteEdge(id) {
-  const e = state.edges.find(x => x.id === id); if (!e) return;
+export function deleteEdge(id) {
+  const e = S.state.edges.find(x => x.id === id); if (!e) return;
   pushHistory();
-  state.edges = state.edges.filter(x => x.id !== id);
+  S.state.edges = S.state.edges.filter(x => x.id !== id);
   if (sel.edge === id) sel.edge = null;
   renderAll(); save();
   if (e.kind === 'source') toast('El UI Kit quedó sin fuente: asígnale una desde su editor.', 'error', 4000);

@@ -1,4 +1,3 @@
-'use strict';
 /* =========================================================
    2. Modelo de datos y persistencia
    ---------------------------------------------------------
@@ -19,7 +18,28 @@
    }
    La ramificación padre → hijo ya no es una línea: es el anidamiento del contenedor.
    ========================================================= */
-function defaultState() {
+import {
+  $, uid, clamp, debounce, STORAGE_KEY, LEGACY_KEY, PAD, MIN_Z, MAX_Z, TYPE_META, TAG_COLORS, KIND_LABEL,
+} from './utils.js';
+import { toast } from '../ui/theme.js';
+
+// Estado mutable compartido (F0b): los módulos leen/escriben S.x porque los imports ESM son de solo lectura.
+export const S = {
+  firstRun: false,       // state
+  state: null,           // state: árbol (nodes, edges, tags, edgeTypes, settings, camera); loadState()
+  cam: null,             // state: cámara activa { x, y, z }
+  vpRect: null,          // camera: rect del viewport; lo fija measureViewport() en init()
+  camRaf: 0,             // camera
+  mmScale: null,         // minimap
+  ptr: null,             // pointer-gestures: gesto en curso
+  spaceDown: false,      // pointer-gestures
+  altDown: false,        // pointer-gestures
+  rafPending: 0,         // pointer-gestures
+  nudgeTimer: null,      // keyboard
+  popoverOpen: false,    // popover
+  adminTab: 'tags',      // admin
+};
+export function defaultState() {
   return {
     version: 2,
     nodes: [],
@@ -46,7 +66,7 @@ function defaultState() {
 }
 
 /** Datos de ejemplo (demo:true). Las posiciones las define el auto-layout en la primera carga. */
-function demoData() {
+export function demoData() {
   const N = (id, type, name, description, parentId, branchTypeId, tags, owner) =>
     ({ id, type, name, description, image: null, tags, owner, parentId, branchTypeId, x: 0, y: 0, w: 0, h: 0, demo: true });
   const nodes = [
@@ -79,7 +99,7 @@ function demoData() {
 }
 
 /** Sanea un estado importado o leído de localStorage; migra el formato v1 (ramificaciones como líneas). */
-function normalizeState(raw) {
+export function normalizeState(raw) {
   const d = defaultState();
   const s = { ...d, ...(raw && typeof raw === 'object' ? raw : {}) };
   s.version = 2;
@@ -151,13 +171,12 @@ function normalizeState(raw) {
   return s;
 }
 
-let firstRun = false;
-function loadState() {
+export function loadState() {
   try {
     let raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) raw = localStorage.getItem(LEGACY_KEY);
     if (!raw) {
-      firstRun = true;
+      S.firstRun = true;
       const s = defaultState(); const demo = demoData();
       s.nodes = demo.nodes; s.edges = demo.edges;
       return s;
@@ -165,18 +184,18 @@ function loadState() {
     return normalizeState(JSON.parse(raw));
   } catch (err) {
     setTimeout(() => toast('No se pudo leer localStorage: ' + err.message, 'error', 6000), 300);
-    firstRun = true;
+    S.firstRun = true;
     return defaultState();
   }
 }
 
-let state = loadState();
-let cam = { ...state.camera };
+S.state = loadState();
+S.cam = { ...S.state.camera };
 
-function persist() {
+export function persist() {
   try {
-    state.camera = { x: cam.x, y: cam.y, z: cam.z };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    S.state.camera = { x: S.cam.x, y: S.cam.y, z: S.cam.z };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(S.state));
     setSaveStatus('Guardado');
   } catch (err) {
     const full = err && (err.name === 'QuotaExceededError' || err.code === 22 || err.code === 1014);
@@ -184,33 +203,33 @@ function persist() {
     toast(full ? 'localStorage está lleno: exporta un respaldo y reduce imágenes.' : 'No se pudo guardar: ' + err.message, 'error', 6000);
   }
 }
-const save = debounce(persist, 400);
-const saveCam = debounce(persist, 900);
-function setSaveStatus(t) { const el = $('#saveStatus'); if (el) el.textContent = t; }
+export const save = debounce(persist, 400);
+export const saveCam = debounce(persist, 900);
+export function setSaveStatus(t) { const el = $('#saveStatus'); if (el) el.textContent = t; }
 document.addEventListener('visibilitychange', () => { if (document.hidden) persist(); });
 window.addEventListener('pagehide', persist);
 
 /* --- Acceso rápido al modelo --- */
-const nodeById = id => state.nodes.find(n => n.id === id);
-const tagById = id => state.tags.find(t => t.id === id);
-const edgeTypeById = id => state.edgeTypes.find(t => t.id === id);
-const isContainer = n => !!n && n.type === 'software';
-const childrenOf = id => state.nodes.filter(n => n.parentId === id);
-const roots = () => state.nodes.filter(n => !n.parentId);
-const edgesOf = id => state.edges.filter(e => e.from === id || e.to === id);
-const sourceEdgeOf = id => state.edges.find(e => e.kind === 'source' && e.from === id);
-const dsOf = id => state.edges.filter(e => e.kind === 'ds' && e.from === id).map(e => nodeById(e.to)).filter(Boolean);
-const defaultBranchType = () => (edgeTypeById('et_feature') || state.edgeTypes[0] || {}).id || null;
+export const nodeById = id => S.state.nodes.find(n => n.id === id);
+export const tagById = id => S.state.tags.find(t => t.id === id);
+export const edgeTypeById = id => S.state.edgeTypes.find(t => t.id === id);
+export const isContainer = n => !!n && n.type === 'software';
+export const childrenOf = id => S.state.nodes.filter(n => n.parentId === id);
+export const roots = () => S.state.nodes.filter(n => !n.parentId);
+export const edgesOf = id => S.state.edges.filter(e => e.from === id || e.to === id);
+export const sourceEdgeOf = id => S.state.edges.find(e => e.kind === 'source' && e.from === id);
+export const dsOf = id => S.state.edges.filter(e => e.kind === 'ds' && e.from === id).map(e => nodeById(e.to)).filter(Boolean);
+export const defaultBranchType = () => (edgeTypeById('et_feature') || S.state.edgeTypes[0] || {}).id || null;
 
-function parentOf(n) { return n && n.parentId ? nodeById(n.parentId) : null; }
-function rootOf(n) { let g = 0; while (n && n.parentId && g++ < 100) { const p = nodeById(n.parentId); if (!p) break; n = p; } return n; }
-function depthOf(n) { let d = 0; while (n && n.parentId && d < 100) { n = nodeById(n.parentId); d++; } return d; }
+export function parentOf(n) { return n && n.parentId ? nodeById(n.parentId) : null; }
+export function rootOf(n) { let g = 0; while (n && n.parentId && g++ < 100) { const p = nodeById(n.parentId); if (!p) break; n = p; } return n; }
+export function depthOf(n) { let d = 0; while (n && n.parentId && d < 100) { n = nodeById(n.parentId); d++; } return d; }
 /** ¿`aId` es ancestro de `bId`? */
-function isAncestor(aId, bId) { let n = nodeById(bId), g = 0; while (n && n.parentId && g++ < 100) { if (n.parentId === aId) return true; n = nodeById(n.parentId); } return false; }
-function ancestorsOf(id) { const out = []; let n = nodeById(id); while (n && n.parentId) { out.push(n.parentId); n = nodeById(n.parentId); if (out.length > 100) break; } return out; }
-function descendantsOf(id, acc = []) { for (const c of childrenOf(id)) { acc.push(c.id); descendantsOf(c.id, acc); } return acc; }
+export function isAncestor(aId, bId) { let n = nodeById(bId), g = 0; while (n && n.parentId && g++ < 100) { if (n.parentId === aId) return true; n = nodeById(n.parentId); } return false; }
+export function ancestorsOf(id) { const out = []; let n = nodeById(id); while (n && n.parentId) { out.push(n.parentId); n = nodeById(n.parentId); if (out.length > 100) break; } return out; }
+export function descendantsOf(id, acc = []) { for (const c of childrenOf(id)) { acc.push(c.id); descendantsOf(c.id, acc); } return acc; }
 /** Posición absoluta (mundo) de un nodo. */
-function worldPos(n) { let x = n.x, y = n.y, p = parentOf(n), g = 0; while (p && g++ < 100) { x += p.x; y += p.y; p = parentOf(p); } return { x, y }; }
+export function worldPos(n) { let x = n.x, y = n.y, p = parentOf(n), g = 0; while (p && g++ < 100) { x += p.x; y += p.y; p = parentOf(p); } return { x, y }; }
 /** ¿La dependencia de DS cruza entre raíces distintas? */
-const isExternalDs = e => { const a = nodeById(e.from), b = nodeById(e.to); return !!a && !!b && rootOf(a).id !== rootOf(b).id; };
+export const isExternalDs = e => { const a = nodeById(e.from), b = nodeById(e.to); return !!a && !!b && rootOf(a).id !== rootOf(b).id; };
 

@@ -1,9 +1,9 @@
-'use strict';
 /* =========================================================
    13. Diálogos genéricos (confirmar / pedir texto)
    ========================================================= */
-const confirmDialog = $('#confirmDialog');
-function confirmBox({ title, message, buttons }) {
+import { $, esc } from '../core/utils.js';
+export const confirmDialog = $('#confirmDialog');
+export function confirmBox({ title, message, buttons }) {
   return new Promise(resolve => {
     confirmDialog.innerHTML = `<div class="dialog-inner"><header><h2>${esc(title)}</h2><button class="icon-btn" data-v="">✕</button></header>
       <div class="dialog-body"><div class="confirm-msg">${esc(message)}</div></div>
@@ -15,7 +15,7 @@ function confirmBox({ title, message, buttons }) {
     const primary = confirmDialog.querySelector('footer .btn.primary, footer .btn.danger'); if (primary) primary.focus();
   });
 }
-function promptBox({ title, label, value = '', okLabel = 'Guardar' }) {
+export function promptBox({ title, label, value = '', okLabel = 'Guardar' }) {
   return new Promise(resolve => {
     confirmDialog.innerHTML = `<form class="dialog-inner"><header><h2>${esc(title)}</h2><button type="button" class="icon-btn" data-cancel>✕</button></header>
       <div class="dialog-body"><div class="field"><label>${esc(label)}</label><input name="v" value="${esc(value)}" autocomplete="off"></div></div>

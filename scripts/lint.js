@@ -1,10 +1,9 @@
-'use strict';
 // Lint mínimo sin dependencias: comprueba sintaxis de todos los .js del proyecto con `node --check`.
-const { execFileSync } = require('node:child_process');
-const fs = require('node:fs');
-const path = require('node:path');
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(import.meta.dirname, '..');
 const SKIP = new Set(['node_modules', 'legacy', 'data', '.git']);
 
 function walk(dir, out) {

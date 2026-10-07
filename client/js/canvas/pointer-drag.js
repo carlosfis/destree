@@ -1,73 +1,86 @@
-'use strict';
 /* --- Arrastre de nodos (con re-anidamiento al soltar) --- */
-function beginDrag() {
+import { $, MOD, CARD_W, GRID, SNAP_DIST } from '../core/utils.js';
+import { viewport, nodesLayer, guidesSvg } from '../core/dom.js';
+import {
+  S, save, nodeById, isContainer, defaultBranchType, ancestorsOf, descendantsOf, worldPos,
+} from '../core/state.js';
+import { pushHistory } from '../core/history.js';
+import { toWorld, toScreen, ptrPos, applyCamera, zoomAt, fitToScreen } from './camera.js';
+import { sel, sizes, nodeEls, nodeRect, clampInside } from './render-nodes.js';
+import { updateEdgePaths } from './render-edges.js';
+import { selectOnly, selectAll, selectEdge, topLevelSelection, renderAll } from './selection.js';
+import { containerAt, onPointerDown, onPointerMove, onPointerUp } from './pointer-gestures.js';
+import { menuPopover, showAddMenu, showNodeMenu, showEdgePopover } from '../ui/popover.js';
+import { openEditor } from '../ui/card-editor.js';
+import { toast } from '../ui/theme.js';
+export function beginDrag() {
   pushHistory();
-  ptr.type = 'drag';
-  if (!sel.nodes.has(ptr.id)) selectOnly(ptr.id);
+  S.ptr.type = 'drag';
+  if (!sel.nodes.has(S.ptr.id)) selectOnly(S.ptr.id);
   const moving = topLevelSelection();
-  if (!moving.includes(ptr.id)) { // se arrastró un hijo de algo seleccionado: mover solo su ancestro seleccionado
-    const anc = ancestorsOf(ptr.id).find(a => sel.nodes.has(a)); ptr.id = anc || ptr.id;
+  if (!moving.includes(S.ptr.id)) { // se arrastró un hijo de algo seleccionado: mover solo su ancestro seleccionado
+    const anc = ancestorsOf(S.ptr.id).find(a => sel.nodes.has(a)); S.ptr.id = anc || S.ptr.id;
   }
-  ptr.moving = new Set(moving);
-  ptr.start = new Map(moving.map(id => { const n = nodeById(id); return [id, { x: n.x, y: n.y }]; }));
-  ptr.exclude = new Set(moving); moving.forEach(id => descendantsOf(id).forEach(d => ptr.exclude.add(d)));
-  ptr.edgeSet = new Set(ptr.exclude);
-  ptr.lifted = new Set(); moving.forEach(id => ancestorsOf(id).forEach(a => ptr.lifted.add(a)));
-  ptr.dropHL = null;
-  viewport.setPointerCapture(ptr.pointerId);
-  for (const id of ptr.moving) nodeEls.get(id)?.classList.add('dragging');
-  for (const id of ptr.lifted) nodeEls.get(id)?.classList.add('lift');
+  S.ptr.moving = new Set(moving);
+  S.ptr.start = new Map(moving.map(id => { const n = nodeById(id); return [id, { x: n.x, y: n.y }]; }));
+  S.ptr.exclude = new Set(moving); moving.forEach(id => descendantsOf(id).forEach(d => S.ptr.exclude.add(d)));
+  S.ptr.edgeSet = new Set(S.ptr.exclude);
+  S.ptr.lifted = new Set(); moving.forEach(id => ancestorsOf(id).forEach(a => S.ptr.lifted.add(a)));
+  S.ptr.dropHL = null;
+  viewport.setPointerCapture(S.ptr.pointerId);
+  for (const id of S.ptr.moving) nodeEls.get(id)?.classList.add('dragging');
+  for (const id of S.ptr.lifted) nodeEls.get(id)?.classList.add('lift');
 }
-function applyDrag() {
-  rafPending = 0;
-  if (!ptr || ptr.type !== 'drag') return;
-  const primary = ptr.start.get(ptr.id);
+export function applyDrag() {
+  S.rafPending = 0;
+  if (!S.ptr || S.ptr.type !== 'drag') return;
+  const primary = S.ptr.start.get(S.ptr.id);
   if (!primary) return;
-  let nx = primary.x + (ptr.px - ptr.sx) / cam.z;
-  let ny = primary.y + (ptr.py - ptr.sy) / cam.z;
-  if (state.settings.snap && !ptr.alt && !altDown) { nx = Math.round(nx / GRID) * GRID; ny = Math.round(ny / GRID) * GRID; }
-  const g = computeGuides(ptr.id, nx, ny, ptr.exclude);
+  let nx = primary.x + (S.ptr.px - S.ptr.sx) / S.cam.z;
+  let ny = primary.y + (S.ptr.py - S.ptr.sy) / S.cam.z;
+  if (S.state.settings.snap && !S.ptr.alt && !S.altDown) { nx = Math.round(nx / GRID) * GRID; ny = Math.round(ny / GRID) * GRID; }
+  const g = computeGuides(S.ptr.id, nx, ny, S.ptr.exclude);
   nx = g.x; ny = g.y;
   const ddx = nx - primary.x, ddy = ny - primary.y;
-  for (const [id, pos] of ptr.start) {
+  for (const [id, pos] of S.ptr.start) {
     const n = nodeById(id); if (!n) continue;
     n.x = pos.x + ddx; n.y = pos.y + ddy;
     const el = nodeEls.get(id); if (el) el.style.transform = `translate(${n.x}px, ${n.y}px)`;
   }
-  updateEdgePaths(ptr.edgeSet);
+  updateEdgePaths(S.ptr.edgeSet);
   drawGuides(g.lines);
   // Resaltar el contenedor destino bajo el puntero
-  const wp = toWorld(ptr.px, ptr.py);
-  const target = containerAt(wp, ptr.exclude);
-  const hl = target && target.id !== (nodeById(ptr.id).parentId || null) ? target.id : null;
-  if (hl !== ptr.dropHL) {
-    if (ptr.dropHL) nodeEls.get(ptr.dropHL)?.classList.remove('drop-target');
-    ptr.dropHL = hl;
+  const wp = toWorld(S.ptr.px, S.ptr.py);
+  const target = containerAt(wp, S.ptr.exclude);
+  const hl = target && target.id !== (nodeById(S.ptr.id).parentId || null) ? target.id : null;
+  if (hl !== S.ptr.dropHL) {
+    if (S.ptr.dropHL) nodeEls.get(S.ptr.dropHL)?.classList.remove('drop-target');
+    S.ptr.dropHL = hl;
     if (hl) nodeEls.get(hl)?.classList.add('drop-target');
   }
 }
-function cleanupDrag() {
-  if (rafPending) { cancelAnimationFrame(rafPending); rafPending = 0; }
-  for (const id of ptr.moving || []) nodeEls.get(id)?.classList.remove('dragging');
-  for (const id of ptr.lifted || []) nodeEls.get(id)?.classList.remove('lift');
-  if (ptr.dropHL) nodeEls.get(ptr.dropHL)?.classList.remove('drop-target');
+export function cleanupDrag() {
+  if (S.rafPending) { cancelAnimationFrame(S.rafPending); S.rafPending = 0; }
+  for (const id of S.ptr.moving || []) nodeEls.get(id)?.classList.remove('dragging');
+  for (const id of S.ptr.lifted || []) nodeEls.get(id)?.classList.remove('lift');
+  if (S.ptr.dropHL) nodeEls.get(S.ptr.dropHL)?.classList.remove('drop-target');
   drawGuides([]);
-  ptr = null;
+  S.ptr = null;
 }
-function endDrag() {
-  if (!ptr) return;
-  if (rafPending) { cancelAnimationFrame(rafPending); rafPending = 0; applyDrag(); }
-  const wp = toWorld(ptr.px, ptr.py);
-  const target = containerAt(wp, ptr.exclude);
+export function endDrag() {
+  if (!S.ptr) return;
+  if (S.rafPending) { cancelAnimationFrame(S.rafPending); S.rafPending = 0; applyDrag(); }
+  const wp = toWorld(S.ptr.px, S.ptr.py);
+  const target = containerAt(wp, S.ptr.exclude);
   const reverted = [], nested = [];
-  for (const id of ptr.moving) {
+  for (const id of S.ptr.moving) {
     const n = nodeById(id); if (!n) continue;
     const cur = n.parentId || null, tid = target ? target.id : null;
     if (tid === cur) { clampInside(n); continue; }
     const w = worldPos(n);
     if (!target) {
       if (isContainer(n)) { n.parentId = null; n.branchTypeId = null; n.x = w.x; n.y = w.y; }
-      else { const s = ptr.start.get(id); n.x = s.x; n.y = s.y; reverted.push(n.name); }
+      else { const s = S.ptr.start.get(id); n.x = s.x; n.y = s.y; reverted.push(n.name); }
       continue;
     }
     const tp = worldPos(target);
@@ -82,14 +95,14 @@ function endDrag() {
 }
 
 /* --- Guías inteligentes: alineación y distancia respecto a los hermanos --- */
-function computeGuides(id, nx, ny, exclude) {
+export function computeGuides(id, nx, ny, exclude) {
   const n = nodeById(id);
   const s = sizes.get(id) || { w: CARD_W, h: 120 };
   const off = n.parentId ? worldPos(nodeById(n.parentId)) : { x: 0, y: 0 };
   const me = { x: off.x + nx, y: off.y + ny, w: s.w, h: s.h };
-  const th = SNAP_DIST / cam.z;
+  const th = SNAP_DIST / S.cam.z;
   let bestX = null, bestY = null;
-  const others = state.nodes.filter(o => (o.parentId || null) === (n.parentId || null) && !exclude.has(o.id)).map(nodeRect);
+  const others = S.state.nodes.filter(o => (o.parentId || null) === (n.parentId || null) && !exclude.has(o.id)).map(nodeRect);
   for (const o of others) {
     const xs = [[me.x, o.x], [me.x + me.w / 2, o.cx], [me.x + me.w, o.x + o.w], [me.x, o.x + o.w], [me.x + me.w, o.x]];
     const ys = [[me.y, o.y], [me.y + me.h / 2, o.cy], [me.y + me.h, o.y + o.h], [me.y, o.y + o.h], [me.y + me.h, o.y]];
@@ -115,7 +128,7 @@ function computeGuides(id, nx, ny, exclude) {
   if (near && (bestX || bestY)) lines.push({ ...near, gapLabel: Math.round(near.gap) });
   return { x: me.x - off.x, y: me.y - off.y, lines };
 }
-function drawGuides(lines) {
+export function drawGuides(lines) {
   if (!lines.length) { guidesSvg.innerHTML = ''; return; }
   let html = '';
   for (const l of lines) {
@@ -129,13 +142,13 @@ function drawGuides(lines) {
 }
 
 /* --- Marquee --- */
-function updateMarquee(p) {
-  const x = Math.min(p.x, ptr.sx), y = Math.min(p.y, ptr.sy), w = Math.abs(p.x - ptr.sx), h = Math.abs(p.y - ptr.sy);
+export function updateMarquee(p) {
+  const x = Math.min(p.x, S.ptr.sx), y = Math.min(p.y, S.ptr.sy), w = Math.abs(p.x - S.ptr.sx), h = Math.abs(p.y - S.ptr.sy);
   const m = $('#marquee');
   m.style.left = x + 'px'; m.style.top = y + 'px'; m.style.width = w + 'px'; m.style.height = h + 'px';
   const a = toWorld(x, y), b = toWorld(x + w, y + h);
-  const next = new Set(ptr.shift ? ptr.base : []);
-  for (const n of state.nodes) {
+  const next = new Set(S.ptr.shift ? S.ptr.base : []);
+  for (const n of S.state.nodes) {
     const r = nodeRect(n);
     if (r.x < b.x && r.x + r.w > a.x && r.y < b.y && r.y + r.h > a.y) next.add(n.id);
   }
@@ -153,9 +166,9 @@ viewport.addEventListener('dragstart', e => e.preventDefault());
 viewport.addEventListener('wheel', e => {
   e.preventDefault();
   const p = ptrPos(e);
-  const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? vpRect.height : 1;
+  const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? S.vpRect.height : 1;
   if (e.ctrlKey || e.metaKey) zoomAt(p.x, p.y, Math.exp(-e.deltaY * k * 0.01));
-  else { cam.x -= e.deltaX * k; cam.y -= e.deltaY * k; applyCamera(); }
+  else { S.cam.x -= e.deltaX * k; S.cam.y -= e.deltaY * k; applyCamera(); }
 }, { passive: false });
 
 viewport.addEventListener('dblclick', e => {
