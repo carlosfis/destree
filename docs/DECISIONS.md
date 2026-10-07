@@ -33,4 +33,8 @@
 - 2026-10-06 F3: PUT del documento reescribe `node_cells`/`node_assignees` desde `cellIds`/`assigneeIds` (ids desconocidos se descartan); GET añade `refs {users, cells}` (nombres citados) para que el designer pinte chips sin directorio.
 - 2026-10-06 F3: head "gestiona" una célula si es lead o miembro (`canManageCell`); solo puede invitar designers a esas células. Admin gestiona todas.
 - 2026-10-06 F3: claves de `S` `cellList`, `userDir`, `docRefs` (no `cells`/`users`/`refs`) porque `client.test.js` prohíbe esos identificadores sueltos en todo el cliente.
+- 2026-10-06 F4a: `transaction(db, fn)` es reentrante (BEGIN en nivel 1, SAVEPOINT anidado) para que `createPage`/`duplicatePage` envuelvan `saveDocument`.
+- 2026-10-06 F4a: sin hash la app abre la última página visitada (`destree:prefs.pageId`) o la primera visible; el lobby solo con `#/lobby`, botón ⌂ o cuando no hay página visible. `bootstrap(wantedId)` es el único punto de entrada de carga de página.
+- 2026-10-06 F4a: transiciones de estado de página como `POST /api/pages/:id/archive|unarchive|restore-deleted` y `DELETE` (soft); hasta F6a el borrado exporta el documento a `data/deleted/` (`app.deletedDir`, null con `:memory:`). La única página activa no se borra.
+- 2026-10-06 F4a: página archivada sigue legible (GET) y aparece en asignaciones marcada; PUT sobre archivada/borrada → 409. Borrada: 404 para no-admin.
 - 2026-10-06 F3: markdown propio (`ui/markdown.js`): escape total antes de marcar; solo enlaces `http(s)`; sin HTML crudo, imágenes ni tablas. La ficha de lectura reutiliza `#editorDialog`.

@@ -27,6 +27,7 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   });
   const db = openReady(dbPath);
   app.decorate('db', db);
+  app.decorate('deletedDir', dbPath === ':memory:' ? null : path.join(path.dirname(dbPath), 'deleted')); // F4a: export JSON al borrar (hasta F6a)
   app.addHook('onClose', async () => db.close());
   for (const s of loadSchemas()) app.addSchema(s);
 

@@ -16,7 +16,16 @@ async function req(method, url, body, opts = {}) {
   }
   return data;
 }
-export const listPages = () => req('GET', '/pages').then(r => r.pages);
+export const listPages = (status) => req('GET', '/pages' + (status ? '?status=' + status : '')).then(r => r.pages);
+/* --- F4a: páginas --- */
+export const createPage = body => req('POST', '/pages', body);
+export const patchPage = (id, body) => req('PATCH', `/pages/${encodeURIComponent(id)}`, body);
+export const archivePage = id => req('POST', `/pages/${encodeURIComponent(id)}/archive`);
+export const unarchivePage = id => req('POST', `/pages/${encodeURIComponent(id)}/unarchive`);
+export const deletePage = id => req('DELETE', `/pages/${encodeURIComponent(id)}`);
+export const restorePage = id => req('POST', `/pages/${encodeURIComponent(id)}/restore-deleted`);
+export const duplicatePage = (id, name) => req('POST', `/pages/${encodeURIComponent(id)}/duplicate`, name ? { name } : null);
+export const myAssignments = () => req('GET', '/me/assignments').then(r => r.items);
 export const getPage = id => req('GET', `/pages/${encodeURIComponent(id)}`);
 /** PUT del documento completo con If-Match; 409 si `ver` es vieja. */
 export const putPage = (id, doc, ver, opts) => req('PUT', `/pages/${encodeURIComponent(id)}`, doc, { ...opts, headers: { 'If-Match': `"${ver}"` } });

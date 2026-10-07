@@ -16,10 +16,15 @@ export function openDb(file = config.dbPath) {
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
   return db;
 }
-/** Ejecuta fn dentro de BEGIN IMMEDIATE … COMMIT; ROLLBACK si lanza. Devuelve el resultado de fn. */
+/** Ejecuta fn dentro de BEGIN IMMEDIATE … COMMIT; ROLLBACK si lanza. Reentrante (F4a): anidado usa SAVEPOINT. Devuelve el resultado de fn. */
+const txDepth = new WeakMap();
 export function transaction(db, fn) {
-  db.exec('BEGIN IMMEDIATE');
-  try { const out = fn(); db.exec('COMMIT'); return out; } catch (err) { try { db.exec('ROLLBACK'); } catch { /* ya cerrada */ } throw err; }
+  const depth = (txDepth.get(db) || 0) + 1; txDepth.set(db, depth);
+  const sp = `sp${depth}`;
+  db.exec(depth === 1 ? 'BEGIN IMMEDIATE' : `SAVEPOINT ${sp}`);
+  try { const out = fn(); db.exec(depth === 1 ? 'COMMIT' : `RELEASE ${sp}`); return out; }
+  catch (err) { try { db.exec(depth === 1 ? 'ROLLBACK' : `ROLLBACK TO ${sp}; RELEASE ${sp}`); } catch { /* ya cerrada */ } throw err; }
+  finally { txDepth.set(db, depth - 1); }
 }
 /** Aplica server/db/migrations/NNN_*.sql pendientes en orden. Devuelve los nombres aplicados. */
 export function migrate(db) {

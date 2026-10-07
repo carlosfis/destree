@@ -3,9 +3,9 @@
 Fuente única de verdad para agencias: árbol de software → Design Systems / UI Kits, responsables, documentación y métricas Figma. Autoalojado, multi-página, roles admin/head/designer.
 
 ## Estado actual
-- Fase hecha: F3 (células, `lib/visibility.js` en GET, asignados/responsable, docs[]+notas con markdown escapado, `#/me`; `docs/handoff/F3.md`).
-- Próxima: F4a (pages API archivar/soft delete/restaurar, router `#/p/<id>`, lobby; `PLAN.md` §5 F4a).
-- Deuda crítica: ninguna. `npm test` 17/17; `node scripts/smoke.js` 19/19 (Chrome headless, consola limpia).
+- Fase hecha: F4a (pages API archivar/soft delete/restaurar/duplicar, `bootstrap(pageId)`, router `#/lobby`/`#/p/<id>`, lobby; `docs/handoff/F4a.md`).
+- Próxima: F4b (`#/admin`: usuarios, células, borradas, audit log; page-settings; `PLAN.md` §5 F4b).
+- Deuda crítica: ninguna. `npm test` 18/18; `node scripts/smoke.js` 20/20 (Chrome headless, consola limpia).
 
 ## Comandos (fijos desde F0a)
 ```
@@ -19,6 +19,7 @@ node scripts/smoke.js  # checklist de paridad en Chrome headless (requiere Chrom
 
 ## Mapa (detalle en docs/MAP.md)
 - `PLAN.md` — plan por fases, prompts y protocolo de handoff. Leer solo la sección de la fase activa.
+- `FIGMA` — ¡IMPORTANTE! No continuar con nada de Figma, el MVP se quedará sin esa función, mantenerlo funcional sin depender en absoluto de ninguna función relacionada a Figma. Esta es una nueva instrucción.
 - `schema/` — JSON Schema draft-07 (desde F1). Fuente de verdad del modelo; valida API, import/export y tests.
 - `server/` — Fastify 5 (JS ESM), SQLite vía `node:sqlite` (`db/sqlite.js`, sin binarios), `lib/normalize.js` (compartido: symlink en `client/js/core/`), `lib/pages.js`, `lib/{auth,permissions,audit}.js`, `plugins/{session,guard,origin-check}.js`; `lib/visibility.js` + `lib/cells.js` (F3), `lib/figma/` (fases siguientes).
 - `client/` — vanilla JS ESM + CSS sin bundler. `js/core/state.js` exporta `S` (estado mutable compartido), `bootstrap()`/`persist()` vía `core/api.js`; `js/core/dom.js` nodos DOM; `js/canvas` lienzo; `js/ui`; `js/views`; `js/main.js` entrada única.

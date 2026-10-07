@@ -49,6 +49,8 @@ export const S = {
   cellList: [],          // F3: células (admin/head: todas vía /api/cells; designer: las suyas desde /api/me)
   userDir: [],           // F3: directorio mínimo (admin/head) para responsable/asignados
   docRefs: null,         // F3: `refs` del GET de página { users:[{id,name}], cells:[{id,name,color}] } para chips
+  pageList: [],          // F4a: páginas visibles (GET /api/pages) para lobby y topbar
+  lobbyTab: 'active',    // F4a: pestaña activa del lobby
 
 };
 // normalize.js (compartido con el servidor) es la única fuente de saneado y defaults.
@@ -93,7 +95,8 @@ const localRaw = () => { try { return localStorage.getItem(STORAGE_KEY) || local
 const readPrefs = () => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch { return {}; } };
 /** theme y tool son preferencias del navegador, no del documento. */
 function applyPrefs(s) { const p = readPrefs(); s.settings.theme = ['light', 'dark'].includes(p.theme) ? p.theme : null; s.settings.tool = p.tool === 'hand' ? 'hand' : 'select'; return s; }
-function writePrefs() { try { localStorage.setItem(PREFS_KEY, JSON.stringify({ theme: S.state.settings.theme, tool: S.state.settings.tool })); } catch { /* sin localStorage */ } }
+function writePrefs() { try { localStorage.setItem(PREFS_KEY, JSON.stringify({ theme: S.state.settings.theme, tool: S.state.settings.tool, pageId: S.pageId || readPrefs().pageId || null })); } catch { /* sin localStorage */ } }
+export const lastPageId = () => readPrefs().pageId || null;
 function withDemo(s) { const demo = demoData(); s.nodes = demo.nodes; s.edges = demo.edges; S.firstRun = true; return s; }
 
 /** Estado local (offline): localStorage o demo. */
@@ -106,13 +109,16 @@ export function loadState() {
     return withDemo(defaultState());
   }
 }
-/** Carga la página desde la API. Página virgen → migra localStorage o carga la demo. Sin servidor → loadState(). */
-export async function bootstrap() {
+/** Carga una página desde la API (F4a: `pageId` o la última visitada o la primera visible). Página virgen → migra localStorage o carga la demo. Sin servidor → loadState().
+    Único punto de entrada para cambiar de página: resetea pageId/version/refs/cámara; main.js limpia historial/selección vía `destree:reload`. */
+export async function bootstrap(wantedId = null) {
   try {
-    const page = (await api.listPages())[0];
-    if (!page) throw new Error('El servidor no tiene páginas');
+    S.pageList = await api.listPages();
+    const wanted = wantedId || lastPageId();
+    const page = S.pageList.find(p => p.id === wanted) || (wantedId ? null : S.pageList[0]);
+    if (!page) { const err = new Error(wantedId ? 'Esa página no existe o no es visible para ti' : 'No hay páginas visibles'); err.status = 404; err.noPage = true; throw err; }
     const doc = await api.getPage(page.id);
-    S.pageId = doc.page.id; S.version = doc.page.version; S.offline = false; S.docRefs = doc.refs || null;
+    S.pageId = doc.page.id; S.version = doc.page.version; S.offline = false; S.docRefs = doc.refs || null; S.dirty = false;
     let s = normalizeState(doc);
     if (!s.nodes.length && doc.page.version === 0) {
       const raw = localRaw();
@@ -120,6 +126,7 @@ export async function bootstrap() {
       if (!s.nodes.length) s = withDemo(s);
     }
     S.state = applyPrefs(s);
+    writePrefs(); // recuerda la última página
   } catch (err) {
     if (err.status) throw err; // F2: 401/403/5xx no caen en modo local (main.js lo gestiona)
     S.offline = true;

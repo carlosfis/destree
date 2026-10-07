@@ -1,4 +1,6 @@
 // Repositorio de páginas: documento completo (page-document v3) ⇄ tablas SQLite.
+import fs from 'node:fs';
+import path from 'node:path';
 import { DEFAULT_ORG_ID, transaction } from '../db/sqlite.js';
 import { ulid, nowIso } from './ids.js';
 import { normalizeDocument, defaultDocument } from './normalize.js';
@@ -8,16 +10,20 @@ export class HttpError extends Error { constructor(status, message, extra) { sup
 const j = v => JSON.stringify(v);
 const pj = (s, d) => { try { return JSON.parse(s) ?? d; } catch { return d; } };
 
-/** `ctx` (F3: { role, userId, cellIds }) filtra páginas no visibles para designer. */
-export function listPages(db, orgId = DEFAULT_ORG_ID, ctx = null) {
-  const rows = db.prepare(`SELECT p.id, p.name, p.description, p.visibility, p.status, p.version, p.updated_at AS updatedAt,
-      (SELECT COUNT(*) FROM nodes n WHERE n.page_id = p.id) AS nodeCount
-    FROM pages p WHERE p.org_id = ? AND p.status != 'deleted' ORDER BY p.created_at`).all(orgId);
+export const PAGE_STATUS = ['active', 'archived', 'deleted'];
+const pageCells = (db, pageId) => db.prepare('SELECT cell_id FROM page_cells WHERE page_id = ? ORDER BY rowid').all(pageId).map(r => r.cell_id);
+/** `ctx` (F3: { role, userId, cellIds }) filtra páginas no visibles para designer. F4a: `status` active (defecto) | archived | deleted | all (activas+archivadas). */
+export function listPages(db, orgId = DEFAULT_ORG_ID, ctx = null, status = 'active') {
+  const where = status === 'all' ? "p.status != 'deleted'" : 'p.status = ?';
+  const rows = db.prepare(`SELECT p.id, p.name, p.description, p.visibility, p.status, p.version, p.updated_at AS updatedAt, p.created_at AS createdAt, p.archived_at AS archivedAt, p.deleted_at AS deletedAt,
+      (SELECT COUNT(*) FROM nodes n WHERE n.page_id = p.id) AS nodeCount, (SELECT COUNT(*) FROM nodes n WHERE n.page_id = p.id AND n.parent_id IS NULL) AS rootCount
+    FROM pages p WHERE p.org_id = ? AND ${where} ORDER BY p.created_at`).all(...(status === 'all' ? [orgId] : [orgId, PAGE_STATUS.includes(status) ? status : 'active']))
+    .map(p => ({ ...p, cellIds: p.visibility === 'cells' ? pageCells(db, p.id) : [] }));
   return needsFilter(ctx) ? rows.filter(p => pageVisibleFor(db, p, ctx)) : rows;
 }
 const groupIds = (rows, key) => { const m = new Map(); for (const r of rows) { if (!m.has(r.node_id)) m.set(r.node_id, []); m.get(r.node_id).push(r[key]); } return m; };
 export function pageMeta(db, pageId) {
-  const p = db.prepare('SELECT id, name, description, visibility, status, version, created_by AS createdBy, updated_at AS updatedAt FROM pages WHERE id = ?').get(pageId);
+  const p = db.prepare('SELECT id, name, description, visibility, status, version, created_by AS createdBy, updated_at AS updatedAt, archived_at AS archivedAt, deleted_at AS deletedAt, deleted_by AS deletedBy FROM pages WHERE id = ?').get(pageId);
   if (!p) throw new HttpError(404, 'Página no encontrada');
   return p;
 }
@@ -41,7 +47,7 @@ export function getDocument(db, pageId, ctx = null) {
   const edges = db.prepare('SELECT id, kind, from_node_id AS "from", to_node_id AS "to", demo FROM edges WHERE page_id = ? ORDER BY position').all(pageId).map(e => ({ ...e, demo: !!e.demo }));
   const tags = db.prepare('SELECT id, name, color FROM tags WHERE page_id = ? ORDER BY position').all(pageId);
   const branchTypes = db.prepare('SELECT id, name, color FROM branch_types WHERE page_id = ? ORDER BY position').all(pageId);
-  const page = { id: p.id, name: p.name, description: p.description, visibility: p.visibility, status: p.status, version: p.version, createdBy: p.created_by, updatedAt: p.updated_at };
+  const page = { id: p.id, name: p.name, description: p.description, visibility: p.visibility, status: p.status, version: p.version, createdBy: p.created_by, updatedAt: p.updated_at, cellIds: p.visibility === 'cells' ? pageCells(db, p.id) : [] };
   const base = defaultDocument(page);
   const doc = filterDocumentForUser({ version: 3, page, nodes, edges, tags, branchTypes, settings: { ...base.settings, ...pj(p.settings_json, {}) }, camera: { ...base.camera, ...pj(p.camera_json, {}) } }, ctx);
   return { ...doc, refs: documentRefs(db, doc) };
@@ -57,8 +63,9 @@ function documentRefs(db, doc) {
 export function saveDocument(db, pageId, doc, expected) {
   const d = normalizeDocument(doc, { id: pageId });
   return transaction(db, () => {
-    const cur = db.prepare('SELECT version, name, description, visibility FROM pages WHERE id = ?').get(pageId);
+    const cur = db.prepare('SELECT version, name, description, visibility, status FROM pages WHERE id = ?').get(pageId);
     if (!cur) throw new HttpError(404, 'Página no encontrada');
+    if (cur.status !== 'active' && expected !== 0) throw new HttpError(409, cur.status === 'archived' ? 'La página está archivada: restáurala para editarla' : 'La página está borrada', { version: cur.version });
     if (expected != null && Number(expected) !== cur.version) throw new HttpError(409, `Versión obsoleta: el servidor tiene ${cur.version}`, { version: cur.version });
     const version = cur.version + 1, now = nowIso();
     const meta = doc && doc.page ? doc.page : {};
@@ -124,11 +131,66 @@ export function patchNode(db, pageId, nodeId, patch) {
     return { version, node, updatedAt: now };
   });
 }
-export function createPage(db, { name, description = '' }, orgId = DEFAULT_ORG_ID) {
+export function createPage(db, { name, description = '', visibility = 'org', cellIds = [], createdBy = null }, orgId = DEFAULT_ORG_ID, content = null) {
   const id = ulid();
-  db.prepare('INSERT INTO pages (id, org_id, name, description) VALUES (?, ?, ?, ?)').run(id, orgId, String(name).slice(0, 120), String(description).slice(0, 500));
-  saveDocument(db, id, defaultDocument({ id, name, description }), 0);
-  return getDocument(db, id);
+  return transaction(db, () => {
+    db.prepare('INSERT INTO pages (id, org_id, name, description, visibility, created_by) VALUES (?, ?, ?, ?, ?, ?)').run(id, orgId, String(name).slice(0, 120), String(description).slice(0, 500), visibility === 'cells' ? 'cells' : 'org', createdBy);
+    setPageCells(db, id, visibility === 'cells' ? cellIds : []);
+    const page = { id, name, description, visibility };
+    saveDocument(db, id, content ? { ...content, page } : defaultDocument(page), 0);
+    return getDocument(db, id);
+  });
+}
+function setPageCells(db, pageId, cellIds) {
+  db.prepare('DELETE FROM page_cells WHERE page_id = ?').run(pageId);
+  const ins = db.prepare('INSERT OR IGNORE INTO page_cells (page_id, cell_id) SELECT ?, id FROM cells WHERE id = ?');
+  for (const c of [...new Set(cellIds || [])]) ins.run(pageId, c);
+}
+/** F4a: metadatos (name, description, visibility + cellIds). version += 1. */
+export function updatePageMeta(db, pageId, patch) {
+  return transaction(db, () => {
+    const cur = pageMeta(db, pageId);
+    if (cur.status === 'deleted') throw new HttpError(409, 'La página está borrada');
+    const name = patch.name != null ? String(patch.name).trim().slice(0, 120) : cur.name;
+    if (!name) throw new HttpError(400, 'El nombre es obligatorio');
+    const vis = patch.visibility != null ? (patch.visibility === 'cells' ? 'cells' : 'org') : cur.visibility;
+    const version = cur.version + 1;
+    db.prepare('UPDATE pages SET name = ?, description = ?, visibility = ?, version = ?, updated_at = ? WHERE id = ?')
+      .run(name, patch.description != null ? String(patch.description).slice(0, 500) : cur.description, vis, version, nowIso(), pageId);
+    if (patch.visibility != null || patch.cellIds != null) setPageCells(db, pageId, vis === 'cells' ? (patch.cellIds ?? pageCells(db, pageId)) : []);
+    return { ...pageMeta(db, pageId), cellIds: vis === 'cells' ? pageCells(db, pageId) : [] };
+  });
+}
+/** F4a: archivar / desarchivar / borrar (soft) / restaurar. Transiciones válidas: active⇄archived, active|archived→deleted→active. */
+export function setPageStatus(db, pageId, status, userId = null) {
+  if (!PAGE_STATUS.includes(status)) throw new HttpError(400, 'Estado desconocido');
+  return transaction(db, () => {
+    const cur = pageMeta(db, pageId);
+    if (cur.status === status) throw new HttpError(409, `La página ya está en estado ${status}`);
+    if (cur.status === 'deleted' && status !== 'active') throw new HttpError(409, 'Restaura la página antes de archivarla');
+    const now = nowIso();
+    db.prepare('UPDATE pages SET status = ?, archived_at = ?, deleted_at = ?, deleted_by = ?, version = version + 1, updated_at = ? WHERE id = ?')
+      .run(status, status === 'archived' ? now : null, status === 'deleted' ? now : null, status === 'deleted' ? userId : null, now, pageId);
+    return pageMeta(db, pageId);
+  });
+}
+/** F4a: borrado suave + export JSON del documento a `deletedDir` (hasta F6a, que lo sustituye por un snapshot `reason=delete`). */
+export function deletePage(db, pageId, userId, deletedDir) {
+  const doc = getDocument(db, pageId);
+  const meta = setPageStatus(db, pageId, 'deleted', userId);
+  let file = null;
+  if (deletedDir) {
+    fs.mkdirSync(deletedDir, { recursive: true });
+    file = path.join(deletedDir, `${pageId}-${nowIso().replace(/[:.]/g, '-')}.json`);
+    fs.writeFileSync(file, JSON.stringify({ ...doc, deletedAt: meta.deletedAt, deletedBy: userId }, null, 2));
+  }
+  return { ...meta, file };
+}
+/** F4a: duplica contenido (nodos, aristas, tags, tipos, células/asignados) en una página nueva. */
+export function duplicatePage(db, pageId, { name, createdBy = null } = {}) {
+  const src = getDocument(db, pageId);
+  if (src.page.status === 'deleted') throw new HttpError(409, 'La página está borrada');
+  return createPage(db, { name: name || `${src.page.name} (copia)`, description: src.page.description, visibility: src.page.visibility, cellIds: src.page.cellIds, createdBy }, DEFAULT_ORG_ID, src);
 }
 /** Importa un respaldo v1/v2/v3 (normaliza y persiste). Sin If-Match: sustituye lo que haya. */
 export function importDocument(db, pageId, raw) {

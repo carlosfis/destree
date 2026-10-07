@@ -192,6 +192,36 @@ await step('F3: ficha (Ver ficha) con markdown escapado + #/me con deep-link', a
   await ev(`document.querySelector('#editorDialog [data-cancel]').click(); location.hash = ''; true`); await sleep(100);
   return { view, me, go };
 });
+// F4a: lobby → nueva página → cambio sin fugas (historial/selección vacíos) → volver → archivar/restaurar.
+await step('F4a: lobby → nueva página → cambio sin fugas → volver → archivar/restaurar', async () => {
+  const before = await ev(`({ page: S.pageId, nodes: S.state.nodes.length })`);
+  await ev(`location.hash = '#/lobby'; true`); await sleep(500);
+  const lobby = await ev(`({ visible: !document.querySelector('#lobbyView').hidden, cards: document.querySelectorAll('#lobbyView .page-card').length, current: !!document.querySelector('#lobbyView .page-card.current') })`);
+  await ev(`document.querySelector('#lobbyNew').click(); true`); await sleep(150);
+  await ev(`(() => { const f = document.querySelector('#confirmDialog form'); f.v.value = 'Smoke Page 2'; f.requestSubmit(); return true; })()`); await sleep(900);
+  await ev(`document.querySelector('.node')?.click(); import('/js/core/history.js').then(m => m.pushHistory()); true`); await sleep(50);
+  const h0 = await ev(`import('/js/core/history.js').then(m => m.history.past.length)`);
+  const fresh = await ev(`({ hash: location.hash.slice(0, 4), changed: S.pageId !== ${JSON.stringify(before.page)}, nodes: S.state.nodes.length, lobbyHidden: document.querySelector('#lobbyView').hidden, btn: document.querySelector('#btnLobby').textContent, cards: document.querySelectorAll('#nodes .node').length })`);
+  const newId = await ev(`S.pageId`);
+  await ev(`import('/js/ui/card-editor.js').then(m => m.openEditor(null, { type: 'software', x: 10, y: 10 }))`); await sleep(100);
+  await ev(`(() => { const f = document.querySelector('#editorForm'); f.elements.name.value = 'Raíz P2'; f.requestSubmit(); return true; })()`); await sleep(1000);
+  const p2 = await ev(`import('/js/core/history.js').then(m => ({ nodes: S.state.nodes.length, hist: m.history.past.length, sel: [...document.querySelectorAll('.node.selected')].length, status: document.querySelector('#saveStatus').textContent }))`);
+  await ev(`location.hash = '#/p/' + ${JSON.stringify(before.page)}; true`); await sleep(900);
+  const back = await ev(`import('/js/core/history.js').then(m => ({ page: S.pageId === ${JSON.stringify(before.page)}, nodes: S.state.nodes.length, hist: m.history.past.length, future: m.history.future.length, sel: [...document.querySelectorAll('.node.selected')].length, popover: document.querySelector('#popover').hidden, dialog: document.querySelector('#editorDialog').open }))`);
+  if (!back.page || back.nodes !== before.nodes || back.hist !== 0 || back.sel !== 0) throw new Error('fuga de estado: ' + JSON.stringify(back));
+  const arch = await ev(`fetch('/api/pages/' + ${JSON.stringify(newId)} + '/archive', { method: 'POST' }).then(r => r.status)`);
+  await ev(`location.hash = '#/lobby'; true`); await sleep(500);
+  const lobby2 = await ev(`({ cards: document.querySelectorAll('#lobbyView .page-card').length })`);
+  await ev(`document.querySelector('#lobbyTabs [data-tab=archived]').click(); true`); await sleep(400);
+  const archived = await ev(`({ cards: document.querySelectorAll('#lobbyView .page-card').length, restore: !!document.querySelector('#lobbyView [data-unarchive]') })`);
+  await ev(`document.querySelector('#lobbyView [data-unarchive]').click(); true`); await sleep(500);
+  const restored = await ev(`document.querySelectorAll('#lobbyView .page-card').length`);
+  await ev(`document.querySelector('#lobbyTabs [data-tab=active]').click(); true`); await sleep(400);
+  const active = await ev(`document.querySelectorAll('#lobbyView .page-card').length`);
+  await ev(`document.querySelector('#lobbyBack').click(); true`); await sleep(400);
+  const end = await ev(`({ lobbyHidden: document.querySelector('#lobbyView').hidden, page: S.pageId === ${JSON.stringify(before.page)}, nodes: S.state.nodes.length })`);
+  return { lobby, h0, fresh, p2, back, arch, lobby2, archived, restored, active, end };
+});
 await step('recarga: persistencia SQLite vía API', async () => { await send('Page.reload'); await sleep(1200); return ev(`({ nodes: S.state.nodes.length, theme: document.documentElement.dataset.theme })`); });
 // F2: invitación (enlace copiable) → alta de designer → modo lectura; PUT → 403; logout → login.
 await step('invitación → designer en modo lectura (403 en PUT)', async () => {

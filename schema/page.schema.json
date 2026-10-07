@@ -13,6 +13,7 @@
     "visibility": { "type": "string", "enum": ["org", "cells"], "default": "org" },
     "status": { "type": "string", "enum": ["active", "archived", "deleted"], "default": "active" },
     "version": { "type": "integer", "minimum": 0 },
+    "cellIds": { "type": "array", "maxItems": 50, "default": [], "items": { "type": "string", "minLength": 1, "maxLength": 64 }, "description": "F4a: células con acceso cuando visibility=cells (page_cells); se cambia con PATCH /api/pages/:id" },
     "createdBy": { "type": ["string", "null"] },
     "updatedAt": { "type": "string", "format": "date-time" }
   }

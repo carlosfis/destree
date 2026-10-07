@@ -240,13 +240,13 @@ Cada fase cierra con handoff + commit + tag y encadena la siguiente en la misma 
 - **Handoff:** `F3.md`.
 - **Verificación:** `npm test`.
 
-### F4a — Pages API + router + lobby
+### F4a — Pages API + router + lobby ✅
 - **Objetivo:** Múltiples canvas con lobby.
 - **Entregables:**
-  - [ ] `004_pages.sql` (pages.visibility, status, deleted_at, cover_image_id, camera_json; page_cells)
-  - [ ] Pages API: crear/renombrar/archivar/desarchivar/duplicar, `PATCH visibility`, `DELETE` soft (admin; snapshot final `reason=delete` cuando exista F6a; hasta entonces exporta JSON a `/data/deleted/`), `POST /api/pages/:id/restore-deleted` (admin), filtro en `GET /api/pages` (status, visibilidad)
-  - [ ] Router hash completo; `state.load(pageId)` resetea cámara/historial/selección/popovers
-  - [ ] `#/lobby`: grid (nombre, descripción, nº raíces, visibilidad, última edición), buscador, crear/archivar (head/admin), filtro archivadas, pestaña "Mis asignaciones" para designer
+  - [x] `004_pages.sql` (archived_at, deleted_by; el resto existía desde 001/003)
+  - [x] Pages API: crear/renombrar/archivar/desarchivar/duplicar, `PATCH visibility`, `DELETE` soft (admin; snapshot final `reason=delete` cuando exista F6a; hasta entonces exporta JSON a `/data/deleted/`), `POST /api/pages/:id/restore-deleted` (admin), filtro en `GET /api/pages` (status, visibilidad)
+  - [x] Router hash completo; `bootstrap(pageId)` + `loadPage` resetean cámara/historial/selección/popovers
+  - [x] `#/lobby`: grid (nombre, descripción, nº raíces, visibilidad, última edición), buscador, crear/archivar (head/admin), filtro archivadas, pestaña "Mis asignaciones" para designer
 - **Aceptación:** admin crea 2 páginas con visibilidad distinta; designer ve solo la suya en lobby · cambiar de página sin fugas de estado (undo vacío, selección vacía) · archivar oculta del lobby por defecto y es reversible · borrar solo admin y restaurable.
 - **Riesgos:** fugas de estado → `state.load` único punto de entrada.
 - **Handoff:** `F4a.md`.
@@ -317,7 +317,7 @@ Cada fase cierra con handoff + commit + tag y encadena la siguiente en la misma 
 - **Handoff:** `F7.md`.
 - **Verificación:** `docker compose up -d --build && curl -s localhost:3000/api/health`.
 
-### F8a — Figma I: conexión, vínculo, thumbnail, componentes
+### F8a — Figma I: conexión, vínculo, thumbnail, componentes (¡IMPORTANTE! No continuar con nada de Figma, el MVP se quedará sin esa función, mantenerlo funcional sin depender en absoluto de ninguna función relacionada a Figma, avisame cuando llegues hasta aquí y detente.)
 - **Objetivo:** Cada nodo se vincula a un archivo Figma con thumbnail y conteos reales.
 - **Entregables:**
   - [ ] `008_figma.sql` (figma_connections, figma_files)

@@ -4,6 +4,10 @@
 import { $, esc } from './core/utils.js';
 import { viewport } from './core/dom.js';
 import { S, persist, setSaveStatus, nodeById, bootstrap } from './core/state.js';
+import { openLobby, closeLobby } from './views/lobby.js';
+import { history } from './core/history.js';
+import { closePopover } from './ui/popover.js';
+import { editorDialog } from './ui/card-editor.js';
 import { undo, redo, updateUndoButtons } from './core/history.js';
 import { measureViewport, applyCamera, zoomStep, setZoom, fitToScreen } from './canvas/camera.js';
 import { renderAll, clearSelection } from './canvas/selection.js';
@@ -32,7 +36,7 @@ $('#zoomLabel').addEventListener('click', () => setZoom(1));
 viewport.addEventListener('pointerdown', () => { if (innerWidth <= 720 && adminPanel.classList.contains('open')) toggleAdmin(false); });
 
 /* --- F2: router mínimo por hash (#/login, #/setup, #/invite/<token>) + sesión --- */
-const route = () => { const m = location.hash.match(/^#\/(login|setup|invite|me|n)(?:\/([^/]+))?/); return m ? { name: m[1], arg: m[2] } : null; };
+const route = () => { const m = location.hash.match(/^#\/(login|setup|invite|me|n|p|lobby)(?:\/([^/]+))?(?:\/n\/([^/]+))?/); return m ? { name: m[1], arg: m[2], node: m[3] } : null; };
 /** Resuelve S.session (o null sin servidor). Muestra setup/login/invitación cuando hace falta. */
 async function authenticate() {
   const r = route();
@@ -57,6 +61,21 @@ function renderUserChip() {
   me.addEventListener('click', () => { location.hash = '#/me'; });
   $('#btnAdmin').before(chip, me, out);
 }
+/** F4a: botón de página actual → lobby (inyectado tras la marca). */
+function renderPageButton() {
+  let b = $('#btnLobby');
+  if (!b) { b = document.createElement('button'); b.className = 'btn'; b.id = 'btnLobby'; b.title = 'Páginas (lobby)'; b.addEventListener('click', () => { location.hash = '#/lobby'; }); $('.topbar .brand').after(b); }
+  b.innerHTML = `⌂ <b>${esc(S.state?.page?.name || 'Páginas')}</b>`;
+}
+/** F4a: cambio de página sin fugas: bootstrap(pageId) + reset de historial/selección/popover/diálogos. */
+async function loadPage(pid) {
+  try { await bootstrap(pid); } catch (err) { if (err.noPage || err.status === 403 || err.status === 404) { toast(err.message, 'error', 5000); if (!S.pageId) return openLobby(); if (location.hash !== '#/lobby') location.hash = '#/lobby'; return; } throw err; }
+  history.past.length = 0; history.future.length = 0; updateUndoButtons();
+  closePopover(); if (editorDialog.open) editorDialog.close(); toggleAdmin(false);
+  document.dispatchEvent(new CustomEvent('destree:reload'));
+  closeLobby(); renderPageButton();
+  setSaveStatus(S.offline ? 'Sin conexión' : S.readonly ? 'Solo lectura' : 'Guardado');
+}
 /** F3: carga células (admin/head: todas; designer: las suyas) y directorio (admin/head). */
 async function loadTeamData() {
   if (!S.session) return;
@@ -64,8 +83,18 @@ async function loadTeamData() {
   if (S.session.permissions.includes('directory.read')) { try { S.userDir = await api.directory(); } catch { S.userDir = []; } }
 }
 /** F3: rutas de app (#/me, #/n/<id>) tras cargar el documento. */
-function appRoute() {
+async function appRoute() {
   const r = route(); if (!r || !S.state) return;
+  if (r.name === 'lobby') return openLobby();
+  if (r.name === 'p' && r.arg) {
+    const pid = decodeURIComponent(r.arg);
+    if (pid !== S.pageId) await loadPage(pid);
+    if (pid !== S.pageId) return; // no se pudo cargar
+    closeLobby();
+    if (r.node && !goToNode(decodeURIComponent(r.node))) toast('Esa card no existe o no es visible para ti.', 'error', 5000);
+    return;
+  }
+  closeLobby();
   if (r.name === 'me') openMyAssignments();
   else if (r.name === 'n' && r.arg && !goToNode(decodeURIComponent(r.arg))) toast('Esa card no existe o no es visible para ti.', 'error', 5000);
 }
@@ -80,7 +109,10 @@ export async function init() {
   if (!canEdit()) applyReadonly();
   await loadTeamData();
   measureViewport(); // F0b: antes era eager en camera.js (S.vpRect); debe preceder a applyTheme → drawMinimap
-  await bootstrap(); // F1: documento desde la API (o localStorage si no hay servidor)
+  const r0 = route();
+  try { await bootstrap(r0 && r0.name === 'p' && r0.arg ? decodeURIComponent(r0.arg) : null); } // F1/F4a: documento desde la API (o localStorage si no hay servidor)
+  catch (err) { if (!err.noPage && err.status !== 403 && err.status !== 404) throw err; toast(err.message, 'error', 5000); if (!S.pageList.length) { applyTheme(); openLobby(); return; } await bootstrap(); }
+  renderPageButton();
   applyTheme();
   applySettingsUI();
   renderAll();
@@ -97,7 +129,7 @@ export async function init() {
   appRoute();
 }
 // F1: tras un 409 state.js recarga el documento del servidor y avisa aquí para repintar.
-document.addEventListener('destree:reload', () => { clearSelection(); applyTheme(); applySettingsUI(); renderAll(); applyCamera(); });
+document.addEventListener('destree:reload', () => { clearSelection(); applyTheme(); applySettingsUI(); renderAll(); applyCamera(); renderPageButton(); });
 init();
 
 
