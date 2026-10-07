@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { buildApp } from '../server/index.js';
+import { setupAdmin, login } from './helpers/auth.js';
 
 const fixture = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'fixtures/legacy-v2.json'), 'utf8'));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'destree-'));
@@ -14,7 +15,8 @@ const open = () => buildApp({ dbPath, logger: false });
 test('API: health, páginas, PUT con If-Match (200/409/428/400), import legacy, persistencia', async (t) => {
   let app = await open();
   t.after(async () => { await app.close(); fs.rmSync(tmp, { recursive: true, force: true }); });
-  const call = async (o) => { const r = await app.inject(o); return { status: r.statusCode, etag: r.headers.etag, body: r.json() }; };
+  let cookie = await setupAdmin(app); // F2: todas las rutas de páginas exigen sesión
+  const call = async (o) => { const r = await app.inject({ ...o, headers: { ...(o.headers || {}), cookie } }); return { status: r.statusCode, etag: r.headers.etag, body: r.json() }; };
 
   const h = await call({ method: 'GET', url: '/api/health' });
   assert.equal(h.status, 200); assert.equal(h.body.ok, true); assert.equal(h.body.db, 'ok');
@@ -67,6 +69,7 @@ test('API: health, páginas, PUT con If-Match (200/409/428/400), import legacy, 
   // persistencia: reabrir la BD
   await app.close();
   app = await open();
+  cookie = await login(app, 'admin@test.io');
   const g2 = await call({ method: 'GET', url: `/api/pages/${id}` });
   assert.equal(g2.body.page.version, 2); assert.equal(g2.body.nodes[0].name, 'Renombrado');
   assert.deepEqual(g2.body.camera, { x: 1, y: 2, z: 1.5 });

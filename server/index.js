@@ -7,7 +7,13 @@ import { config } from './config.js';
 import { openReady } from './db/sqlite.js';
 import { loadSchemas, AJV_OPTIONS, formatErrors } from './lib/schemas.js';
 import { HttpError } from './lib/pages.js';
+import sessionPlugin from './plugins/session.js';
+import guardPlugin from './plugins/guard.js';
+import originPlugin from './plugins/origin-check.js';
 import healthRoutes from './routes/health.js';
+import authRoutes from './routes/auth.js';
+import inviteRoutes from './routes/invites.js';
+import userRoutes from './routes/users.js';
 import pageRoutes from './routes/pages.js';
 
 export async function buildApp({ dbPath = config.dbPath, logger = { level: config.logLevel } } = {}) {
@@ -15,6 +21,7 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
     logger,
     bodyLimit: 32 * 1024 * 1024,
     ajv: { customOptions: AJV_OPTIONS, plugins: [ajvFormats] },
+    trustProxy: config.trustProxy,
   });
   const db = openReady(dbPath);
   app.decorate('db', db);
@@ -23,7 +30,10 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
 
   app.setErrorHandler((err, req, reply) => {
     if (err.validation) return reply.code(400).send({ error: 'validation', message: err.message, errors: formatErrors(err.validation) });
-    if (err instanceof HttpError) return reply.code(err.status).send({ error: err.status === 409 ? 'conflict' : 'error', message: err.message, ...(err.version != null ? { version: err.version } : {}) });
+    if (err instanceof HttpError) {
+      const code = { 401: 'unauthorized', 403: 'forbidden', 409: 'conflict', 410: 'gone', 429: 'rate_limited' }[err.status] || 'error';
+      return reply.code(err.status).send({ error: code, message: err.message, ...(err.version != null ? { version: err.version } : {}), ...(err.setup != null ? { setup: err.setup } : {}) });
+    }
     if (err.statusCode && err.statusCode < 500) return reply.code(err.statusCode).send({ error: 'error', message: err.message });
     req.log.error(err);
     return reply.code(500).send({ error: 'internal', message: 'Error interno' });
@@ -33,7 +43,13 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
     return reply.code(404).type('text/plain').send('Not found');
   });
 
+  await app.register(sessionPlugin);
+  await app.register(guardPlugin);
+  await app.register(originPlugin);
   await app.register(healthRoutes);
+  await app.register(authRoutes);
+  await app.register(inviteRoutes);
+  await app.register(userRoutes);
   await app.register(pageRoutes);
   // Cliente estático. normalize.js llega vía symlink client/js/core/normalize.js → server/lib/normalize.js.
   await app.register(fastifyStatic, { root: config.clientDir, prefix: '/', index: ['index.html'], cacheControl: false, decorateReply: false });

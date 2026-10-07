@@ -44,6 +44,9 @@ export const S = {
   offline: false,        // state (F1): sin servidor → localStorage
   saving: false,         // state (F1): PUT en vuelo
   dirty: false,          // state (F1): cambios pendientes mientras hay PUT en vuelo
+  session: null,         // F2: { user, org, role, permissions, cellIds } de GET /api/me; null sin servidor
+  readonly: false,       // F2: designer (sin pages.edit): sin edición ni PUT; core/readonly.js
+
 };
 // normalize.js (compartido con el servidor) es la única fuente de saneado y defaults.
 export const defaultState = defaultDocument;
@@ -115,6 +118,7 @@ export async function bootstrap() {
     }
     S.state = applyPrefs(s);
   } catch (err) {
+    if (err.status) throw err; // F2: 401/403/5xx no caen en modo local (main.js lo gestiona)
     S.offline = true;
     S.state = loadState();
     setTimeout(() => toast('Sin conexión con el servidor: trabajando en local (' + err.message + ')', 'error', 6000), 300);
@@ -151,12 +155,16 @@ async function pushRemote(keepalive) {
   } catch (err) {
     if (err.status === 409) { setSaveStatus('Conflicto'); await reloadFromServer().catch(() => {}); toast('La página cambió en el servidor: se recargó la última versión.', 'error', 6000); }
     else if (err.status === 400) { setSaveStatus('Sin guardar'); toast('El servidor rechazó el documento: ' + err.message, 'error', 8000); }
+    else if (err.status === 401) setSaveStatus('Sesión caducada');
+    else if (err.status === 403) { setSaveStatus('Solo lectura'); toast('Sin permisos para guardar cambios en esta página.', 'error', 6000); }
+    else if (err.status) { setSaveStatus('Sin guardar'); toast('No se pudo guardar: ' + err.message, 'error', 6000); }
     else { persistLocal(); toast('No se pudo guardar en el servidor: ' + err.message, 'error', 6000); }
   } finally { S.saving = false; if (S.dirty) pushRemote(); }
 }
 export function persist(keepalive = false) {
   S.state.camera = { x: S.cam.x, y: S.cam.y, z: S.cam.z };
   writePrefs();
+  if (S.readonly) return; // F2: el designer no escribe (el servidor devolvería 403)
   if (S.offline || !S.pageId) persistLocal(); else pushRemote(keepalive);
 }
 export const save = debounce(persist, 800);

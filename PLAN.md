@@ -212,15 +212,15 @@ Cada fase = 1 sesión de Claude Code. Regla de corte: si se alarga, handoff ⚠�
 - **Handoff:** `F1.md` + `docs/API.md` iniciado.
 - **Verificación:** `npm test && curl -s localhost:3000/api/health`.
 
-### F2 — Auth + roles + invitaciones
+### F2 — Auth + roles + invitaciones ✅
 - **Objetivo:** Setup inicial, login, sesiones, roles aplicados en servidor, invitaciones con enlace copiable.
 - **Entregables:**
-  - [ ] `002_auth.sql` (users, memberships, sessions, invites, audit_log)
-  - [ ] `POST /api/setup` (solo sin usuarios: org + admin), `/api/auth/login|logout`, `GET /api/me` (user, role, permissions, cellIds), `POST /api/invites` (devuelve enlace; email si SMTP), `POST /api/invites/accept`, `/api/users` CRUD + rol (admin)
-  - [ ] `lib/permissions.js` + `plugins/guard.js` en todas las rutas de F1; `plugins/origin-check.js` en mutaciones con exclusión por `routeConfig.skipOriginCheck` (lo usará `/api/figma/report` y `/api/figma/hook`); rate-limit en /auth; cookie secure si `TRUST_PROXY`
-  - [ ] `lib/audit.js` en escrituras
-  - [ ] Vistas `setup.js`, `login.js`, `invite.js`; topbar con usuario/rol/logout; `core/readonly.js` desactiva pointer/keyboard/editor para designer
-  - [ ] `tests/permissions.test.js` (tabla ruta × rol → 200/403)
+  - [x] `002_auth.sql` (users, memberships, sessions, invites, audit_log)
+  - [x] `POST /api/setup` (solo sin usuarios: org + admin), `/api/auth/login|logout`, `GET /api/me` (user, role, permissions, cellIds), `POST /api/invites` (devuelve enlace; email si SMTP), `POST /api/invites/accept`, `/api/users` CRUD + rol (admin)
+  - [x] `lib/permissions.js` + `plugins/guard.js` en todas las rutas de F1; `plugins/origin-check.js` en mutaciones con exclusión por `routeConfig.skipOriginCheck` (lo usará `/api/figma/report` y `/api/figma/hook`); rate-limit en /auth; cookie secure si `TRUST_PROXY`
+  - [x] `lib/audit.js` en escrituras
+  - [x] Vistas `setup.js`, `login.js`, `invite.js`; topbar con usuario/rol/logout; `core/readonly.js` desactiva pointer/keyboard/editor para designer
+  - [x] `tests/permissions.test.js` (tabla ruta × rol → 200/403)
 - **Aceptación:** primer arranque pide org+admin; sin sesión `/api/*` → 401 y la web redirige · designer: 403 en PUT y sin botones de edición · invitación por token crea usuario con rol; token expirado → 410 · enlace copiable sin SMTP.
 - **Riesgos:** rutas sin guard → test negativo obligatorio por ruta.
 - **Handoff:** `F2.md` con matriz aplicada y rutas.

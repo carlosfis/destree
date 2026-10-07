@@ -38,6 +38,7 @@ export function processImage(file) {
 export function pathOf(n) { const parts = [n.name]; let p = parentOf(n), g = 0; while (p && g++ < 100) { parts.unshift(p.name); p = parentOf(p); } return parts.join(' › '); }
 
 export function openEditor(id, preset = {}) {
+  if (S.readonly) return; // F2: designer no edita
   const node = id ? nodeById(id) : null;
   if (id && !node) return;
   const draft = node ? { ...node, tags: [...node.tags] } : { id: null, type: preset.type || 'software', name: '', description: '', image: null, tags: [], owner: '', parentId: preset.parentId || null, branchTypeId: null, x: preset.x ?? 0, y: preset.y ?? 0 };

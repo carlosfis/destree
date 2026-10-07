@@ -1,4 +1,4 @@
-// Smoke de paridad (F0b, F1 sobre Fastify+SQLite temporal): checklist en Chrome headless vía CDP; recoge excepciones y console.error. Uso: node scripts/smoke.js
+// Smoke de paridad (F0b, F1 sobre Fastify+SQLite temporal, F2 setup/login/readonly): checklist en Chrome headless vía CDP; recoge excepciones y console.error. Uso: node scripts/smoke.js
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -23,7 +23,8 @@ const problems = [];
 const drain = () => { for (const m of events.splice(0)) {
   if (m.method === 'Runtime.exceptionThrown') problems.push('EXC ' + (m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text));
   if (m.method === 'Runtime.consoleAPICalled' && ['error', 'warning', 'assert'].includes(m.params.type)) problems.push('CONSOLE.' + m.params.type + ' ' + m.params.args.map((a) => a.description || a.value).join(' '));
-  if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error') problems.push('LOG ' + m.params.entry.text + ' ' + (m.params.entry.url || ''));
+  // F2: 401 en /api/me sin sesión y el 403 del PUT de designer son respuestas esperadas del flujo, no errores.
+  if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error' && !/status of (401|403)/.test(m.params.entry.text)) problems.push('LOG ' + m.params.entry.text + ' ' + (m.params.entry.url || ''));
 } };
 await send('Runtime.enable'); await send('Log.enable'); await send('Page.enable');
 await send('Browser.setDownloadBehavior', { behavior: 'deny' }).catch(() => {});
@@ -38,6 +39,14 @@ const center = async (sel) => ev(`(() => { const r = document.querySelector(${JS
 
 await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` });
 await sleep(1200); drain();
+// F2: primer arranque → formulario de setup (org + admin); tras enviarlo arranca la app con sesión.
+const fill = async (pairs) => ev(`(() => { ${pairs.map(([n, v]) => `document.querySelector('#authView [name=${n}]').value = ${JSON.stringify(v)};`).join('')} document.querySelector('#authView form').requestSubmit(); return true; })()`);
+await step('setup inicial (org + admin) → sesión', async () => {
+  const shown = await ev(`!document.querySelector('#authView').hidden && !!document.querySelector('#authView [name=orgName]')`);
+  if (!shown) throw new Error('no apareció el formulario de setup');
+  await fill([['orgName', 'Smoke SA'], ['name', 'Ana'], ['email', 'ana@smoke.io'], ['password', 'smoke-1234']]); await sleep(1200);
+  return ev(`({ role: S.session.role, org: S.session.org.name, chip: document.querySelector('#userChip')?.textContent, authHidden: document.querySelector('#authView').hidden, usersTab: !!document.querySelector('#adminTabs [data-tab=users]') })`);
+});
 await step('carga: demo + S expuesto', () => ev(`({ nodes: S.state.nodes.length, dom: document.querySelectorAll('#nodes .node').length, edges: S.state.edges.length, firstRun: S.firstRun, vp: !!S.vpRect })`));
 await step('crear raíz (btnNew → menú → editor → submit)', async () => {
   await ev(`document.querySelector('#btnNew').click()`); await sleep(80);
@@ -146,6 +155,25 @@ await step('arrastre de nodo + marquee + rueda zoom', async () => {
   return { moved: before[0] !== after[0] || before[1] !== after[1], z: await ev(`S.cam.z`), ptr: await ev(`S.ptr`) };
 });
 await step('recarga: persistencia SQLite vía API', async () => { await send('Page.reload'); await sleep(1200); return ev(`({ nodes: S.state.nodes.length, theme: document.documentElement.dataset.theme })`); });
+// F2: invitación (enlace copiable) → alta de designer → modo lectura; PUT → 403; logout → login.
+await step('invitación → designer en modo lectura (403 en PUT)', async () => {
+  const link = await ev(`fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'des@smoke.io', role: 'designer' }) }).then(r => r.json()).then(j => j.link)`);
+  if (!/#\/invite\//.test(link)) throw new Error('sin enlace: ' + link);
+  await ev(`fetch('/api/auth/logout', { method: 'POST' }).then(r => r.status)`);
+  await send('Page.navigate', { url: link }); await sleep(900);
+  await fill([['name', 'Dani'], ['password', 'smoke-1234']]); await sleep(1200);
+  const put = await ev(`fetch('/api/pages/' + S.pageId, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'If-Match': String(S.version) }, body: '{}' }).then(r => r.status)`);
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: 400, y: 300, button: 'right', clickCount: 1 }); await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 400, y: 300, button: 'right', clickCount: 1 }); await sleep(100);
+  await key('n', 'KeyN'); await sleep(100);
+  return ev(`({ role: S.session.role, ro: S.readonly, viewer: document.body.classList.contains('viewer'), nodes: S.state.nodes.length, newHidden: document.querySelector('#btnNew').hidden, adminHidden: document.querySelector('#btnAdmin').hidden, ports: getComputedStyle(document.querySelector('.port')).display, popover: document.querySelector('#popover').hidden, status: document.querySelector('#saveStatus').textContent, put: ${'${put}'} })`.replace('${put}', JSON.stringify(put)));
+});
+await step('logout → login (admin)', async () => {
+  await ev(`document.querySelector('#btnLogout').click(); true`); await sleep(1200);
+  const login = await ev(`!document.querySelector('#authView').hidden && !!document.querySelector('#authView [name=password]') && !document.querySelector('#authView [name=orgName]')`);
+  if (!login) throw new Error('no apareció el login');
+  await fill([['email', 'ana@smoke.io'], ['password', 'smoke-1234']]); await sleep(1200);
+  return ev(`({ role: S.session.role, ro: S.readonly, hash: location.hash, nodes: S.state.nodes.length })`);
+});
 drain();
 console.log(results.join('\n'));
 console.log(problems.length ? `\nPROBLEMAS (${problems.length}):\n` + problems.join('\n') : '\nconsola limpia: 0 excepciones / 0 console.error');

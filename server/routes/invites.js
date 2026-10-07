@@ -1,0 +1,58 @@
+// F2: POST/GET /api/invites · DELETE /api/invites/:id · GET /api/invites/:token (público) · POST /api/invites/accept
+import { createInvite, listInvites, getInviteByToken, acceptInvite, publicInvite } from '../lib/auth.js';
+import { ROLES } from '../lib/permissions.js';
+import { audit } from '../lib/audit.js';
+import { HttpError } from '../lib/pages.js';
+import { sessionCookie } from '../plugins/session.js';
+import { transaction } from '../db/sqlite.js';
+import { limited } from './auth.js';
+
+const tokenParam = { type: 'object', required: ['token'], properties: { token: { type: 'string', minLength: 20, maxLength: 64 } } };
+
+export default async function inviteRoutes(app) {
+  const link = (req, token) => `${req.headers['x-forwarded-proto'] || req.protocol}://${req.headers['x-forwarded-host'] || req.headers.host}/#/invite/${token}`;
+
+  app.post('/api/invites', {
+    onRequest: app.guard('invite'),
+    schema: { body: { type: 'object', required: ['email', 'role'], additionalProperties: false, properties: { email: { type: 'string', format: 'email', maxLength: 200 }, role: { enum: ROLES }, cellIds: { type: 'array', maxItems: 50, items: { type: 'string', maxLength: 64 } } } } },
+  }, async (req, reply) => {
+    if (req.role === 'head' && req.body.role !== 'designer') throw new HttpError(403, 'Un head solo invita designers');
+    const inv = transaction(app.db, () => {
+      const r = createInvite(app.db, { orgId: req.orgId, email: req.body.email, role: req.body.role, cellIds: req.body.cellIds || [], invitedBy: req.user.id });
+      audit(app.db, { orgId: req.orgId, userId: req.user.id, action: 'invite.create', entity: 'invite', entityId: r.id, meta: { email: r.email, role: r.role } });
+      return r;
+    });
+    reply.code(201);
+    // Sin SMTP (F9b): el enlace se copia a mano.
+    return { id: inv.id, email: inv.email, role: inv.role, expiresAt: inv.expiresAt, link: link(req, inv.token), emailSent: false };
+  });
+
+  app.get('/api/invites', { onRequest: app.guard('invite') }, async (req) => ({ invites: listInvites(app.db, req.orgId) }));
+
+  app.delete('/api/invites/:id', { onRequest: app.guard('invite'), schema: { params: { type: 'object', required: ['id'], properties: { id: { type: 'string', maxLength: 64 } } } } }, async (req, reply) => {
+    const r = app.db.prepare('DELETE FROM invites WHERE id = ? AND org_id = ? AND used_at IS NULL').run(req.params.id, req.orgId);
+    if (!r.changes) throw new HttpError(404, 'Invitación no encontrada');
+    audit(app.db, { orgId: req.orgId, userId: req.user.id, action: 'invite.revoke', entity: 'invite', entityId: req.params.id });
+    return reply.code(204).send();
+  });
+
+  // Público: datos de la invitación para la pantalla de alta. 404 / 410.
+  app.get('/api/invites/:token', { schema: { params: tokenParam } }, async (req) => {
+    const inv = getInviteByToken(app.db, req.params.token);
+    const org = app.db.prepare('SELECT name FROM orgs WHERE id = ?').get(inv.org_id);
+    return { email: inv.email, role: inv.role, orgName: org?.name || '', expiresAt: inv.expires_at };
+  });
+
+  app.post('/api/invites/accept', {
+    onRequest: limited,
+    schema: { body: { type: 'object', required: ['token', 'password'], additionalProperties: false, properties: { token: tokenParam.properties.token, name: { type: 'string', maxLength: 120 }, password: { type: 'string', minLength: 8, maxLength: 200 } } } },
+  }, async (req, reply) => {
+    const res = transaction(app.db, () => {
+      const r = acceptInvite(app.db, { token: req.body.token, name: req.body.name || '', password: req.body.password, ua: req.headers['user-agent'], ip: req.ip });
+      audit(app.db, { orgId: r.invite.org_id, userId: r.user.id, action: 'invite.accept', entity: 'invite', entityId: r.invite.id, meta: { role: r.user.role } });
+      return r;
+    });
+    reply.code(201).header('Set-Cookie', sessionCookie(res.token));
+    return { user: res.user, invite: publicInvite(res.invite) };
+  });
+}

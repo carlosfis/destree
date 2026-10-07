@@ -19,3 +19,12 @@
 - 2026-10-06 F1: ids fijos `org_default` / `p_default` para el seed; páginas nuevas con ULID propio (`server/lib/ids.js`).
 - 2026-10-06 F1: página virgen (version 0, sin nodos): el cliente migra `localStorage systree:v2` si existe o carga la demo y la persiste. localStorage solo se escribe sin servidor.
 - 2026-10-06 F1: `scripts/dev-server.js` eliminado; `npm run dev` = `node --watch server/index.js`; `smoke.js` arranca Fastify con `DATABASE_PATH` temporal.
+- 2026-10-06 F2: sesiones en cookie `destree_sid` (HttpOnly, SameSite=Lax, 30 días) con token aleatorio de 32 bytes; en BD solo `sha256(token)`. Sin `SERVER_SECRET` para sesiones (queda para F8a). Sin @fastify/cookie: parseo propio en `plugins/session.js`.
+- 2026-10-06 F2: contraseñas con `scrypt` de `node:crypto` (`scrypt$N$salt$hash`), sin dependencias.
+- 2026-10-06 F2: `guard` y rate-limit son hooks `onRequest` de ruta (no `preHandler`): deben ejecutarse antes de la validación Ajv para que un designer reciba 403 y no 400.
+- 2026-10-06 F2: origin-check solo falla si llega `Origin`/`Referer` y no coincide con `Host` (`X-Forwarded-Host` si `TRUST_PROXY`); sin cabecera se permite (curl, tests). La defensa CSRF principal es SameSite=Lax.
+- 2026-10-06 F2: una sola org (`org_default`) hasta que haga falta multi-org; `memberships` y `sessions.org_id` ya lo soportan.
+- 2026-10-06 F2: invitaciones sin correo (`emailSent:false`); el enlace `#/invite/<token>` se copia a mano. Invitar un correo con invitación pendiente la sustituye; 7 días de validez; cambiar rol o desactivar cierra las sesiones del usuario.
+- 2026-10-06 F2: en el cliente la sesión vive en `S.session` (no `S.me`: `me` es identificador local en `pointer-drag.js` y el test de símbolos sueltos lo detectaría). Modo lectura = `S.readonly` + `body.viewer`; nunca la palabra `readonly` en strings/atributos del cliente por el mismo test.
+- 2026-10-06 F2: topbar (chip de usuario, Salir) y pestaña Usuarios se inyectan por JS para mantener el markup legacy intacto (`tests/client.test.js` compara el body).
+- 2026-10-06 F2: 401 en `/api/me` al cargar sin sesión y 403 del PUT de designer son respuestas esperadas; `smoke.js` ignora esas dos entradas de red del log del navegador.

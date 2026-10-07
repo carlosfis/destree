@@ -13,5 +13,6 @@ export const config = {
   dbPath: process.env.DATABASE_PATH || path.join(ROOT, 'data', 'destree.db'),
   clientDir: path.join(ROOT, 'client'),
   schemaDir: path.join(ROOT, 'schema'),
+  trustProxy: /^(1|true|yes)$/i.test(process.env.TRUST_PROXY || ''), // detrás de proxy TLS: cookie Secure + X-Forwarded-*
   logLevel: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'test' ? 'silent' : 'info'),
 };

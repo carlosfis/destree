@@ -1,0 +1,23 @@
+/* F2: acceso (setup/login/invitación), chip de usuario, modo lectura */
+#authView { position: fixed; inset: 0; z-index: 60; background: var(--bg-canvas); display: grid; place-items: center; padding: 24px; overflow: auto; }
+#authView[hidden] { display: none; }
+.auth-card { width: min(100%, 380px); background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 28px 28px 24px; display: flex; flex-direction: column; gap: 12px; }
+.auth-card .brand { font-weight: 600; color: var(--fg-2); font-size: 13px; letter-spacing: .02em; }
+.auth-card h1 { margin: 0; font-size: 20px; font-weight: 600; }
+.auth-card .hint { margin: 0; font-size: 13px; color: var(--fg-2); line-height: 1.5; }
+.auth-card form { display: flex; flex-direction: column; gap: 12px; }
+.auth-card input { width: 100%; }
+.auth-card .form-error { color: var(--danger); font-size: 13px; min-height: 1em; }
+.auth-card .form-error:empty { display: none; }
+.auth-card .btn.primary { justify-content: center; padding: 8px 12px; }
+.user-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--fg-2); white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.user-chip b { color: var(--fg); font-weight: 500; }
+.user-chip .role { font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.invite-link { display: flex; gap: 6px; margin: 8px 0 4px; }
+.invite-link input { flex: 1; font-family: var(--mono); font-size: 12px; }
+.row.inactive { opacity: .55; }
+.row select { max-width: 120px; }
+/* modo lectura (designer): sin puertos, asas, botones de card ni cursor de edición */
+body.viewer .port, body.viewer .resize, body.viewer .node [data-action] { display: none !important; }
+body.viewer .node { cursor: default; }
+@media (max-width: 720px) { .user-chip b { display: none; } }
