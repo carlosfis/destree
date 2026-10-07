@@ -3,8 +3,8 @@
 Fuente única de verdad para agencias: árbol de software → Design Systems / UI Kits, responsables, documentación y métricas Figma. Autoalojado, multi-página, roles admin/head/designer.
 
 ## Estado actual
-- Fase hecha: F6b (respaldos tar.gz + cron + restore con lock, export/import org con schema, pestaña Respaldos; `docs/handoff/F6b.md`).
-- Próxima: F7 (Docker, README, docs/FIGMA.md, `008` drop `image_legacy`, release v0.1.0; `PLAN.md` §5 F7).
+- Fase hecha: F7 ⚠️ (Docker/compose/Caddy, CI + release, README/INSTALL/ADMIN/USER/FIGMA, `008` drop `image_legacy` con guarda, v0.1.0; verificación Docker/GHCR en `PENDIENTE.md`).
+- Próxima: **ALTO** — F8a (Figma) no se implementa por decisión del plan. Esperar al usuario (`PENDIENTE.md`). Candidatas: F9b sin Figma (SMTP), F11a, F11b.
 - Deuda crítica: ninguna. `npm test` 25/25; `node scripts/smoke.js` 25/25 (Chrome headless, consola limpia).
 
 ## Comandos (fijos desde F0a)
@@ -23,7 +23,8 @@ node scripts/smoke.js  # checklist de paridad en Chrome headless (requiere Chrom
 - `schema/` — JSON Schema draft-07 (desde F1). Fuente de verdad del modelo; valida API, import/export y tests.
 - `server/` — Fastify 5 (JS ESM), SQLite vía `node:sqlite` (`db/sqlite.js`, sin binarios; `sharp` es la única dep nativa, F5), `lib/normalize.js` (compartido: symlink en `client/js/core/`), `lib/pages.js`, `lib/{auth,permissions,audit}.js`, `plugins/{session,guard,origin-check}.js`; `lib/visibility.js` + `lib/cells.js` (F3), `lib/images.js` (F5), `lib/versions.js` (F6a), `lib/backup.js` + `lib/org-export.js` (F6b), `lib/figma/` (fases siguientes).
 - `client/` — vanilla JS ESM + CSS sin bundler. `js/core/state.js` exporta `S` (estado mutable compartido), `bootstrap()`/`persist()` vía `core/api.js`; `js/core/dom.js` nodos DOM; `js/canvas` lienzo; `js/ui` (incl. `page-settings.js`, drawer); `js/views` (`lobby`, `admin-view`, `users`, `cells`, `me`, `auth-views`); `js/main.js` entrada única.
-- `figma-plugin/` — DesTree Companion (desde F10).
+- `figma-plugin/` — DesTree Companion (F10; no se implementa: MVP sin Figma).
+- `Dockerfile`, `docker-compose.yml`, `docker/Caddyfile`, `.github/workflows/{ci,release}.yml` — F7.
 - `legacy/arbol.html` — original. NUNCA leerlo entero: `grep -n` + `sed -n A,Bp`.
 - `docs/handoff/F<N>.md` — handoff por fase. `docs/DECISIONS.md` — append-only. `docs/MAP.md` — mapa de archivos.
 

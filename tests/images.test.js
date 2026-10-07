@@ -58,7 +58,6 @@ test('API imágenes: upload 3 MB → webp ≤1600 + thumb; documento guarda imag
   assert.equal(a.imageId, id); assert.equal(a.image, null);
   assert.ok(b.imageId && b.imageId !== id); assert.equal(b.image, null, 'dataURL convertida a archivo');
   assert.equal(c.imageId, null, 'imageId inexistente se descarta');
-  assert.equal(app.db.prepare('SELECT COUNT(*) AS n FROM nodes WHERE image_legacy IS NOT NULL').get().n, 0);
   // embedImages → dataURL webp para export portable
   const emb = (await j({ method: 'GET', url: '/api/pages/p_default?embedImages=1' }, admin)).body;
   assert.match(emb.nodes[0].image, /^data:image\/webp;base64,/); assert.equal(emb.nodes[0].imageId, id);
@@ -103,12 +102,18 @@ test('migración al arrancar: nodes.image_legacy → images + image_id', async (
   const dbPath = path.join(tmp, 'legacy.db');
   const { openReady } = await import('../server/db/sqlite.js');
   const db = openReady(dbPath);
+  // simula una BD anterior a F7: columna image_legacy presente y 008 pendiente
+  db.exec("ALTER TABLE nodes ADD COLUMN image_legacy TEXT; DELETE FROM _migrations WHERE name = '008_drop_image_legacy.sql'");
   const png = await noisePng(20, 20);
   db.prepare("INSERT INTO nodes (id, page_id, type, name, image_legacy) VALUES ('n1', 'p_default', 'software', 'N1', ?)").run('data:image/png;base64,' + png.toString('base64'));
+  assert.ok(!db.prepare("SELECT 1 FROM _migrations WHERE name = '008_drop_image_legacy.sql'").get(), '008 pendiente mientras haya dataURLs');
   db.close();
   const app = await buildApp({ dbPath, logger: false });
   t.after(() => app.close());
-  const row = app.db.prepare("SELECT image_id, image_legacy FROM nodes WHERE id = 'n1'").get();
-  assert.ok(row.image_id); assert.equal(row.image_legacy, null);
+  const row = app.db.prepare("SELECT image_id FROM nodes WHERE id = 'n1'").get();
+  assert.ok(row.image_id);
+  const { hasColumn } = await import('../server/db/sqlite.js');
+  assert.equal(hasColumn(app.db, 'nodes', 'image_legacy'), false, 'F7: 008 aplicada tras vaciar la columna');
+  assert.ok(app.db.prepare("SELECT 1 FROM _migrations WHERE name = '008_drop_image_legacy.sql'").get());
   assert.ok(fs.existsSync(path.join(app.uploadsDir, 'org_default', `${row.image_id}.webp`)));
 });

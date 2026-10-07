@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
-import { DEFAULT_ORG_ID } from '../db/sqlite.js';
+import { DEFAULT_ORG_ID, hasColumn } from '../db/sqlite.js';
 import { ulid, nowIso } from './ids.js';
 import { HttpError, getDocument } from './pages.js';
 import { pageVisibleFor, needsFilter } from './visibility.js';
@@ -100,6 +100,7 @@ export async function ingestDataUrls(db, dir, doc, { orgId = DEFAULT_ORG_ID, cre
 }
 /** Al arrancar: nodes.image_legacy → images + image_id. Idempotente. */
 export async function migrateLegacyImages(db, dir) {
+  if (!hasColumn(db, 'nodes', 'image_legacy')) return 0; // F7: columna ya eliminada (008)
   const rows = db.prepare('SELECT page_id, id, name, image_legacy FROM nodes WHERE image_legacy IS NOT NULL').all();
   let n = 0;
   for (const r of rows) {

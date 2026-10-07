@@ -1,9 +1,11 @@
-# Mapa del repositorio (F6b)
+# Mapa del repositorio (F7)
 
 Una línea por archivo. Actualizar al crear/mover archivos (protocolo de handoff §6).
 
 ## Raíz
-- `CLAUDE.md` — instrucciones del proyecto (≤60 líneas). `PLAN.md` — fases, prompts, handoff. `PENDIENTE.md` — lo que requiere al usuario (F3+). `README.md` — stub público. `LICENSE` — MIT.
+- `CLAUDE.md` — instrucciones del proyecto (≤60 líneas). `PLAN.md` — fases, prompts, handoff. `PENDIENTE.md` — lo que requiere al usuario (F3+). `README.md` — presentación, instalación, roles (F7). `CHANGELOG.md`, `CONTRIBUTING.md` — F7. `LICENSE` — MIT.
+- `Dockerfile` (multi-stage, usuario node, healthcheck), `.dockerignore`, `docker-compose.yml` (volumen `./data`; perfiles `https` Caddy y `dev` Mailpit), `docker/Caddyfile` — F7.
+- `.github/workflows/ci.yml` (lint+test), `release.yml` (tag v* → GHCR multi-arch + Release), `.github/ISSUE_TEMPLATE/` — F7.
 - `package.json` — `"type": "module"`; deps fastify, @fastify/static, ajv-formats, sharp (F5, nativa); scripts dev/start/test/migrate/import/backup/lint.
 - `.env.example` — variables (sin secretos; `TRUST_PROXY` desde F2; `UPLOADS_DIR` desde F5; `VERSIONS_KEEP`/`VERSIONS_COALESCE_MIN` desde F6a; `BACKUP_CRON`/`BACKUP_KEEP`/`BACKUPS_DIR` desde F6b). `.gitignore` — `data/`, `.env`, `export-actual.json`.
 - `export-actual.json` — datos reales del usuario (gitignored; importados en `data/destree.db`; fixture `tests/fixtures/legacy-v2.json`).
@@ -14,9 +16,9 @@ Una línea por archivo. Actualizar al crear/mover archivos (protocolo de handoff
 - `page.schema.json`, `node.schema.json` (F3: `notes`, `docs[]`, `visibility`, `cellIds`, `assigneeIds`, `ownerUserId`, `status`, `hasExternalRefs`), `edge.schema.json`, `tag.schema.json`, `branch-type.schema.json` — entidades (`$id` relativo, `additionalProperties:false`).
 
 ## server/ (Fastify 5, ESM)
-- `index.js` — `buildApp({dbPath, logger})` (+`app.uploadsDir` + `migrateLegacyImages` + purga de huérfanas F5; `app.backupsDir`, lock `.server.lock`, cron de respaldos F6b): Ajv strict:false + ajv-formats, addSchema de `/schema`, error handler (400/401/403/404/409/410/428/429), plugins session/guard/origin → rutas, static `client/`; listen si es el main.
+- `index.js` — `buildApp({dbPath, logger})` (+`app.uploadsDir` + `migrateLegacyImages` + purga de huérfanas F5; `app.backupsDir`, lock `.server.lock`, cron de respaldos F6b; `checkEnvironment()` y reintento de `migrate()` tras vaciar `image_legacy` F7): Ajv strict:false + ajv-formats, addSchema de `/schema`, error handler (400/401/403/404/409/410/428/429), plugins session/guard/origin → rutas, static `client/`; listen si es el main.
 - `config.js` — `.env` mínimo; `port` 3000, `host`, `dbPath`, `clientDir`, `schemaDir`, `trustProxy`, `logLevel`, `uploadsDir` (F5), `versionsKeep`, `versionsCoalesceMs` (F6a), `backupsDir`, `backupKeep`, `backupCron` (F6b).
-- `db/sqlite.js` — `node:sqlite`: `openDb` (WAL, FK), `migrate`, `seed` (org/página por defecto + tags/branch types), `transaction(db, fn)` (reentrante, SAVEPOINT), `openReady`.
+- `db/sqlite.js` — `node:sqlite`: `openDb` (WAL, FK), `migrate`, `seed` (org/página por defecto + tags/branch types), `transaction(db, fn)` (reentrante, SAVEPOINT), `openReady`; F7: `GUARDS` por migración, `hasColumn`.
 - `db/migrations/001_core.sql` — orgs, pages, tags, branch_types, nodes (+`image_legacy` hasta F5), node_tags, edges.
 - `db/migrations/002_auth.sql` — users, memberships, sessions (id = sha256 del token), invites (token_hash), audit_log.
 - `db/migrations/003_cells.sql` — cells, cell_members, page_cells, node_cells (raíces `cells`), node_assignees.
@@ -24,6 +26,7 @@ Una línea por archivo. Actualizar al crear/mover archivos (protocolo de handoff
 - `db/migrations/005_images.sql` — F5: `images` (sha256 único por org), índice `nodes_image`.
 - `db/migrations/006_versions.sql` — F6a: `page_versions` (snapshot gzip, hash, reason, image_ids_json).
 - `db/migrations/007_backups.sql` — F6b: `backups`.
+- `db/migrations/008_drop_image_legacy.sql` — F7: elimina `nodes.image_legacy` (guarda: solo con la columna vacía).
 - `lib/normalize.js` — normalización v1/v2/v3 → v3 compartida con el cliente (sin imports; F3: `docUrl` legado → `docs[0]`, `cellIds`/`assigneeIds`). `lib/ids.js` — ULID, `nowIso`.
 - `lib/pages.js` — `listPages(db, org, ctx, status)`, `getDocument(db, id, ctx)` (+`refs`, filtro designer), `saveDocument` (transacción, If-Match → 409, 409 si no activa, node_cells/node_assignees), `patchNode`, `createPage` (visibilidad, células, contenido), F4a: `updatePageMeta`, `setPageStatus`, `deletePage` (soft; F6a: la ruta crea antes la versión `delete`), `duplicatePage`, `importDocument`, `HttpError`.
 - `lib/visibility.js` — F3: `pageVisibleFor` (regla 2), `filterDocumentForUser` (reglas 3/4/6, `hasExternalRefs`), `needsFilter`.
@@ -95,7 +98,7 @@ Una línea por archivo. Actualizar al crear/mover archivos (protocolo de handoff
 - `fixtures/legacy-v2.json` — `export-actual.json` anonimizado (11 nodos, 9 aristas, v2).
 
 ## docs/
-- `MAP.md` — este archivo. `DECISIONS.md` — append-only. `API.md` — endpoints. `handoff/TEMPLATE.md`, `handoff/F0a.md`, `handoff/F0b.md`, `handoff/F1.md`, `handoff/F2.md`, `handoff/F3.md`, `handoff/F4a.md`, `handoff/F4b.md`, `handoff/F5.md`, `handoff/F6a.md`, `handoff/F6b.md`.
+- `MAP.md` — este archivo. `DECISIONS.md` — append-only. `API.md` — endpoints. F7: `INSTALL.md` (instalación, variables, actualización), `ADMIN.md` (administración), `USER.md` (uso del lienzo), `FIGMA.md` (no implementado; capacidades de la API). `handoff/TEMPLATE.md`, `handoff/F0a.md`, `handoff/F0b.md`, `handoff/F1.md`, `handoff/F2.md`, `handoff/F3.md`, `handoff/F4a.md`, `handoff/F4b.md`, `handoff/F5.md`, `handoff/F6a.md`, `handoff/F6b.md`, `handoff/F7.md`.
 
 ## legacy/
 - `arbol.html` — monolito original (2545 líneas). Nunca leerlo entero.

@@ -303,15 +303,15 @@ Cada fase cierra con handoff + commit + tag y encadena la siguiente en la misma 
 - **Handoff:** `F6b.md` con procedimiento de restore.
 - **Verificación:** `npm test && npm run backup`.
 
-### F7 — Docker + docs + release v0.1.0
+### F7 — Docker + docs + release v0.1.0 ✅ (verificación Docker/GHCR pendiente del usuario: `PENDIENTE.md`)
 - **Objetivo:** Instalación en 3 comandos; primer release en GitHub.
 - **Entregables:**
-  - [ ] Dockerfile multi-stage `node:22-bookworm-slim` (stage build con python3/make/g++ para nativos; runtime sin toolchain; usuario no root; HEALTHCHECK `/api/health`; chown `/data`), `docker-compose.yml` (volumen `./data`, perfil `https` Caddy, perfil `dev` Mailpit), `.env.example` comentado
-  - [ ] Arranque valida `SERVER_SECRET`, permisos de `/data`, migra automáticamente
-  - [ ] README completo (qué es, instalación docker/sin docker, actualización, backup/restore, roles), `docs/INSTALL.md`, `ADMIN.md`, `USER.md`
-  - [ ] `ci.yml` (lint+test en ubuntu, Node 22); `release.yml` (tag v* → `permissions: {contents: write, packages: write}`, `docker/setup-qemu-action` + `setup-buildx-action` + `build-push-action` `platforms: linux/amd64,linux/arm64` → GHCR `:X.Y.Z` + `:latest`, Release con zip)
-  - [ ] `CHANGELOG.md`, `CONTRIBUTING.md`, issue templates
-  - [ ] `git tag v0.1.0` + release
+  - [x] Dockerfile multi-stage `node:22-bookworm-slim` (stage build con python3/make/g++ para nativos; runtime sin toolchain; usuario no root; HEALTHCHECK `/api/health`; chown `/data`), `docker-compose.yml` (volumen `./data`, perfil `https` Caddy, perfil `dev` Mailpit), `.env.example` comentado
+  - [x] Arranque valida permisos de `/data` (y avisa de `SERVER_SECRET` si hay PAT), migra automáticamente
+  - [x] README completo (qué es, instalación docker/sin docker, actualización, backup/restore, roles), `docs/INSTALL.md`, `ADMIN.md`, `USER.md`
+  - [x] `ci.yml` (lint+test en ubuntu, Node 22); `release.yml` (tag v* → `permissions: {contents: write, packages: write}`, `docker/setup-qemu-action` + `setup-buildx-action` + `build-push-action` `platforms: linux/amd64,linux/arm64` → GHCR `:X.Y.Z` + `:latest`, Release con zip)
+  - [x] `CHANGELOG.md`, `CONTRIBUTING.md`, issue templates
+  - [x] `git tag v0.1.0` (release la crea `release.yml`; comprobar en GitHub)
 - **Aceptación:** máquina limpia: `git clone && cp .env.example .env && docker compose up -d` → setup en :3000 · `down && up` conserva datos · CI verde; `ghcr.io/<user>/destree:0.1.0` existe para amd64 y arm64 (`docker manifest inspect`).
 - **Riesgos:** sharp/better-sqlite3 en arm64 vía QEMU lento → usar prebuilds (`npm ci` descarga binarios por plataforma) y cache de buildx.
 - **Handoff:** `F7.md`.

@@ -6,7 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
 import { config } from './config.js';
-import { openReady } from './db/sqlite.js';
+import { openReady, migrate } from './db/sqlite.js';
 import { loadSchemas, AJV_OPTIONS, formatErrors } from './lib/schemas.js';
 import { HttpError } from './lib/pages.js';
 import sessionPlugin from './plugins/session.js';
@@ -39,6 +39,7 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   app.decorate('backupsDir', config.backupsDir || (dbPath === ':memory:' ? fs.mkdtempSync(path.join(os.tmpdir(), 'destree-backups-')) : path.join(path.dirname(dbPath), 'backups'))); // F6b
   const migrated = await migrateLegacyImages(db, app.uploadsDir); // F5: dataURLs heredadas → archivos
   if (migrated && logger) app.log.info(`imágenes legadas migradas: ${migrated}`);
+  for (const m of migrate(db)) app.log.info(`migración aplicada tras vaciar image_legacy: ${m}`); // F7: 008 queda pendiente hasta aquí
   app.addHook('onClose', async () => db.close());
   for (const s of loadSchemas()) app.addSchema(s);
 
@@ -83,7 +84,17 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   return app;
 }
 
+/** F7: comprobaciones de arranque: carpeta de datos escribible; SERVER_SECRET solo se exige cuando haya integración Figma (F8a). */
+export function checkEnvironment(log = console) {
+  if (config.dbPath !== ':memory:') {
+    const dir = path.dirname(config.dbPath);
+    try { fs.mkdirSync(dir, { recursive: true }); fs.accessSync(dir, fs.constants.W_OK); } catch (err) { throw new Error(`La carpeta de datos ${dir} no es escribible (${err.message}). En Docker: chown -R 1000:1000 ./data`); }
+  }
+  if (!process.env.SERVER_SECRET && config.figmaPat) log.warn('SERVER_SECRET no definido: necesario para cifrar el PAT de Figma');
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
+  try { checkEnvironment(); } catch (err) { console.error(err.message); process.exit(1); }
   const app = await buildApp();
   try {
     await app.listen({ port: config.port, host: config.host });

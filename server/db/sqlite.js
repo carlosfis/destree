@@ -26,6 +26,11 @@ export function transaction(db, fn) {
   catch (err) { try { db.exec(depth === 1 ? 'ROLLBACK' : `ROLLBACK TO ${sp}; RELEASE ${sp}`); } catch { /* ya cerrada */ } throw err; }
   finally { txDepth.set(db, depth - 1); }
 }
+/** Guardas: una migración solo se aplica cuando su condición se cumple (si no, queda pendiente para el siguiente arranque). */
+export const hasColumn = (db, table, col) => db.prepare(`PRAGMA table_info(${table})`).all().some(c => c.name === col);
+const GUARDS = {
+  '008_drop_image_legacy.sql': db => !hasColumn(db, 'nodes', 'image_legacy') || db.prepare('SELECT COUNT(*) AS n FROM nodes WHERE image_legacy IS NOT NULL').get().n === 0, // F7: tras migrateLegacyImages
+};
 /** Aplica server/db/migrations/NNN_*.sql pendientes en orden. Devuelve los nombres aplicados. */
 export function migrate(db) {
   db.exec('CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY, applied_at TEXT NOT NULL)');
@@ -34,6 +39,7 @@ export function migrate(db) {
   const applied = [];
   for (const f of files) {
     if (done.has(f)) continue;
+    if (GUARDS[f] && !GUARDS[f](db)) break; // pendiente: no saltar a las siguientes
     const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, f), 'utf8');
     transaction(db, () => { db.exec(sql); db.prepare('INSERT INTO _migrations (name, applied_at) VALUES (?, ?)').run(f, nowIso()); });
     applied.push(f);

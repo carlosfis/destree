@@ -51,4 +51,8 @@
 - 2026-10-06 F6b: programación con cron propio de 5 campos (hora local, comprobación cada 30 s, una ejecución por minuto) vía `BACKUP_CRON`; vacío = desactivado. Vive en el proceso del servidor.
 - 2026-10-06 F6b: `scripts/restore.js` exige servidor parado: lock `.server.lock` con pid (onListen/onClose; pid muerto se ignora). Lo anterior se mueve a `restore-prev-<ts>/`, nunca se borra.
 - 2026-10-06 F6b: export org conserva ids; import es aditivo (usuarios por correo, páginas por id sustituidas, versiones reescritas), nunca exporta hashes; usuarios importados reciben contraseña aleatoria y el admin la fija con `PATCH /api/users/:id { password }`.
+- 2026-10-06 F7: migraciones con guarda (`GUARDS` en `db/sqlite.js`): `008_drop_image_legacy.sql` solo se aplica cuando la columna está vacía; una guarda falsa detiene la cadena (no se saltan migraciones) y `buildApp` reintenta tras `migrateLegacyImages`.
+- 2026-10-06 F7: `SERVER_SECRET` no es obligatorio (solo se avisa si hay `FIGMA_PAT`); el arranque falla únicamente si la carpeta de datos no es escribible. HTTPS soportado vía perfil `https` (Caddy + `DOMAIN`); cualquier otro proxy debe poner `TRUST_PROXY=1`.
+- 2026-10-06 F7: imagen única `ghcr.io/carlosfis/destree` multi-arch construida solo en CI (tag `v*`); en local `docker compose up --build`. Sin Docker en la máquina de desarrollo, la verificación de F7 queda en `PENDIENTE.md`.
+- 2026-10-06 F7: el MVP se cierra sin Figma (PLAN §5 F8a: detenerse). `docs/FIGMA.md` solo documenta capacidades de la API.
 - 2026-10-06 F3: markdown propio (`ui/markdown.js`): escape total antes de marcar; solo enlaces `http(s)`; sin HTML crudo, imágenes ni tablas. La ficha de lectura reutiliza `#editorDialog`.

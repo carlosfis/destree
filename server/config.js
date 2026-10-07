@@ -20,5 +20,6 @@ export const config = {
   versionsKeep: Math.max(1, Number(process.env.VERSIONS_KEEP) || 50), // F6a: versiones auto conservadas por página
   versionsCoalesceMs: Math.max(0, Number(process.env.VERSIONS_COALESCE_MIN ?? 5) * 60e3), // F6a: autos del mismo usuario se funden en esta ventana
   trustProxy: /^(1|true|yes)$/i.test(process.env.TRUST_PROXY || ''), // detrás de proxy TLS: cookie Secure + X-Forwarded-*
+  figmaPat: process.env.FIGMA_PAT || '', // F8a (no implementado): solo para avisar de SERVER_SECRET
   logLevel: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'test' ? 'silent' : 'info'),
 };

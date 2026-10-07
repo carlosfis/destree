@@ -37,7 +37,7 @@ export function getDocument(db, pageId, ctx = null) {
     if (!tagsByNode.has(r.node_id)) tagsByNode.set(r.node_id, []); tagsByNode.get(r.node_id).push(r.tag_id);
   }
   const nodes = db.prepare('SELECT * FROM nodes WHERE page_id = ? ORDER BY position').all(pageId).map(n => ({
-    id: n.id, type: n.type, name: n.name, description: n.description, image: n.image_legacy, imageId: n.image_id,
+    id: n.id, type: n.type, name: n.name, description: n.description, image: null, imageId: n.image_id,
     tags: tagsByNode.get(n.id) || [], owner: n.owner_label, ownerUserId: n.owner_user_id, parentId: n.parent_id, branchTypeId: n.branch_type_id,
     x: n.x, y: n.y, w: n.w, h: n.h, demo: !!n.demo, notes: n.notes, docs: pj(n.docs_json, []), visibility: n.visibility, status: n.status,
     cellIds: cellsByNode.get(n.id) || [], assigneeIds: assigneesByNode.get(n.id) || [],
@@ -75,12 +75,12 @@ export function saveDocument(db, pageId, doc, expected) {
     d.tags.forEach((t, i) => insTag.run(t.id, pageId, t.name, t.color, i));
     const insBt = db.prepare('INSERT INTO branch_types (id, page_id, name, color, position) VALUES (?, ?, ?, ?, ?)');
     d.branchTypes.forEach((t, i) => insBt.run(t.id, pageId, t.name, t.color, i));
-    const insNode = db.prepare(`INSERT INTO nodes (id, page_id, type, name, description, notes, docs_json, image_id, image_legacy, owner_user_id, owner_label, parent_id, branch_type_id, x, y, w, h, demo, visibility, status, position, updated_at)
-      VALUES (@id, @pageId, @type, @name, @description, @notes, @docs, @imageId, @image, @ownerUserId, @owner, @parentId, @branchTypeId, @x, @y, @w, @h, @demo, @visibility, @status, @position, @now)`);
+    const insNode = db.prepare(`INSERT INTO nodes (id, page_id, type, name, description, notes, docs_json, image_id, owner_user_id, owner_label, parent_id, branch_type_id, x, y, w, h, demo, visibility, status, position, updated_at)
+      VALUES (@id, @pageId, @type, @name, @description, @notes, @docs, @imageId, @ownerUserId, @owner, @parentId, @branchTypeId, @x, @y, @w, @h, @demo, @visibility, @status, @position, @now)`);
     const insNodeTag = db.prepare('INSERT INTO node_tags (page_id, node_id, tag_id, position) VALUES (?, ?, ?, ?)');
     const imageIds = new Set(db.prepare('SELECT id FROM images').all().map(r => r.id));
     d.nodes.forEach((n, i) => {
-      insNode.run({ id: n.id, pageId, type: n.type, name: n.name, description: n.description, notes: n.notes, docs: j(n.docs), imageId: n.imageId && imageIds.has(n.imageId) ? n.imageId : null, image: null /* F5: dataURL ya ingerida en la ruta; nunca se persiste */, ownerUserId: n.ownerUserId, owner: n.owner, parentId: n.parentId, branchTypeId: n.branchTypeId, x: n.x, y: n.y, w: n.w, h: n.h, demo: n.demo ? 1 : 0, visibility: n.visibility, status: n.status, position: i, now });
+      insNode.run({ id: n.id, pageId, type: n.type, name: n.name, description: n.description, notes: n.notes, docs: j(n.docs), imageId: n.imageId && imageIds.has(n.imageId) ? n.imageId : null /* F5: la dataURL se ingiere en la ruta; nunca se persiste */, ownerUserId: n.ownerUserId, owner: n.owner, parentId: n.parentId, branchTypeId: n.branchTypeId, x: n.x, y: n.y, w: n.w, h: n.h, demo: n.demo ? 1 : 0, visibility: n.visibility, status: n.status, position: i, now });
       n.tags.forEach((t, k) => insNodeTag.run(pageId, n.id, t, k));
     });
     const insEdge = db.prepare('INSERT INTO edges (id, page_id, kind, from_node_id, to_node_id, demo, position) VALUES (?, ?, ?, ?, ?, ?, ?)');
