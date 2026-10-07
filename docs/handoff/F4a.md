@@ -1,5 +1,5 @@
 # Handoff F4a — Pages API + router + lobby   [✅ completa]
-Commit: (hash en el commit siguiente) · Tag: f4a (f3 → e9deec7)
+Commit: 9bedc92 · Tag: f4a (f3 → e9deec7)
 ## Hecho
 - `004_pages.sql`: `pages.archived_at`, `pages.deleted_by` (visibility/status/deleted_at/camera_json desde 001; `page_cells` desde 003).
 - `lib/pages.js`: `listPages(db, org, ctx, status)` (active|archived|deleted|all, `rootCount`, `cellIds`), `createPage` (visibility+cellIds, contenido opcional), `updatePageMeta`, `setPageStatus`, `deletePage` (soft + JSON en `data/deleted/<id>-<ts>.json`, `app.deletedDir`), `duplicatePage`; PUT en página no activa → 409. `transaction()` reentrante (SAVEPOINT).
