@@ -14,7 +14,6 @@ Abre `http://localhost:3000`: el primer arranque pide nombre de organización y 
 - Imagen publicada: `ghcr.io/carlosfis/destree:<versión>` (amd64/arm64). `docker compose pull` para actualizar.
 - La carpeta `./data` debe ser escribible por el usuario `node` (uid 1000): `sudo chown -R 1000:1000 data` si el contenedor no arranca.
 - HTTPS: `DOMAIN=destree.ejemplo.com` en `.env`, puertos 80/443 libres, `docker compose --profile https up -d` (Caddy obtiene el certificado). Pon `TRUST_PROXY=1`.
-- Correo de pruebas (futuro): `docker compose --profile dev up -d` levanta Mailpit en `:8025`.
 
 ## Sin Docker
 ```
@@ -35,7 +34,6 @@ Para producción usa un gestor de procesos (systemd, pm2) y un proxy TLS (Caddy/
 | `LOG_LEVEL` | info | pino |
 | `VERSIONS_KEEP`, `VERSIONS_COALESCE_MIN` | 50, 5 | Versiones automáticas por página |
 | `BACKUP_CRON`, `BACKUP_KEEP` | —, 10 | Respaldos programados (cron 5 campos, hora local) |
-| `SERVER_SECRET` | — | Reservado (cifrado del PAT de Figma; no implementado) |
 
 ## Actualización
 1. Respaldo (`npm run backup` o `#/admin → Respaldos`).

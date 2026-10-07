@@ -1,4 +1,4 @@
-// F0b: estructura ESM del cliente + paridad CSS con legacy/arbol.html. F1: +api.js, normalize.js (symlink), claves S de persistencia.
+// Estructura del cliente: index.html (estilos en orden, un único módulo, sin inline), ESM sin globales, claves de S, imports↔exports, symlink normalize.js.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -7,15 +7,8 @@ import path from 'node:path';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const CLIENT = path.join(ROOT, 'client');
 const read = (f) => fs.readFileSync(path.join(CLIENT, f), 'utf8');
-const legacy = fs.readFileSync(path.join(ROOT, 'legacy/arbol.html'), 'utf8').split('\n');
-const range = (a, b) => legacy.slice(a - 1, b).join('\n') + '\n';
 
-const CSS = [
-  ['css/01-theme.css', 9, 92], ['css/02-base.css', 93, 156], ['css/03-topbar.css', 157, 191],
-  ['css/04-canvas.css', 192, 237], ['css/05-nodes.css', 238, 340], ['css/06-floating.css', 341, 375],
-  ['css/07-popover.css', 376, 401], ['css/08-admin.css', 402, 439], ['css/09-dialogs.css', 440, 489],
-  ['css/10-responsive.css', 490, 501],
-];
+const CSS = ["01-theme", "02-base", "03-topbar", "04-canvas", "05-nodes", "06-floating", "07-popover", "08-admin", "09-dialogs", "10-responsive", "11-auth", "12-cells", "13-lobby", "14-admin", "15-overrides", "16-drawer"].map((n) => `css/${n}.css`);
 const walk = (dir, out = []) => {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
@@ -42,18 +35,13 @@ const exportsOf = (src) => {
   return names;
 };
 
-test('CSS: concatenación de css/01..10 == <style> original (líneas 9-501)', () => {
-  for (const [f, a, b] of CSS) assert.equal(read(f), range(a, b), f);
-  assert.equal(CSS.map(([f]) => read(f)).join(''), range(9, 501));
-});
-
-test('index.html: markup original y un único <script type="module" src="js/main.js">', () => {
+test('index.html: estilos css/01..16 en orden, un único <script type="module" src="js/main.js">, sin manejadores inline', () => {
   const html = read('index.html');
-  assert.ok(html.startsWith(range(1, 7)), 'cabecera');
-  assert.ok(html.includes(range(503, 587)), 'body');
   const scripts = [...html.matchAll(/<script[^>]*>/g)].map((m) => m[0]);
   assert.deepEqual(scripts, ['<script type="module" src="js/main.js">']);
-  assert.deepEqual([...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]), [...CSS.map(([f]) => f), 'css/11-auth.css', 'css/12-cells.css', 'css/13-lobby.css', 'css/14-admin.css', 'css/15-overrides.css', 'css/16-drawer.css']); // F2: +auth · F3: +cells · F4a: +lobby · F4b: +admin · post-F7: +overrides
+  assert.ok(!/\son[a-z]+="/i.test(html), 'sin manejadores inline (compatible con CSP)');
+  assert.deepEqual([...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]), CSS);
+  for (const f of CSS) assert.ok(fs.existsSync(path.join(CLIENT, f)), f);
 });
 
 test('ESM: sin use strict, sin let/var top-level, sin globales window.* salvo S en main.js', () => {

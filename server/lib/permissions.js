@@ -1,6 +1,6 @@
-// F2: matriz única de permisos (PLAN §3). can(ctx, action) → boolean. ctx = { role }.
+// Matriz única de permisos. can(ctx, action) → boolean. ctx = { role }.
 export const ROLES = ['admin', 'head', 'designer'];
-// acción → roles que la tienen. Solo rol por org; las células llegan en F3 (lib/visibility.js).
+// acción → roles que la tienen. Rol por org; la visibilidad por células vive en lib/visibility.js.
 const MATRIX = {
   'users.manage': ['admin'],
   'invite': ['admin', 'head'],            // head: solo designer (regla extra en routes/invites.js)
@@ -9,7 +9,6 @@ const MATRIX = {
   'cells.members': ['admin', 'head'],   // head: solo sus células (regla extra en routes/cells.js)
   'directory.read': ['admin', 'head'],  // listado mínimo de usuarios para asignar
   'org.settings': ['admin'],
-  'figma.connect': ['admin'],
   'backups': ['admin'],
   'pages.read': ['admin', 'head', 'designer'],
   'pages.create': ['admin', 'head'],
@@ -20,7 +19,6 @@ const MATRIX = {
   'pages.export': ['admin', 'head', 'designer'],   // designer: solo lo visible (F3)
   'versions.read': ['admin', 'head', 'designer'],
   'versions.write': ['admin', 'head'],
-  'figma.link': ['admin', 'head'],
   'audit.read': ['admin'],
 };
 export const ACTIONS = Object.keys(MATRIX);

@@ -8,7 +8,7 @@ Fuente única de verdad para agencias y equipos de producto: un lienzo con el **
 - **Historial**: versiones automáticas y manuales por página, diff y restauración; respaldos tar.gz programables; export/import de la organización.
 - **Sin dependencias pesadas**: Node 22 + Fastify 5 + SQLite (`node:sqlite`), cliente vanilla ESM sin bundler. Única dependencia nativa: `sharp`.
 
-> Figma (métricas, thumbnails, webhooks) no está implementado: la app es completa sin ello.
+> Figma (métricas, thumbnails, webhooks) queda fuera del producto: la app es completa sin ello; los enlaces a archivos de Figma se añaden a mano en Documentación.
 
 ## Instalación rápida (Docker)
 ```
@@ -46,7 +46,10 @@ Docker: `docker compose pull && docker compose up -d` (o `--build` si clonaste).
 | Borrar/restaurar páginas, respaldos, audit log | ✓ | — | — |
 
 ## Documentación
-`docs/INSTALL.md` (instalación y variables) · `docs/ADMIN.md` (administración) · `docs/USER.md` (uso del lienzo) · `docs/API.md` · `docs/FIGMA.md` · `docs/MAP.md` (mapa del código) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CHANGELOG.md`.
+`docs/INSTALL.md` (instalación y variables) · `docs/ADMIN.md` (administración) · `docs/USER.md` (uso del lienzo) · `docs/API.md` · `docs/MAP.md` (mapa del código) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CHANGELOG.md` · `PENDIENTE.md` (roadmap detallado por fases).
+
+## Roadmap
+Orden previsto (detalle y estado en `PENDIENTE.md`): cambio de contraseña propio y restablecimiento desde Administración · correo SMTP para invitaciones y recuperación · cabeceras de seguridad y CSP · README en inglés, capturas y vídeo · v1.0.0. Fuera de alcance por ahora: integración con Figma, SSO/OAuth.
 
 ## Licencia
 MIT — ver `LICENSE`.

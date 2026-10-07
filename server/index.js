@@ -84,13 +84,12 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   return app;
 }
 
-/** F7: comprobaciones de arranque: carpeta de datos escribible; SERVER_SECRET solo se exige cuando haya integración Figma (F8a). */
+/** Comprobaciones de arranque: carpeta de datos escribible. */
 export function checkEnvironment(log = console) {
   if (config.dbPath !== ':memory:') {
     const dir = path.dirname(config.dbPath);
     try { fs.mkdirSync(dir, { recursive: true }); fs.accessSync(dir, fs.constants.W_OK); } catch (err) { throw new Error(`La carpeta de datos ${dir} no es escribible (${err.message}). En Docker: chown -R 1000:1000 ./data`); }
   }
-  if (!process.env.SERVER_SECRET && config.figmaPat) log.warn('SERVER_SECRET no definido: necesario para cifrar el PAT de Figma');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {

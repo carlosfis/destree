@@ -1,7 +1,7 @@
 {
   "name": "destree",
   "version": "0.1.0",
-  "description": "Fuente única de verdad para agencias: árbol de software, Design Systems, UI Kits, responsables y métricas Figma.",
+  "description": "Fuente única de verdad para agencias: árbol de software, Design Systems, UI Kits, responsables y documentación.",
   "private": true,
   "type": "module",
   "engines": {

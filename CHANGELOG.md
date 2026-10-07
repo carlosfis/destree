@@ -1,7 +1,7 @@
 # Changelog
 
 ## 0.1.0 — 2026-10-06
-Primer release autoalojable (F0–F7).
+Primer release autoalojable.
 - Lienzo de árbol de software (contenedores anidados, DS / UI Kits, conexiones, etiquetas, tipos de ramificación, auto-layout, minimapa, undo/redo), migrado del prototipo a ESM + Fastify 5 + SQLite (`node:sqlite`).
 - Documento validado con JSON Schema; PUT optimista con `If-Match`.
 - Auth propia (scrypt, cookie de sesión), roles admin/head/designer, invitaciones por enlace, audit log.

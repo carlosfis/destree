@@ -1,5 +1,5 @@
 /* =========================================================
-   15. Overrides del tema legacy (css/01..10 se mantienen 1:1 con legacy/arbol.html)
+   15. Overrides del tema base (css/01..10 proceden del prototipo original; aquí se ajustan sin tocarlos)
    ========================================================= */
 /* Contenedores opacos (accesibilidad): el anidado es un tono más oscuro que la raíz para marcar profundidad. */
 :root {

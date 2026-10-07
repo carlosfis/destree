@@ -1,5 +1,5 @@
 // F2: anti-CSRF en mutaciones /api/*: si llega Origin (o Referer) debe coincidir con Host. Rutas con config.skipOriginCheck quedan exentas
-// (F8a/F9a: /api/figma/report, /api/figma/hook). Sin Origin ni Referer (curl, inject) se permite: la cookie es SameSite=Lax.
+// Rutas de servidor a servidor pueden eximirse con `config.skipOriginCheck`. Sin Origin ni Referer (curl, inject) se permite: la cookie es SameSite=Lax.
 import { HttpError } from '../lib/pages.js';
 
 export function originMatches(req) {

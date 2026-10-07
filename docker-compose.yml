@@ -1,4 +1,4 @@
-# DesTree (F7). `cp .env.example .env && docker compose up -d` → http://localhost:3000
+# DesTree. `cp .env.example .env && docker compose up -d` → http://localhost:3000
 services:
   destree:
     build: .
@@ -28,13 +28,6 @@ services:
       - caddy_config:/config
     depends_on:
       - destree
-  # Perfil dev: buzón de pruebas para el correo (F9b). UI en http://localhost:8025
-  mailpit:
-    image: axllent/mailpit
-    profiles: ["dev"]
-    ports:
-      - "8025:8025"
-      - "1025:1025"
 volumes:
   caddy_data:
   caddy_config:
