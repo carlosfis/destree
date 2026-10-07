@@ -35,4 +35,8 @@
 .staff-list li { display: flex; align-items: baseline; gap: 8px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; }
 .staff-list .role { color: var(--fg-3); font-size: 12px; }
 
-@media (max-width: 720px) { #nodeDrawer { width: 100%; } }
+@media (max-width: 720px) {
+  #nodeDrawer { width: 100%; }
+  .staff-row, .doc-row { grid-template-columns: 1fr 1fr; }
+  .staff-row > :last-child, .doc-row > :last-child { grid-column: 1 / -1; }
+}

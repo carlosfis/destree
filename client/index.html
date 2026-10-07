@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="color-scheme" content="light dark">
-<title>Árbol de Sistemas</title>
+<title>DesTree</title>
 <link rel="stylesheet" href="css/01-theme.css">
 <link rel="stylesheet" href="css/02-base.css">
 <link rel="stylesheet" href="css/03-topbar.css">
@@ -28,7 +28,7 @@
 <header class="topbar">
   <div class="brand">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><rect x="6.5" y="9" width="5" height="4.5" rx="1"/><rect x="13" y="13" width="4.5" height="4.5" rx="1"/><path d="M3 7h18"/></svg>
-    <span>Árbol de Sistemas</span>
+    <span>DesTree</span>
   </div>
   <button class="btn primary" id="btnNew" title="Nueva card (N)">＋ <span class="hide-sm">Nueva card</span></button>
   <button class="btn" id="btnLayout" title="Auto-layout jerárquico">⇅ <span class="hide-sm">Auto-layout</span></button>
@@ -41,15 +41,15 @@
     </button>
   </div>
   <div class="spacer"></div>
-  <button class="icon-btn" id="btnUndo" title="Deshacer (Ctrl/⌘+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
-  <button class="icon-btn" id="btnRedo" title="Rehacer (Ctrl/⌘+Shift+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+  <button class="icon-btn" id="btnUndo" title="Deshacer (Ctrl/⌘+Z)" aria-label="Deshacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+  <button class="icon-btn" id="btnRedo" title="Rehacer (Ctrl/⌘+Shift+Z)" aria-label="Rehacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
   <span class="save-status" id="saveStatus"></span>
   <div class="sep"></div>
   <button class="theme-switch" id="themeSwitch" title="Cambiar tema" aria-label="Cambiar tema">
     <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
     <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
   </button>
-  <button class="icon-btn" id="btnHelp" title="Atajos de teclado (?)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg></button>
+  <button class="icon-btn" id="btnHelp" title="Atajos de teclado (?)" aria-label="Atajos de teclado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg></button>
   <button class="btn" id="btnAdmin" title="Panel de administración">⚙ <span class="hide-sm">Administrar</span></button>
 </header>
 
@@ -78,17 +78,18 @@
   <div class="float" id="statusBar"></div>
   <canvas class="float" id="minimap" width="200" height="130"></canvas>
   <div class="float" id="zoomBar">
-    <button class="icon-btn" id="zoomOut" title="Alejar (−)">−</button>
+    <button class="icon-btn" id="zoomOut" title="Alejar (−)" aria-label="Alejar">−</button>
     <button class="zoom-label" id="zoomLabel" title="Restablecer a 100%">100%</button>
-    <button class="icon-btn" id="zoomIn" title="Acercar (+)">+</button>
-    <button class="icon-btn" id="zoomFit" title="Ajustar a pantalla (Shift+1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+    <button class="icon-btn" id="zoomIn" title="Acercar (+)" aria-label="Acercar">+</button>
+    <button class="icon-btn" id="zoomFit" title="Ajustar a pantalla (Shift+1)" aria-label="Ajustar a pantalla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
   </div>
   <div class="float" id="toasts"></div>
+  <div class="float" id="emptyHint" hidden></div>
 </main>
 
 <!-- ====================== Panel de administración ====================== -->
 <aside class="panel" id="adminPanel" aria-label="Administración">
-  <header><h2>Administración</h2><button class="icon-btn" id="closeAdmin" title="Cerrar">✕</button></header>
+  <header><h2>Administración</h2><button class="icon-btn" id="closeAdmin" title="Cerrar" aria-label="Cerrar">✕</button></header>
   <nav class="tabs" id="adminTabs">
     <button data-tab="tags" class="active">Etiquetas</button>
     <button data-tab="edgeTypes">Ramificaciones</button>

@@ -18,7 +18,7 @@ export async function openVersionsPanel() {
   let versions = [];
   try { versions = await api.listVersions(S.pageId); } catch (err) { return toast(err.message, 'error', 5000); }
   editorDialog.innerHTML = `<div class="dialog-inner node-view versions">
-    <header><h2>Historial · ${esc(S.state.page.name)}</h2><button type="button" class="icon-btn" data-cancel>✕</button></header>
+    <header><h2>Historial · ${esc(S.state.page.name)}</h2><button type="button" class="icon-btn" data-cancel aria-label="Cerrar">✕</button></header>
     <div class="dialog-body">
       <div class="inline-actions">${has('versions.write') ? '<button class="btn primary" id="verManual">＋ Versión manual</button>' : ''}<span class="hint">Versión actual: ${S.version}. Las automáticas se crean al guardar (se funden en 5 min) y se conservan las últimas; manuales, restauraciones, importaciones y archivados no se purgan.</span></div>
       ${versions.length ? `<ul class="ver-list">${versions.map(v => `<li data-n="${v.number}"><div class="ver-head"><b>v${v.number}</b><span class="chip tag-${v.reason === 'auto' ? 'gray' : v.reason === 'manual' ? 'blue' : 'orange'}">${esc(REASON[v.reason] || v.reason)}</span>${v.label ? `<span class="ver-label">${esc(v.label)}</span>` : ''}<span class="url">${esc(v.createdByName || '—')} · ${esc(fmt(v.createdAt))} · ${kb(v.size)}</span>

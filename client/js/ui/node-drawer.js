@@ -13,7 +13,7 @@ export const instanceLabel = parentId => (parentId ? 'Child instance' : 'Main in
 /** Markup completo del sidebar. `panes` = { tabId: html }. `tag` = 'form' (editor) | 'div' (ficha). */
 export function drawerHTML({ title, badge = '', tabs = TABS, panes, footer = '', tag = 'form', id = '', cls = '' }) {
   return `<${tag}${id ? ` id="${id}"` : ''} class="drawer-inner ${cls}">
-    <header>${badge}<h2 id="drawerTitle">${title}</h2><button type="button" class="icon-btn" data-cancel title="Cerrar (Esc)">✕</button></header>
+    <header>${badge}<h2 id="drawerTitle">${title}</h2><button type="button" class="icon-btn" data-cancel title="Cerrar (Esc)" aria-label="Cerrar">✕</button></header>
     <nav class="tabs drawer-tabs">${tabs.map((t, i) => `<button type="button" data-tab="${t.id}" class="${i === 0 ? 'active' : ''}">${t.label}</button>`).join('')}</nav>
     <div class="dialog-body drawer-body">${tabs.map((t, i) => `<section class="tab-pane" data-pane="${t.id}"${i ? ' hidden' : ''}>${panes[t.id] || ''}</section>`).join('')}</div>
     ${footer ? `<footer>${footer}</footer>` : ''}

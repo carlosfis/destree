@@ -310,6 +310,43 @@ await step('F6b: respaldos (crear desde #/admin, descargar, export org)', async 
 });
 await step('recarga: persistencia SQLite vía API', async () => { await send('Page.reload'); await sleep(1200); return ev(`({ nodes: S.state.nodes.length, theme: document.documentElement.dataset.theme })`); });
 // F2: invitación (enlace copiable) → alta de designer → modo lectura; PUT → 403; logout → login.
+// P1: estado vacío del lienzo (guía + botón) y Escape en el lobby → vuelve al lienzo.
+await step('P1: estado vacío del lienzo + Escape cierra el lobby', async () => {
+  const page = await ev(`S.pageId`);
+  const created = await ev(`fetch('/api/pages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Smoke vacía' }) }).then(r => r.json())`);
+  await ev(`location.hash = '#/p/' + ${JSON.stringify(created.page.id)}; true`); await sleep(900);
+  const empty = await ev(`({ nodes: S.state.nodes.length, hint: !document.querySelector('#emptyHint').hidden, btn: !!document.querySelector('#emptyNew'), title: document.title })`);
+  await ev(`document.querySelector('#emptyNew').click(); true`); await sleep(100);
+  const menu = await ev(`document.querySelectorAll('#popover .menu-item').length`);
+  await ev(`document.querySelector('#popover .menu-item').click(); true`); await sleep(150);
+  await ev(`(() => { const f = document.querySelector('#editorForm'); f.elements.name.value = 'Primera'; f.requestSubmit(); return true; })()`); await sleep(400);
+  const after = await ev(`({ nodes: S.state.nodes.length, hintHidden: document.querySelector('#emptyHint').hidden })`);
+  await ev(`location.hash = '#/lobby'; true`); await sleep(500);
+  const lobby = await ev(`({ visible: !document.querySelector('#lobbyView').hidden, focus: document.activeElement?.dataset?.tab || document.activeElement?.tagName })`);
+  await key('Escape', 'Escape'); await sleep(400);
+  const esc = await ev(`({ lobbyHidden: document.querySelector('#lobbyView').hidden, hash: location.hash })`);
+  await ev(`location.hash = '#/p/' + ${JSON.stringify(page)}; true`); await sleep(900);
+  if (!empty.hint || !empty.btn || !menu || !after.hintHidden || after.nodes !== 1 || !esc.lobbyHidden) throw new Error(JSON.stringify({ empty, menu, after, lobby, esc }));
+  return { empty, after, lobby, esc };
+});
+// P1: 360×740 sin desborde horizontal en lienzo, lobby y #/admin (usuarios, audit).
+await step('P1: viewport 360×740 sin scroll horizontal (lienzo, lobby, admin)', async () => {
+  await send('Emulation.setDeviceMetricsOverride', { width: 360, height: 740, deviceScaleFactor: 1, mobile: true }); await sleep(400);
+  const sw = (sel) => ev(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); return el ? { sw: el.scrollWidth, cw: el.clientWidth } : null; })()`);
+  const canvas = { html: await sw('html'), topbar: await sw('.topbar') };
+  await ev(`location.hash = '#/lobby'; true`); await sleep(500);
+  const lobby = { html: await sw('html'), view: await sw('#lobbyView') };
+  await ev(`location.hash = '#/admin/users'; true`); await sleep(900);
+  const users = { view: await sw('#adminView') };
+  await ev(`document.querySelector('#orgTabs [data-tab=audit]').click(); true`); await sleep(600);
+  const audit = { view: await sw('#adminView') };
+  await ev(`document.querySelector('#adminBack').click(); true`); await sleep(500);
+  await send('Emulation.clearDeviceMetricsOverride'); await sleep(400);
+  const all = { canvas, lobby, users, audit };
+  const bad = Object.entries(all).flatMap(([k, o]) => Object.entries(o).filter(([, m]) => !m || m.sw > m.cw + 1).map(([n]) => `${k}.${n}`));
+  if (bad.length) throw new Error('desborde horizontal: ' + bad.join(', ') + ' ' + JSON.stringify(all));
+  return all;
+});
 await step('invitación → designer en modo lectura (403 en PUT)', async () => {
   const link = await ev(`fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'des@smoke.io', role: 'designer' }) }).then(r => r.json()).then(j => j.link)`);
   if (!/#\/invite\//.test(link)) throw new Error('sin enlace: ' + link);

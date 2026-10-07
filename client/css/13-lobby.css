@@ -18,4 +18,9 @@
 .page-actions .btn { padding: 4px 9px; font-size: 12.5px; }
 #btnLobby { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #btnLobby b { font-weight: 500; }
-@media (max-width: 720px) { .lobby { padding: 12px; } #btnLobby { max-width: 140px; } }
+@media (max-width: 720px) {
+  .lobby { padding: 12px; } #btnLobby { max-width: 140px; }
+  .lobby-head { flex-wrap: wrap; } .lobby-head .user-chip { max-width: 160px; }
+  .lobby-bar { flex-wrap: wrap; } .lobby-bar input { max-width: none; flex: 1 1 160px; }
+}
+@media (max-width: 480px) { .lobby .row { flex-wrap: wrap; } .lobby .row > .grow { flex-basis: 100%; } }

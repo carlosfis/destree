@@ -48,11 +48,25 @@ export function updateStatus() {
   bar.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join('');
 }
 
+/** Guía centrada cuando la página no tiene cards (editor: crear la primera Main instance; lectura: aviso). */
+export function renderEmptyHint() {
+  const el = $('#emptyHint'); if (!el || !S.state) return;
+  const empty = S.state.nodes.length === 0;
+  el.hidden = !empty;
+  if (!empty) { el.innerHTML = ''; return; }
+  el.innerHTML = S.readonly
+    ? '<h3>Esta página está vacía</h3><p>Aún no hay cards visibles para ti. Cuando el equipo añada contenido aparecerá aquí.</p>'
+    : '<h3>Esta página está vacía</h3><p>Crea la primera <b>Main instance</b> (un software raíz) y anida dentro sus features, Design Systems y UI Kits.</p><button type="button" class="btn primary" id="emptyNew">＋ Nueva Main instance</button><p class="hint">También con clic derecho en el fondo o la tecla <kbd>N</kbd>.</p>';
+  el.onpointerdown = e => e.stopPropagation(); // no inicia marquee ni pan
+  $('#emptyNew', el)?.addEventListener('click', () => $('#btnNew').click());
+}
+
 export function renderAll() {
   renderNodes();
   renderEdges();
   applySelection();
   drawMinimap();
+  renderEmptyHint();
   if ($('#adminPanel').classList.contains('open')) renderAdmin();
 }
 

@@ -29,6 +29,7 @@ export async function openAdminView(tab) {
   $('#orgTabs', v).addEventListener('click', e => { const b = e.target.closest('button'); if (b) openAdminView(b.dataset.tab); });
   $('#adminBack', v).addEventListener('click', () => { location.hash = S.pageId ? `#/p/${encodeURIComponent(S.pageId)}` : '#/lobby'; });
   const body = $('#orgBody', v);
+  $('#orgTabs .active', v)?.focus();
   if (tab === 'users') return renderUsersTab(body);
   if (tab === 'cells') return renderCellsTab(body);
   if (tab === 'deleted') return renderDeleted(body);
@@ -46,7 +47,7 @@ async function renderBackups(body) {
   const rows = $('#bkRows', body); if (!r.backups.length) rows.innerHTML = '<div class="empty">Sin respaldos todavía.</div>';
   for (const b of r.backups) {
     const row = document.createElement('div'); row.className = 'row';
-    row.innerHTML = `<span class="grow"><b>${esc(b.filename)}</b><br><span class="count">${esc(b.kind)} · ${esc(b.status)} · ${kb(b.bytes)} · ${fmt(b.createdAt)}${b.error ? ' · ' + esc(b.error) : ''}</span></span>${b.status === 'ok' ? `<a class="btn" href="/api/backups/${b.id}/download" download>Descargar</a>` : ''}<button class="icon-btn" title="Eliminar">🗑</button>`;
+    row.innerHTML = `<span class="grow"><b>${esc(b.filename)}</b><br><span class="count">${esc(b.kind)} · ${esc(b.status)} · ${kb(b.bytes)} · ${fmt(b.createdAt)}${b.error ? ' · ' + esc(b.error) : ''}</span></span>${b.status === 'ok' ? `<a class="btn" href="/api/backups/${b.id}/download" download>Descargar</a>` : ''}<button class="icon-btn" title="Eliminar" aria-label="Eliminar">🗑</button>`;
     row.querySelector('.icon-btn').addEventListener('click', async () => { try { await api.deleteBackup(b.id); renderBackups(body); } catch (err) { toast(err.message, 'error'); } });
     rows.appendChild(row);
   }

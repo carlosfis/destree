@@ -60,11 +60,11 @@ function renderUserChip() {
   chip.innerHTML = `<b>${esc(S.session.user.name || S.session.user.email)}</b><span class="role">${esc(ROLE_LABEL[S.session.role] || S.session.role)}</span>`;
   const out = document.createElement('button'); out.className = 'btn'; out.id = 'btnLogout'; out.title = 'Cerrar sesión'; out.textContent = 'Salir';
   out.addEventListener('click', async () => { await api.logout().catch(() => {}); location.hash = '#/login'; location.reload(); });
-  const me = document.createElement('button'); me.className = 'btn'; me.id = 'btnMe'; me.title = 'Mis asignaciones'; me.textContent = '★ Mías'; // F3
+  const me = document.createElement('button'); me.className = 'btn'; me.id = 'btnMe'; me.title = 'Mis asignaciones'; me.innerHTML = '★ <span class="hide-sm">Mías</span>'; // F3
   me.addEventListener('click', () => { location.hash = '#/me'; });
-  const ver = document.createElement('button'); ver.className = 'btn'; ver.id = 'btnVersions'; ver.title = 'Historial de versiones'; ver.textContent = '⟲ Historial'; ver.addEventListener('click', openVersionsPanel); // F6a
+  const ver = document.createElement('button'); ver.className = 'btn'; ver.id = 'btnVersions'; ver.title = 'Historial de versiones'; ver.innerHTML = '⟲ <span class="hide-sm">Historial</span>'; ver.addEventListener('click', openVersionsPanel); // F6a
   const org = adminTabsFor().length ? document.createElement('button') : null; // F4b
-  if (org) { org.className = 'btn'; org.id = 'btnOrg'; org.title = 'Administración (usuarios, células, audit)'; org.textContent = '⚑ Admin'; org.addEventListener('click', () => { location.hash = '#/admin'; }); }
+  if (org) { org.className = 'btn'; org.id = 'btnOrg'; org.title = 'Administración (usuarios, células, audit)'; org.innerHTML = '⚑ <span class="hide-sm">Admin</span>'; org.addEventListener('click', () => { location.hash = '#/admin'; }); }
   $('#btnAdmin').before(chip, me, ver, ...(org ? [org] : []), out);
   $('#btnAdmin').innerHTML = '⚙ <span class="hide-sm">Página</span>'; $('#btnAdmin').title = 'Ajustes de la página';
 }
@@ -73,9 +73,11 @@ function renderPageButton() {
   let b = $('#btnLobby');
   if (!b) { b = document.createElement('button'); b.className = 'btn'; b.id = 'btnLobby'; b.title = 'Páginas (lobby)'; b.addEventListener('click', () => { location.hash = '#/lobby'; }); $('.topbar .brand').after(b); }
   b.innerHTML = `⌂ <b>${esc(S.state?.page?.name || 'Páginas')}</b>`;
+  document.title = S.state?.page?.name ? `DesTree · ${S.state.page.name}` : 'DesTree';
 }
 /** F4a: cambio de página sin fugas: bootstrap(pageId) + reset de historial/selección/popover/diálogos. */
 async function loadPage(pid) {
+  setSaveStatus('Cargando…');
   try { await bootstrap(pid); } catch (err) { if (err.noPage || err.status === 403 || err.status === 404) { toast(err.message, 'error', 5000); if (!S.pageId) return openLobby(); if (location.hash !== '#/lobby') location.hash = '#/lobby'; return; } throw err; }
   history.past.length = 0; history.future.length = 0; updateUndoButtons();
   closePopover(); if (editorDialog.open) editorDialog.close(); closeDrawer(); toggleAdmin(false);

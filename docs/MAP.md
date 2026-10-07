@@ -47,7 +47,7 @@ Una línea por archivo. Actualizar al crear/mover archivos.
 - `routes/cells.js` — `/api/cells` CRUD + `PUT /:id/members`, `GET /api/users/directory`. `routes/audit.js` — `GET /api/audit` (admin). `routes/backups.js` — `/api/backups` (GET/POST/DELETE, `/:id/download`), `/api/org/export`, `/api/org/import`. `routes/versions.js` — `/api/pages/:id/versions` (GET/POST), `/:n`, `/:a/diff/:b`, `/:n/restore`. `routes/images.js` — `POST /api/images` (binario), `DELETE /api/images/:id`, `GET /uploads/:id[/thumb]`. `routes/nodes.js` — `PATCH /api/pages/:pageId/nodes/:nodeId/visibility|owner`, `PUT …/assignees`; `GET /api/me/assignments`.
 
 ## client/ (vanilla JS ESM + CSS, sin bundler)
-- `index.html` — topbar, lienzo, `#adminPanel` (ajustes de página), diálogos, `#nodeDrawer`, `#authView` + `<link>` css/01..16 + único `<script type="module" src="js/main.js">`.
+- `index.html` — topbar, lienzo, `#adminPanel` (ajustes de página), diálogos, `#nodeDrawer`, `#emptyHint` (estado vacío), `#authView` + `<link>` css/01..16 + único `<script type="module" src="js/main.js">`.
 - `css/01-theme … 10-responsive.css` — estilos base heredados del prototipo original. `css/11-auth.css` — overlay de acceso, chip de usuario, `body.viewer` (modo lectura). `css/12-cells.css` — chips de células/asignados, pestaña Células, ficha de lectura, enlaces y markdown. `css/13-lobby.css` — lobby y botón de página. `css/14-admin.css` — `#/admin`, tabla de audit, formulario Página. `css/15-overrides.css` — overrides de variables del tema legacy (contenedores opacos) + hero de imagen en cards/contenedores. `css/16-drawer.css` — sidebar de instancia (`#nodeDrawer`: pestañas, staff, ficha).
 - `js/main.js` — entrada: botones topbar, router por hash (`#/login`, `#/setup`, `#/invite/<token>`, `#/me`, `#/n/<id>`, `#/lobby`, `#/p/<id>[/n/<nodeId>]`, `#/admin[/<tab>]` → `appRoute()`), `authenticate()` → `S.session`, `loadTeamData()`, `loadPage()` (cambio sin fugas), `renderPageButton()` (⌂ página), chip usuario + ★ Mías + ⟲ Historial + ⚑ Admin + logout (inyectados por JS; `#btnAdmin` → "⚙ Página"), `init()`, `window.S` solo en localhost.
 - `js/core/utils.js` — `$`, `$$`, `uid`, `clamp`, `esc`, `debounce`, constantes (`STORAGE_KEY`, `PREFS_KEY`, `CARD_W`, `GRID`…; PAD/MIN_Z/MAX_Z/TAG_COLORS desde normalize.js), `TYPE_META`, `KIND_LABEL`.
@@ -60,7 +60,7 @@ Una línea por archivo. Actualizar al crear/mover archivos.
 - `js/canvas/camera.js` — pan/zoom, `measureViewport`, `toWorld`/`toScreen`, `fitToScreen`, `animateCamera`.
 - `js/canvas/render-nodes.js` — `sel`, mapas de tamaños/elementos, `renderNodes`, `computeSizes`, `freeSpot`; chips ◐ células (`visibilityChip`), asignados, responsable, ⎘ docs, ⇢ ocultas.
 - `js/canvas/render-edges.js` — geometría y SVG de aristas, `updateEdgePaths`.
-- `js/canvas/selection.js` — selección, `updateStatus`, `renderAll`.
+- `js/canvas/selection.js` — selección, `updateStatus`, `renderEmptyHint` (guía de página vacía), `renderAll`.
 - `js/canvas/minimap.js` — `drawMinimap` + arrastre en minimapa.
 - `js/canvas/pointer-gestures.js` — down/move/up: drag, pan, marquee, pinch, conexión, resize.
 - `js/canvas/pointer-drag.js` — arrastre/guías/marquee/rueda/menú contextual; listeners del viewport.
@@ -84,7 +84,7 @@ Una línea por archivo. Actualizar al crear/mover archivos.
 
 ## scripts/
 - `lint.js` — `node --check` de todos los .js. `migrate.js` — aplica migraciones + seed. `import.js` — `node scripts/import.js archivo.json [pageId]` (ingiere dataURLs).
-- `backup.js` — respaldo manual sin API. `restore.js` — restaura un tar.gz con el servidor parado. `smoke.js` — checklist en Chrome headless vía CDP sobre Fastify con DB temporal (setup, lienzo, célula/editor/ficha/#/me, lobby/cambio de página, #/admin + pestaña Página, upload/ingesta, historial, respaldos, invitación→designer readonly + ficha, logout/login; consola limpia).
+- `backup.js` — respaldo manual sin API. `restore.js` — restaura un tar.gz con el servidor parado. `smoke.js` — checklist en Chrome headless vía CDP sobre Fastify con DB temporal (setup, lienzo, célula/editor/ficha/#/me, lobby/cambio de página, #/admin + pestaña Página, upload/ingesta, historial, respaldos, estado vacío + Escape, viewport 360×740 sin desborde, invitación→designer readonly + ficha, logout/login; consola limpia).
 
 ## tests/
 - `client.test.js` — index.html (estilos en orden, único módulo, sin inline), estructura ESM (sin `let` top-level, claves de `S`, imports↔exports, symlink normalize, alcance desde `main.js`).

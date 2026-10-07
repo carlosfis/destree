@@ -30,7 +30,7 @@ export async function openMyAssignments() {
   if (!S.session) return;
   const items = await assignmentItems();
   editorDialog.innerHTML = `<div class="dialog-inner node-view">
-    <header><h2>Mis asignaciones</h2><button type="button" class="icon-btn" data-cancel>✕</button></header>
+    <header><h2>Mis asignaciones</h2><button type="button" class="icon-btn" data-cancel aria-label="Cerrar">✕</button></header>
     <div class="dialog-body">
       <p class="hint">Cards donde eres responsable o estás asignado, en todas las páginas que puedes ver.</p>
       ${assignmentHTML(items)}

@@ -1,5 +1,11 @@
 # Changelog
 
+## Sin publicar
+- UI: estado vacío del lienzo con guía y botón «Nueva Main instance»; «Cargando…» al cambiar de página; Escape cierra lobby y administración; foco inicial en pestañas; `aria-label` en botones de icono; `<title>` y marca «DesTree» (título con el nombre de la página).
+- Responsive ≥360 px: topbar compacta, lobby y administración sin desborde horizontal (cabecera, formularios, tabla de audit), filas de staff y documentación apiladas en el sidebar.
+- Smoke: pasos nuevos para estado vacío + Escape y viewport 360×740.
+- Limpieza del repo: fuera el plan por fases, los handoffs, el prototipo original y toda referencia a Figma; `PENDIENTE.md` como único seguimiento.
+
 ## 0.1.0 — 2026-10-06
 Primer release autoalojable.
 - Lienzo de árbol de software (contenedores anidados, DS / UI Kits, conexiones, etiquetas, tipos de ramificación, auto-layout, minimapa, undo/redo), migrado del prototipo a ESM + Fastify 5 + SQLite (`node:sqlite`).

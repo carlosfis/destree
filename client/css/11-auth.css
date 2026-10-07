@@ -20,4 +20,4 @@
 /* modo lectura (designer): sin puertos, asas, botones de card ni cursor de edición */
 body.viewer .port, body.viewer .resize, body.viewer .node [data-action] { display: none !important; }
 body.viewer .node { cursor: default; }
-@media (max-width: 720px) { .user-chip b { display: none; } }
+@media (max-width: 720px) { .user-chip b { display: none; } .invite-link { flex-wrap: wrap; } .invite-link .btn { flex: 1; justify-content: center; } }

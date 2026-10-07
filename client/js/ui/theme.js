@@ -29,7 +29,7 @@ export function toast(msg, kind = 'info', ms = 2600) {
 export function openShortcuts() {
   const K = (...ks) => ks.map(k => `<kbd>${esc(k)}</kbd>`).join('');
   const row = (l, ...ks) => `<div class="sc"><span>${l}</span><span>${K(...ks)}</span></div>`;
-  $('#shortcutsDialog').innerHTML = `<div class="dialog-inner"><header><h2>Atajos de teclado</h2><button class="icon-btn" id="closeSc">✕</button></header>
+  $('#shortcutsDialog').innerHTML = `<div class="dialog-inner"><header><h2>Atajos de teclado</h2><button class="icon-btn" id="closeSc" aria-label="Cerrar">✕</button></header>
     <div class="dialog-body"><div class="shortcuts">
       <h4>Lienzo</h4>
       ${row('Pan', 'Rueda', 'Espacio + arrastrar', 'Botón central')}${row('Zoom al cursor', MOD + ' + rueda', 'Pinch')}

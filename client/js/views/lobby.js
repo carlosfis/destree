@@ -34,6 +34,7 @@ export async function openLobby(tab = S.lobbyTab || 'active') {
   });
   $('#lobbySearch', v)?.addEventListener('input', e => { const q = e.target.value.trim().toLowerCase(); v.querySelectorAll('.page-card').forEach(c => { c.hidden = !!q && !c.dataset.q.includes(q); }); });
   const body = $('#lobbyBody', v);
+  $('#lobbyTabs .active', v)?.focus();
   if (tab === 'me') { body.innerHTML = assignmentHTML(await assignmentItems()); body.addEventListener('click', e => { const a = e.target.closest('a'); if (a) { e.preventDefault(); location.hash = a.getAttribute('href'); } }); return; }
   let pages = [];
   try { pages = await api.listPages(tab); if (tab === 'active') S.pageList = pages; } catch (err) { body.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }

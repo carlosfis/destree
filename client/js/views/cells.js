@@ -35,7 +35,7 @@ function cellRow(c, body) {
   const row = document.createElement('div'); row.className = 'cell-row';
   const members = (c.memberIds || []).map(nameOf);
   row.innerHTML = `<div class="row"><button class="swatch tag-${esc(c.color)}" title="Cambiar color" ${isAdmin() ? '' : 'disabled'}></button><input class="inline grow" value="${esc(c.name)}" maxlength="80" ${isAdmin() ? '' : 'disabled'}>
-      <span class="count">${members.length} miembro${members.length === 1 ? '' : 's'}</span>${canManage(c) ? '<button class="btn" data-members>Miembros</button>' : ''}${isAdmin() ? '<button class="icon-btn" data-del title="Eliminar">🗑</button>' : ''}</div>
+      <span class="count">${members.length} miembro${members.length === 1 ? '' : 's'}</span>${canManage(c) ? '<button class="btn" data-members>Miembros</button>' : ''}${isAdmin() ? '<button class="icon-btn" data-del title="Eliminar" aria-label="Eliminar">🗑</button>' : ''}</div>
     <div class="cell-meta">${c.leadUserId ? `Lead: <b>${esc(nameOf(c.leadUserId))}</b> · ` : ''}${members.length ? esc(members.join(', ')) : '<i>sin miembros</i>'}</div>
     <div class="cell-members" hidden></div>`;
   const [sw, inp] = row.querySelector('.row').children;

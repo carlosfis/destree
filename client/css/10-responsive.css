@@ -10,3 +10,11 @@
   .type-picker, .field-row { grid-template-columns: 1fr; }
   .img-field { flex-direction: column; }
 }
+@media (max-width: 480px) {
+  .topbar { gap: 4px; padding: 6px; }
+  .topbar .btn { padding: 5px 7px; }
+  .topbar .user-chip { max-width: 96px; }
+  .topbar .sep { display: none; }
+  #zoomBar { right: 8px; bottom: 8px; }
+  #statusBar { display: none; }
+}

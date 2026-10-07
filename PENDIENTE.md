@@ -10,15 +10,15 @@
 
 ---
 
-## P1 — UI acotada (agente) · en curso
+## P1 — UI acotada (agente) ✅ 2026-10-07
 **Objetivo:** que un designer o head pueda usar la app sin tropiezos en pantalla pequeña y sin estados ambiguos.
-- [ ] Estado vacío del lienzo: página sin cards muestra una guía centrada (crear Main instance para editores; aviso de solo lectura para designer) que desaparece al crear la primera card.
-- [ ] Indicador de carga al cambiar de página (barra de estado «Cargando…») y estados vacíos/errores ya existentes en lobby, admin, historial y asignaciones revisados.
-- [ ] Responsive ≥360 px: topbar sin desbordes (textos ocultos, chip compacto), lobby y `#/admin` sin scroll horizontal (cabecera, pestañas, formularios, tabla de audit), drawer e inputs de staff/documentación apilados.
-- [ ] Teclado y foco: Escape cierra lobby/admin y vuelve al lienzo; foco inicial en cada diálogo y overlay; botones de icono con `aria-label`.
-- [ ] Marca coherente: `<title>` y marca de la topbar dicen «DesTree».
-- [ ] Smoke: pasos nuevos para estado vacío, Escape en lobby y viewport 360×740 sin scroll horizontal.
-**Aceptación:** `npm test`, `npm run lint` y `node scripts/smoke.js` verdes; smoke incluye los tres pasos nuevos.
+- [x] Estado vacío del lienzo: página sin cards muestra una guía centrada (crear Main instance para editores; aviso de solo lectura para designer) que desaparece al crear la primera card.
+- [x] Indicador de carga al cambiar de página (barra de estado «Cargando…») y estados vacíos/errores ya existentes en lobby, admin, historial y asignaciones revisados.
+- [x] Responsive ≥360 px: topbar sin desbordes (textos ocultos, chip compacto), lobby y `#/admin` sin scroll horizontal (cabecera, pestañas, formularios, tabla de audit), drawer e inputs de staff/documentación apilados.
+- [x] Teclado y foco: Escape cierra lobby/admin y vuelve al lienzo; foco inicial en cada diálogo y overlay; botones de icono con `aria-label`.
+- [x] Marca coherente: `<title>` y marca de la topbar dicen «DesTree».
+- [x] Smoke: pasos nuevos para estado vacío, Escape en lobby y viewport 360×740 sin scroll horizontal.
+**Aceptación:** `npm test`, `npm run lint` y `node scripts/smoke.js` verdes; smoke incluye los tres pasos nuevos. Cumplida: 24 tests, lint OK, smoke 27/27 (los dos pasos P1 cubren estado vacío + Escape y viewport 360×740).
 
 ## P2 — Verificar Docker y desplegar una instancia de prueba (usuario)
 **Objetivo:** confirmar que la instalación documentada funciona antes de regalar o anunciar nada.
@@ -88,5 +88,6 @@
 ---
 
 ## Resueltos
+- 2026-10-07 P1 UI acotada: estado vacío del lienzo, «Cargando…», Escape en overlays, foco en pestañas, aria-labels, marca «DesTree», responsive ≥360 px, dos pasos nuevos en el smoke.
 - 2026-10-07 P0 Limpieza: fuera `PLAN.md`, `docs/handoff/`, `legacy/`, `docs/FIGMA.md`, restos de Figma en código/config/docs y el perfil Mailpit; `PENDIENTE.md` reorganizado en fases; `CLAUDE.md` reescrito; tests sin dependencia del prototipo. Trabajo promo commiteado.
 - 2026-10-07 CI (`ci.yml`) verde en main; release `v0.1.0` creada por `release.yml` (imagen multi-arch + zip). Nota: GitHub no dispara workflows al subir >3 tags a la vez.
