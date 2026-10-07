@@ -1,5 +1,5 @@
 # Handoff F0b — ESM + scaffolding docs + GitHub   [✅ completa]
-Commit: <hash> · Tag: f0b (f0a → f677074)
+Commit: 5d9948b · Tag: f0b (f0a → f677074)
 ## Hecho
 - Cliente a ESM: 21 módulos con `import`/`export` explícitos; `client/index.html` con un único `<script type="module" src="js/main.js">`; sin `'use strict'`.
 - `core/state.js` exporta `S` con 13 claves migradas desde `let` top-level: `firstRun`, `state`, `cam` (state.js) · `vpRect`, `camRaf` (camera) · `mmScale` (minimap) · `ptr`, `spaceDown`, `altDown`, `rafPending` (pointer-gestures) · `nudgeTimer` (keyboard) · `popoverOpen` (popover) · `adminTab` (admin). Toda reasignación/lectura → `S.x` (incl. spread `...S.state`).
