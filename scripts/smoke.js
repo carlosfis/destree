@@ -1,4 +1,4 @@
-// Smoke de paridad (F0b): checklist en Chrome headless vía CDP; recoge excepciones y console.error. Uso: node scripts/smoke.js
+// Smoke de paridad (F0b, F1 sobre Fastify+SQLite temporal): checklist en Chrome headless vía CDP; recoge excepciones y console.error. Uso: node scripts/smoke.js
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -7,8 +7,8 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const PORT = 5174, DBG = 9333;
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const srv = spawn(process.execPath, ['scripts/dev-server.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT) }, stdio: 'ignore' });
 const prof = fs.mkdtempSync(path.join(os.tmpdir(), 'destree-smoke-'));
+const srv = spawn(process.execPath, ['server/index.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), DATABASE_PATH: path.join(prof, 'smoke.db'), LOG_LEVEL: 'silent' }, stdio: 'ignore' });
 const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${DBG}`, `--user-data-dir=${prof}`, '--no-first-run', '--disable-gpu', '--window-size=1400,900', 'about:blank'], { stdio: 'ignore' });
 const cleanup = () => { try { chrome.kill(); } catch {} try { srv.kill(); } catch {} try { fs.rmSync(prof, { recursive: true, force: true, maxRetries: 3 }); } catch {} };
 process.on('exit', cleanup);
@@ -145,7 +145,7 @@ await step('arrastre de nodo + marquee + rueda zoom', async () => {
   await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: vp.x, y: vp.y, deltaX: 0, deltaY: -120, modifiers: META }); await sleep(80);
   return { moved: before[0] !== after[0] || before[1] !== after[1], z: await ev(`S.cam.z`), ptr: await ev(`S.ptr`) };
 });
-await step('recarga: persistencia localStorage', async () => { await send('Page.reload'); await sleep(1200); return ev(`({ nodes: S.state.nodes.length, theme: document.documentElement.dataset.theme })`); });
+await step('recarga: persistencia SQLite vía API', async () => { await send('Page.reload'); await sleep(1200); return ev(`({ nodes: S.state.nodes.length, theme: document.documentElement.dataset.theme })`); });
 drain();
 console.log(results.join('\n'));
 console.log(problems.length ? `\nPROBLEMAS (${problems.length}):\n` + problems.join('\n') : '\nconsola limpia: 0 excepciones / 0 console.error');

@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "node.schema.json",
+  "title": "Node",
+  "description": "Card del árbol. x,y son locales respecto al contenedor padre (mundo si es raíz). w,h: tamaño mínimo manual del contenedor (0 = automático).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "name", "parentId", "x", "y"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "type": { "type": "string", "enum": ["software", "ds", "uikit"] },
+    "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "description": { "type": "string", "maxLength": 140, "default": "" },
+    "image": { "type": ["string", "null"], "pattern": "^data:image/", "maxLength": 2000000, "default": null, "description": "dataURL legado; F5 lo sustituye por imageId" },
+    "imageId": { "type": ["string", "null"], "default": null },
+    "tags": { "type": "array", "maxItems": 50, "items": { "type": "string", "minLength": 1, "maxLength": 64 }, "default": [] },
+    "owner": { "type": "string", "maxLength": 80, "default": "", "description": "Responsable legado en texto (\"@ana\")" },
+    "ownerUserId": { "type": ["string", "null"], "default": null },
+    "parentId": { "type": ["string", "null"], "maxLength": 64, "description": "software contenedor; null = raíz. Obligatorio para ds y uikit" },
+    "branchTypeId": { "type": ["string", "null"], "maxLength": 64, "default": null, "description": "solo software anidado" },
+    "x": { "type": "number" },
+    "y": { "type": "number" },
+    "w": { "type": "number", "minimum": 0, "default": 0 },
+    "h": { "type": "number", "minimum": 0, "default": 0 },
+    "demo": { "type": "boolean", "default": false },
+    "notes": { "type": "string", "maxLength": 4000, "default": "", "description": "markdown" },
+    "docs": { "type": "array", "maxItems": 20, "default": [], "items": { "type": "object", "additionalProperties": false, "required": ["label", "url"], "properties": { "label": { "type": "string", "maxLength": 80 }, "url": { "type": "string", "format": "uri", "maxLength": 2048 } } } },
+    "visibility": { "type": "string", "enum": ["org", "cells", "inherit"], "default": "inherit", "description": "raíz: org|cells; hijos: inherit" },
+    "status": { "type": "string", "enum": ["active", "draft", "deprecated", "archived"], "default": "active" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

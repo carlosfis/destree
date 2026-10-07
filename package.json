@@ -4,14 +4,22 @@
   "description": "Fuente única de verdad para agencias: árbol de software, Design Systems, UI Kits, responsables y métricas Figma.",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
-    "dev": "node scripts/dev-server.js",
-    "start": "node scripts/dev-server.js",
+    "dev": "node --watch server/index.js",
+    "start": "node server/index.js",
     "test": "node --test \"tests/**/*.test.js\"",
     "migrate": "node scripts/migrate.js",
+    "import": "node scripts/import.js",
     "backup": "node scripts/backup.js",
     "lint": "node scripts/lint.js"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@fastify/static": "^8.3.0",
+    "ajv-formats": "^3.0.1",
+    "fastify": "^5.12.5"
+  }
 }

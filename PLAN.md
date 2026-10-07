@@ -9,8 +9,8 @@ Fuente única de verdad para agencias: árbol de software, DS, UI Kits, responsa
 | Runtime | Node 22 LTS | Node 20 EOL abril 2026 |
 | Backend | Fastify 5 (JS ESM, sin TS) + Ajv nativo con `ajv: { customOptions: { strict: false, allErrors: true }, plugins: [ajvFormats] }` | Los JSON Schema de `/schema` validan rutas; strict por defecto rechaza `$schema` draft-07/`format` sin ajv-formats |
 | Validación | JSON Schema draft-07 en `/schema` + `ajv-formats` | Requisito del usuario; fuente de verdad única para API, import/export y tests |
-| DB | SQLite (better-sqlite3, WAL) + migraciones SQL numeradas | Un archivo = backup/restore trivial; autoalojado en un contenedor |
-| Binarios nativos | Aceptados: better-sqlite3 y sharp (prebuilds glibc+musl; imagen multi-arch con buildx) | Rendimiento y validación real de imágenes; se compila en stage de build |
+| DB | SQLite vía `node:sqlite` (WAL) + migraciones SQL numeradas (F1: better-sqlite3 descartado por crash en Node 24) | Un archivo = backup/restore trivial; sin binario nativo |
+| Binarios nativos | Aceptado: sharp (prebuilds glibc+musl; imagen multi-arch con buildx) | Rendimiento y validación real de imágenes; se compila en stage de build |
 | Frontend | Vanilla JS + CSS, sin bundler ni framework | Conserva el 100% del canvas actual; split por secciones; sin build |
 | Módulos | F0a: scripts clásicos en orden (`<script src>`, globales compartidas) · F0b: ESM con objeto mutable `S` (`S.state`, `S.cam`, `S.ptr`…) | Las secciones reasignan bindings top-level (`state`, `cam`, `ptr`, `vpRect`, `popoverOpen`…); imports ESM son solo lectura |
 | Router | Hash (`#/login`, `#/lobby`, `#/p/:id`, `#/admin`, `#/me`) | Sin servidor de SPA, sirve estático |
@@ -197,16 +197,16 @@ Cada fase = 1 sesión de Claude Code. Regla de corte: si se alarga, handoff ⚠�
 - **Handoff:** `F0b.md` con lista de símbolos migrados a `S`.
 - **Verificación:** `npm run dev` + checklist; `git log --oneline -3`.
 
-### F1 — JSON Schema + backend core + persistencia
+### F1 — JSON Schema + backend core + persistencia ✅
 - **Objetivo:** Modelo en `/schema`; la página se guarda en SQLite vía API.
 - **Entregables:**
-  - [ ] `schema/page-document|node|edge|tag|branch-type|page.schema.json` derivados de `normalizeState`
-  - [ ] `server/index.js` Fastify 5 (Ajv `strict:false` + ajv-formats) + static client + `db/sqlite.js` + `001_core.sql` (orgs, pages, nodes, edges, tags, branch_types, node_tags) + seed org/página por defecto
-  - [ ] `GET/PUT /api/pages/:id` (documento completo, Ajv, transacción, `If-Match: version` → 409), `GET /api/pages`, `POST /api/pages`, `POST /api/import` (v1/v2/v3), `GET /api/health`
-  - [ ] `server/lib/normalize.js` compartido (cliente lo importa)
-  - [ ] `client/js/core/api.js` + `state.js`: guardado debounced 800 ms, recarga en 409, fallback localStorage solo offline
-  - [ ] `scripts/migrate.js`; `tests/fixtures/legacy-v2.json` (derivado de `export-actual.json`, recortado ≤40 nodos); `tests/schema.test.js` (fixture valida tras normalizar; nodo inválido falla)
-  - [ ] Importar `export-actual.json` en la página por defecto (datos reales del usuario)
+  - [x] `schema/page-document|node|edge|tag|branch-type|page.schema.json` derivados de `normalizeState`
+  - [x] `server/index.js` Fastify 5 (Ajv `strict:false` + ajv-formats) + static client + `db/sqlite.js` + `001_core.sql` (orgs, pages, nodes, edges, tags, branch_types, node_tags) + seed org/página por defecto
+  - [x] `GET/PUT /api/pages/:id` (documento completo, Ajv, transacción, `If-Match: version` → 409), `GET /api/pages`, `POST /api/pages`, `POST /api/import` (v1/v2/v3), `GET /api/health`
+  - [x] `server/lib/normalize.js` compartido (cliente lo importa)
+  - [x] `client/js/core/api.js` + `state.js`: guardado debounced 800 ms, recarga en 409, fallback localStorage solo offline
+  - [x] `scripts/migrate.js`; `tests/fixtures/legacy-v2.json` (derivado de `export-actual.json`, recortado ≤40 nodos); `tests/schema.test.js` (fixture valida tras normalizar; nodo inválido falla)
+  - [x] Importar `export-actual.json` en la página por defecto (datos reales del usuario)
 - **Aceptación:** `npm start` en :3000 y el canvas carga/guarda desde SQLite tras reiniciar · PUT inválido → 400 con errores Ajv · PUT con version vieja → 409 · importar JSON legacy persiste · datos de `export-actual.json` visibles.
 - **Riesgos:** normalización duplicada → un solo `normalize.js`; Ajv strict → opción fijada en `server/index.js`.
 - **Handoff:** `F1.md` + `docs/API.md` iniciado.

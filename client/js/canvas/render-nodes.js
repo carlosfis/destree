@@ -9,7 +9,7 @@
 import { $, esc, CARD_W, CTR_MIN_W, CTR_MIN_BODY, PAD, HEAD_GAP, GAP, TYPE_META } from '../core/utils.js';
 import { nodesLayer } from '../core/dom.js';
 import {
-  S, nodeById, tagById, edgeTypeById, isContainer, childrenOf, roots, sourceEdgeOf, parentOf, depthOf,
+  S, nodeById, tagById, branchTypeById, isContainer, childrenOf, roots, sourceEdgeOf, parentOf, depthOf,
   worldPos, isExternalDs,
 } from '../core/state.js';
 import { updateEdgePaths } from './render-edges.js';
@@ -72,7 +72,7 @@ export function leafHTML(n) {
 }
 export function headHTML(n) {
   const c = commonHTML(n);
-  const bt = n.parentId ? edgeTypeById(n.branchTypeId) : null;
+  const bt = n.parentId ? branchTypeById(n.branchTypeId) : null;
   return `<div class="head-top">
       <span class="type-badge">${n.parentId ? 'Software' : 'Software · Raíz'}</span>
       ${bt ? `<span class="chip tag-${bt.color}" title="Tipo de ramificación">↳ ${esc(bt.name)}</span>` : (n.parentId ? '<span class="chip tag-gray">↳ sin tipo</span>' : '')}

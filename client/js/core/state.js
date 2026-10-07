@@ -1,7 +1,7 @@
 /* =========================================================
    2. Modelo de datos y persistencia
    ---------------------------------------------------------
-   state = {
+   state = page-document v3 (schema/page-document.schema.json) = {
      nodes: [{ id, type:'software'|'ds'|'uikit', name, description, image, tags:[tagId], owner,
                parentId,        // software contenedor (null = raíz / maestro). Obligatorio para ds y uikit
                branchTypeId,    // tipo de ramificación (solo software anidado)
@@ -12,21 +12,22 @@
              ds:     from = software, to = DS/UI Kit que usa. Si viven en raíces distintas se dibuja discontinua
              source: from = UI Kit, to = fuente (DS o software) de la que deriva
      tags:      [{ id, name, color }]
-     edgeTypes: [{ id, name, color }]     // tipos de ramificación (anidamiento)
+     branchTypes: [{ id, name, color }]   // tipos de ramificación (anidamiento; antes edgeTypes)
+     page:      { id, name, description, visibility, status, version }   // F1: metadatos (servidor)
      settings:  { theme, snap, minimap, grid, tool }
      camera:    { x, y, z }
    }
    La ramificación padre → hijo ya no es una línea: es el anidamiento del contenedor.
    ========================================================= */
-import {
-  $, uid, clamp, debounce, STORAGE_KEY, LEGACY_KEY, PAD, MIN_Z, MAX_Z, TYPE_META, TAG_COLORS, KIND_LABEL,
-} from './utils.js';
+import { $, debounce, STORAGE_KEY, LEGACY_KEY, PREFS_KEY } from './utils.js';
+import { normalizeDocument, defaultDocument } from './normalize.js';
+import * as api from './api.js';
 import { toast } from '../ui/theme.js';
 
 // Estado mutable compartido (F0b): los módulos leen/escriben S.x porque los imports ESM son de solo lectura.
 export const S = {
   firstRun: false,       // state
-  state: null,           // state: árbol (nodes, edges, tags, edgeTypes, settings, camera); loadState()
+  state: null,           // state: documento v3 (page, nodes, edges, tags, branchTypes, settings, camera); bootstrap()
   cam: null,             // state: cámara activa { x, y, z }
   vpRect: null,          // camera: rect del viewport; lo fija measureViewport() en init()
   camRaf: 0,             // camera
@@ -38,33 +39,15 @@ export const S = {
   nudgeTimer: null,      // keyboard
   popoverOpen: false,    // popover
   adminTab: 'tags',      // admin
+  pageId: null,          // state (F1): página cargada desde la API
+  version: 0,            // state (F1): versión optimista (If-Match)
+  offline: false,        // state (F1): sin servidor → localStorage
+  saving: false,         // state (F1): PUT en vuelo
+  dirty: false,          // state (F1): cambios pendientes mientras hay PUT en vuelo
 };
-export function defaultState() {
-  return {
-    version: 2,
-    nodes: [],
-    edges: [],
-    tags: [
-      { id: 't_core', name: 'Core', color: 'blue' },
-      { id: 't_web', name: 'Web', color: 'purple' },
-      { id: 't_mobile', name: 'Mobile', color: 'green' },
-      { id: 't_legacy', name: 'Legacy', color: 'brown' },
-      { id: 't_interno', name: 'Interno', color: 'gray' },
-      { id: 't_pagos', name: 'Pagos', color: 'yellow' },
-    ],
-    edgeTypes: [
-      { id: 'et_feature', name: 'Feature', color: 'blue' },
-      { id: 'et_fork', name: 'Fork', color: 'gray' },
-      { id: 'et_mobile', name: 'Versión mobile', color: 'green' },
-      { id: 'et_desktop', name: 'Versión desktop', color: 'purple' },
-      { id: 'et_geo', name: 'Geografía/Región', color: 'orange' },
-      { id: 'et_parent', name: 'Software padre/hijo', color: 'brown' },
-    ],
-    settings: { theme: null, snap: true, minimap: true, grid: true, tool: 'select' },
-    camera: { x: 80, y: 60, z: 0.9 },
-  };
-}
-
+// normalize.js (compartido con el servidor) es la única fuente de saneado y defaults.
+export const defaultState = defaultDocument;
+export const normalizeState = normalizeDocument;
 /** Datos de ejemplo (demo:true). Las posiciones las define el auto-layout en la primera carga. */
 export function demoData() {
   const N = (id, type, name, description, parentId, branchTypeId, tags, owner) =>
@@ -98,128 +81,101 @@ export function demoData() {
   return { nodes, edges };
 }
 
-/** Sanea un estado importado o leído de localStorage; migra el formato v1 (ramificaciones como líneas). */
-export function normalizeState(raw) {
-  const d = defaultState();
-  const s = { ...d, ...(raw && typeof raw === 'object' ? raw : {}) };
-  s.version = 2;
-  s.nodes = Array.isArray(s.nodes) ? s.nodes.filter(n => n && n.id).map(n => ({
-    id: String(n.id), type: TYPE_META[n.type] ? n.type : 'software', name: String(n.name ?? 'Sin nombre'),
-    description: String(n.description ?? '').slice(0, 140), image: typeof n.image === 'string' && n.image.startsWith('data:image') ? n.image : null,
-    tags: Array.isArray(n.tags) ? n.tags.map(String) : [], owner: String(n.owner ?? ''),
-    parentId: n.parentId ? String(n.parentId) : null, branchTypeId: n.branchTypeId ? String(n.branchTypeId) : null,
-    x: Number.isFinite(+n.x) ? +n.x : 0, y: Number.isFinite(+n.y) ? +n.y : 0,
-    w: Number.isFinite(+n.w) ? Math.max(0, +n.w) : 0, h: Number.isFinite(+n.h) ? Math.max(0, +n.h) : 0, demo: !!n.demo,
-  })) : [];
-  const byId = id => s.nodes.find(n => n.id === id);
-  s.tags = Array.isArray(s.tags) && s.tags.length ? s.tags.filter(t => t && t.id).map(t => ({ id: String(t.id), name: String(t.name ?? ''), color: TAG_COLORS.includes(t.color) ? t.color : 'gray' })) : d.tags;
-  s.edgeTypes = Array.isArray(s.edgeTypes) && s.edgeTypes.length ? s.edgeTypes.filter(t => t && t.id).map((t, i) => ({ id: String(t.id), name: String(t.name ?? ''), color: TAG_COLORS.includes(t.color) ? t.color : TAG_COLORS[i % TAG_COLORS.length] })) : d.edgeTypes;
-  const rawEdges = Array.isArray(s.edges) ? s.edges.filter(e => e && e.id && e.from !== e.to) : [];
 
-  // --- Migración v1: líneas de ramificación → anidamiento ---
-  const legacyBranch = rawEdges.filter(e => e.kind === 'branch');
-  if (legacyBranch.length || s.nodes.some(n => n.type !== 'software' && !n.parentId)) {
-    const worldOld = new Map(s.nodes.map(n => [n.id, { x: n.x, y: n.y }])); // en v1 todas las posiciones eran de mundo
-    const isAnc = (a, b) => { let n = byId(b); const seen = new Set(); while (n && n.parentId && !seen.has(n.id)) { if (n.parentId === a) return true; seen.add(n.id); n = byId(n.parentId); } return false; };
-    for (const e of legacyBranch) {
-      const child = byId(e.to), parent = byId(e.from);
-      if (child && parent && child.type === 'software' && parent.type === 'software' && !child.parentId && child.id !== parent.id && !isAnc(child.id, parent.id)) {
-        child.parentId = parent.id; child.branchTypeId = e.typeId ? String(e.typeId) : null;
-      }
-    }
-    for (const n of s.nodes) {
-      if (n.type === 'software' || n.parentId) continue;
-      const consumer = rawEdges.find(e => e.kind === 'ds' && e.to === n.id);
-      let host = consumer && byId(consumer.from);
-      if (!host) { const src = rawEdges.find(e => e.kind === 'source' && e.from === n.id); const sn = src && byId(src.to); host = sn && (sn.type === 'software' ? sn : byId(sn.parentId)); }
-      if (!host || host.type !== 'software') host = s.nodes.find(x => x.type === 'software');
-      if (!host) { host = { id: uid(), type: 'software', name: 'Organización', description: 'Contenedor creado al migrar.', image: null, tags: [], owner: '', parentId: null, branchTypeId: null, x: 0, y: 0, w: 0, h: 0, demo: false }; s.nodes.unshift(host); worldOld.set(host.id, { x: 0, y: 0 }); }
-      n.parentId = host.id;
-    }
-    // Convertir posiciones de mundo a locales
-    const worldOf = id => worldOld.get(id) || { x: 0, y: 0 };
-    for (const n of s.nodes) if (n.parentId && worldOld.has(n.id)) { const pw = worldOf(n.parentId), w = worldOf(n.id); n.x = Math.max(PAD, w.x - pw.x); n.y = Math.max(90, w.y - pw.y); }
-  }
+/* --- Carga y persistencia (F1): API + fallback localStorage solo offline --- */
+const localRaw = () => { try { return localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY); } catch { return null; } };
+const readPrefs = () => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch { return {}; } };
+/** theme y tool son preferencias del navegador, no del documento. */
+function applyPrefs(s) { const p = readPrefs(); s.settings.theme = ['light', 'dark'].includes(p.theme) ? p.theme : null; s.settings.tool = p.tool === 'hand' ? 'hand' : 'select'; return s; }
+function writePrefs() { try { localStorage.setItem(PREFS_KEY, JSON.stringify({ theme: S.state.settings.theme, tool: S.state.settings.tool })); } catch { /* sin localStorage */ } }
+function withDemo(s) { const demo = demoData(); s.nodes = demo.nodes; s.edges = demo.edges; S.firstRun = true; return s; }
 
-  // --- Integridad de jerarquía ---
-  const ids = new Set(s.nodes.map(n => n.id));
-  for (const n of s.nodes) {
-    if (n.parentId && (!ids.has(n.parentId) || n.parentId === n.id || byId(n.parentId).type !== 'software')) n.parentId = null;
-  }
-  for (const n of s.nodes) { // romper ciclos
-    const seen = new Set([n.id]); let p = n.parentId;
-    while (p) { if (seen.has(p)) { n.parentId = null; break; } seen.add(p); p = byId(p)?.parentId || null; }
-  }
-  for (const n of s.nodes) {
-    if (n.type !== 'software') { n.branchTypeId = null; n.w = 0; n.h = 0; if (!n.parentId) { const host = s.nodes.find(x => x.type === 'software' && x.id !== n.id); if (host) n.parentId = host.id; } }
-    if (n.type === 'software' && !n.parentId) n.branchTypeId = null;
-  }
-  s.nodes = s.nodes.filter(n => n.type === 'software' || n.parentId); // DS/UI Kit sin ningún software posible se descartan
-  const etIds = new Set(s.edgeTypes.map(t => t.id));
-  for (const n of s.nodes) if (n.parentId && n.type === 'software' && !etIds.has(n.branchTypeId)) n.branchTypeId = s.edgeTypes[0].id;
-
-  const ids2 = new Set(s.nodes.map(n => n.id));
-  s.edges = rawEdges.filter(e => KIND_LABEL[e.kind] && ids2.has(e.from) && ids2.has(e.to))
-    .filter(e => e.kind === 'ds' ? byId(e.from).type === 'software' && byId(e.to).type !== 'software' : byId(e.from).type === 'uikit')
-    .map(e => ({ id: String(e.id), kind: e.kind, from: e.from, to: e.to, demo: !!e.demo }));
-  const tagIds = new Set(s.tags.map(t => t.id));
-  s.nodes.forEach(n => { n.tags = n.tags.filter(t => tagIds.has(t)); });
-  s.settings = { ...d.settings, ...(s.settings || {}) };
-  const c = s.camera || {};
-  s.camera = { x: Number.isFinite(+c.x) ? +c.x : d.camera.x, y: Number.isFinite(+c.y) ? +c.y : d.camera.y, z: clamp(Number.isFinite(+c.z) ? +c.z : 1, MIN_Z, MAX_Z) };
-  delete s.exportedAt;
-  return s;
-}
-
+/** Estado local (offline): localStorage o demo. */
 export function loadState() {
   try {
-    let raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) raw = localStorage.getItem(LEGACY_KEY);
-    if (!raw) {
-      S.firstRun = true;
-      const s = defaultState(); const demo = demoData();
-      s.nodes = demo.nodes; s.edges = demo.edges;
-      return s;
-    }
-    return normalizeState(JSON.parse(raw));
+    const raw = localRaw();
+    return applyPrefs(raw ? normalizeState(JSON.parse(raw)) : withDemo(defaultState()));
   } catch (err) {
     setTimeout(() => toast('No se pudo leer localStorage: ' + err.message, 'error', 6000), 300);
-    S.firstRun = true;
-    return defaultState();
+    return withDemo(defaultState());
   }
 }
-
-S.state = loadState();
+/** Carga la página desde la API. Página virgen → migra localStorage o carga la demo. Sin servidor → loadState(). */
+export async function bootstrap() {
+  try {
+    const page = (await api.listPages())[0];
+    if (!page) throw new Error('El servidor no tiene páginas');
+    const doc = await api.getPage(page.id);
+    S.pageId = doc.page.id; S.version = doc.page.version; S.offline = false;
+    let s = normalizeState(doc);
+    if (!s.nodes.length && doc.page.version === 0) {
+      const raw = localRaw();
+      if (raw) { try { s = normalizeState({ ...JSON.parse(raw), page: doc.page }); S.dirty = true; } catch { /* ignorar respaldo corrupto */ } }
+      if (!s.nodes.length) s = withDemo(s);
+    }
+    S.state = applyPrefs(s);
+  } catch (err) {
+    S.offline = true;
+    S.state = loadState();
+    setTimeout(() => toast('Sin conexión con el servidor: trabajando en local (' + err.message + ')', 'error', 6000), 300);
+  }
+  S.cam = { ...S.state.camera };
+  if (S.dirty) { S.dirty = false; save(); }
+}
+S.state = defaultState(); // provisional hasta bootstrap(); ningún módulo lee S.state en su nivel superior
 S.cam = { ...S.state.camera };
 
-export function persist() {
-  try {
-    S.state.camera = { x: S.cam.x, y: S.cam.y, z: S.cam.z };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(S.state));
-    setSaveStatus('Guardado');
-  } catch (err) {
+/** Documento v3 tal como viaja en PUT (sin claves ajenas al schema). */
+export function toDocument() {
+  const { page, nodes, edges, tags, branchTypes, settings, camera } = S.state;
+  return { version: 3, page: { ...page, version: S.version }, nodes, edges, tags, branchTypes, settings, camera };
+}
+function persistLocal() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S.state)); setSaveStatus(S.offline ? 'Guardado (local)' : 'Sin conexión'); } catch (err) {
     const full = err && (err.name === 'QuotaExceededError' || err.code === 22 || err.code === 1014);
     setSaveStatus('Sin guardar');
     toast(full ? 'localStorage está lleno: exporta un respaldo y reduce imágenes.' : 'No se pudo guardar: ' + err.message, 'error', 6000);
   }
 }
-export const save = debounce(persist, 400);
+async function reloadFromServer() {
+  const doc = await api.getPage(S.pageId);
+  S.version = doc.page.version; S.state = applyPrefs(normalizeState(doc)); S.cam = { ...S.state.camera };
+  document.dispatchEvent(new CustomEvent('destree:reload'));
+}
+async function pushRemote(keepalive) {
+  if (S.saving) { S.dirty = true; return; }
+  S.saving = true; S.dirty = false; setSaveStatus('Guardando…');
+  try {
+    const res = await api.putPage(S.pageId, toDocument(), S.version, { keepalive });
+    S.version = res.version; setSaveStatus('Guardado');
+  } catch (err) {
+    if (err.status === 409) { setSaveStatus('Conflicto'); await reloadFromServer().catch(() => {}); toast('La página cambió en el servidor: se recargó la última versión.', 'error', 6000); }
+    else if (err.status === 400) { setSaveStatus('Sin guardar'); toast('El servidor rechazó el documento: ' + err.message, 'error', 8000); }
+    else { persistLocal(); toast('No se pudo guardar en el servidor: ' + err.message, 'error', 6000); }
+  } finally { S.saving = false; if (S.dirty) pushRemote(); }
+}
+export function persist(keepalive = false) {
+  S.state.camera = { x: S.cam.x, y: S.cam.y, z: S.cam.z };
+  writePrefs();
+  if (S.offline || !S.pageId) persistLocal(); else pushRemote(keepalive);
+}
+export const save = debounce(persist, 800);
 export const saveCam = debounce(persist, 900);
 export function setSaveStatus(t) { const el = $('#saveStatus'); if (el) el.textContent = t; }
-document.addEventListener('visibilitychange', () => { if (document.hidden) persist(); });
-window.addEventListener('pagehide', persist);
+document.addEventListener('visibilitychange', () => { if (document.hidden) persist(true); });
+window.addEventListener('pagehide', () => persist(true));
 
 /* --- Acceso rápido al modelo --- */
 export const nodeById = id => S.state.nodes.find(n => n.id === id);
 export const tagById = id => S.state.tags.find(t => t.id === id);
-export const edgeTypeById = id => S.state.edgeTypes.find(t => t.id === id);
+export const branchTypeById = id => S.state.branchTypes.find(t => t.id === id);
 export const isContainer = n => !!n && n.type === 'software';
 export const childrenOf = id => S.state.nodes.filter(n => n.parentId === id);
 export const roots = () => S.state.nodes.filter(n => !n.parentId);
 export const edgesOf = id => S.state.edges.filter(e => e.from === id || e.to === id);
 export const sourceEdgeOf = id => S.state.edges.find(e => e.kind === 'source' && e.from === id);
 export const dsOf = id => S.state.edges.filter(e => e.kind === 'ds' && e.from === id).map(e => nodeById(e.to)).filter(Boolean);
-export const defaultBranchType = () => (edgeTypeById('et_feature') || S.state.edgeTypes[0] || {}).id || null;
+export const defaultBranchType = () => (branchTypeById('et_feature') || S.state.branchTypes[0] || {}).id || null;
 
 export function parentOf(n) { return n && n.parentId ? nodeById(n.parentId) : null; }
 export function rootOf(n) { let g = 0; while (n && n.parentId && g++ < 100) { const p = nodeById(n.parentId); if (!p) break; n = p; } return n; }

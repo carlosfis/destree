@@ -1,0 +1,80 @@
+// Repositorio de páginas: documento completo (page-document v3) ⇄ tablas SQLite.
+import { DEFAULT_ORG_ID, transaction } from '../db/sqlite.js';
+import { ulid, nowIso } from './ids.js';
+import { normalizeDocument, defaultDocument } from './normalize.js';
+
+export class HttpError extends Error { constructor(status, message, extra) { super(message); this.status = status; Object.assign(this, extra); } }
+const j = v => JSON.stringify(v);
+const pj = (s, d) => { try { return JSON.parse(s) ?? d; } catch { return d; } };
+
+export function listPages(db, orgId = DEFAULT_ORG_ID) {
+  return db.prepare(`SELECT p.id, p.name, p.description, p.visibility, p.status, p.version, p.updated_at AS updatedAt,
+      (SELECT COUNT(*) FROM nodes n WHERE n.page_id = p.id) AS nodeCount
+    FROM pages p WHERE p.org_id = ? AND p.status != 'deleted' ORDER BY p.created_at`).all(orgId);
+}
+export function pageMeta(db, pageId) {
+  const p = db.prepare('SELECT id, name, description, visibility, status, version, created_by AS createdBy, updated_at AS updatedAt FROM pages WHERE id = ?').get(pageId);
+  if (!p) throw new HttpError(404, 'Página no encontrada');
+  return p;
+}
+/** Documento completo de la página (v3). */
+export function getDocument(db, pageId) {
+  const p = db.prepare('SELECT * FROM pages WHERE id = ?').get(pageId);
+  if (!p) throw new HttpError(404, 'Página no encontrada');
+  const tagsByNode = new Map();
+  for (const r of db.prepare('SELECT node_id, tag_id FROM node_tags WHERE page_id = ? ORDER BY node_id, position').all(pageId)) {
+    if (!tagsByNode.has(r.node_id)) tagsByNode.set(r.node_id, []); tagsByNode.get(r.node_id).push(r.tag_id);
+  }
+  const nodes = db.prepare('SELECT * FROM nodes WHERE page_id = ? ORDER BY position').all(pageId).map(n => ({
+    id: n.id, type: n.type, name: n.name, description: n.description, image: n.image_legacy, imageId: n.image_id,
+    tags: tagsByNode.get(n.id) || [], owner: n.owner_label, ownerUserId: n.owner_user_id, parentId: n.parent_id, branchTypeId: n.branch_type_id,
+    x: n.x, y: n.y, w: n.w, h: n.h, demo: !!n.demo, notes: n.notes, docs: pj(n.docs_json, []), visibility: n.visibility, status: n.status,
+  }));
+  const edges = db.prepare('SELECT id, kind, from_node_id AS "from", to_node_id AS "to", demo FROM edges WHERE page_id = ? ORDER BY position').all(pageId).map(e => ({ ...e, demo: !!e.demo }));
+  const tags = db.prepare('SELECT id, name, color FROM tags WHERE page_id = ? ORDER BY position').all(pageId);
+  const branchTypes = db.prepare('SELECT id, name, color FROM branch_types WHERE page_id = ? ORDER BY position').all(pageId);
+  const page = { id: p.id, name: p.name, description: p.description, visibility: p.visibility, status: p.status, version: p.version, createdBy: p.created_by, updatedAt: p.updated_at };
+  const base = defaultDocument(page);
+  return { version: 3, page, nodes, edges, tags, branchTypes, settings: { ...base.settings, ...pj(p.settings_json, {}) }, camera: { ...base.camera, ...pj(p.camera_json, {}) } };
+}
+/** Reemplaza el contenido de la página en una transacción. `expected` (If-Match) ≠ version actual → 409. */
+export function saveDocument(db, pageId, doc, expected) {
+  const d = normalizeDocument(doc, { id: pageId });
+  return transaction(db, () => {
+    const cur = db.prepare('SELECT version, name, description, visibility FROM pages WHERE id = ?').get(pageId);
+    if (!cur) throw new HttpError(404, 'Página no encontrada');
+    if (expected != null && Number(expected) !== cur.version) throw new HttpError(409, `Versión obsoleta: el servidor tiene ${cur.version}`, { version: cur.version });
+    const version = cur.version + 1, now = nowIso();
+    const meta = doc && doc.page ? doc.page : {};
+    db.prepare('UPDATE pages SET name = ?, description = ?, visibility = ?, settings_json = ?, camera_json = ?, version = ?, updated_at = ? WHERE id = ?')
+      .run(meta.name ? d.page.name : cur.name, meta.description != null ? d.page.description : cur.description, meta.visibility ? d.page.visibility : cur.visibility,
+        j({ snap: d.settings.snap, grid: d.settings.grid, minimap: d.settings.minimap }), j(d.camera), version, now, pageId);
+    for (const t of ['node_tags', 'edges', 'nodes', 'tags', 'branch_types']) db.prepare(`DELETE FROM ${t} WHERE page_id = ?`).run(pageId);
+    const insTag = db.prepare('INSERT INTO tags (id, page_id, name, color, position) VALUES (?, ?, ?, ?, ?)');
+    d.tags.forEach((t, i) => insTag.run(t.id, pageId, t.name, t.color, i));
+    const insBt = db.prepare('INSERT INTO branch_types (id, page_id, name, color, position) VALUES (?, ?, ?, ?, ?)');
+    d.branchTypes.forEach((t, i) => insBt.run(t.id, pageId, t.name, t.color, i));
+    const insNode = db.prepare(`INSERT INTO nodes (id, page_id, type, name, description, notes, docs_json, image_id, image_legacy, owner_user_id, owner_label, parent_id, branch_type_id, x, y, w, h, demo, visibility, status, position, updated_at)
+      VALUES (@id, @pageId, @type, @name, @description, @notes, @docs, @imageId, @image, @ownerUserId, @owner, @parentId, @branchTypeId, @x, @y, @w, @h, @demo, @visibility, @status, @position, @now)`);
+    const insNodeTag = db.prepare('INSERT INTO node_tags (page_id, node_id, tag_id, position) VALUES (?, ?, ?, ?)');
+    d.nodes.forEach((n, i) => {
+      insNode.run({ id: n.id, pageId, type: n.type, name: n.name, description: n.description, notes: n.notes, docs: j(n.docs), imageId: n.imageId, image: n.image, ownerUserId: n.ownerUserId, owner: n.owner, parentId: n.parentId, branchTypeId: n.branchTypeId, x: n.x, y: n.y, w: n.w, h: n.h, demo: n.demo ? 1 : 0, visibility: n.visibility, status: n.status, position: i, now });
+      n.tags.forEach((t, k) => insNodeTag.run(pageId, n.id, t, k));
+    });
+    const insEdge = db.prepare('INSERT INTO edges (id, page_id, kind, from_node_id, to_node_id, demo, position) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    d.edges.forEach((e, i) => insEdge.run(e.id, pageId, e.kind, e.from, e.to, e.demo ? 1 : 0, i));
+    return { version, nodes: d.nodes.length, edges: d.edges.length, updatedAt: now };
+  });
+}
+export function createPage(db, { name, description = '' }, orgId = DEFAULT_ORG_ID) {
+  const id = ulid();
+  db.prepare('INSERT INTO pages (id, org_id, name, description) VALUES (?, ?, ?, ?)').run(id, orgId, String(name).slice(0, 120), String(description).slice(0, 500));
+  saveDocument(db, id, defaultDocument({ id, name, description }), 0);
+  return getDocument(db, id);
+}
+/** Importa un respaldo v1/v2/v3 (normaliza y persiste). Sin If-Match: sustituye lo que haya. */
+export function importDocument(db, pageId, raw) {
+  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.nodes) || !Array.isArray(raw.edges)) throw new HttpError(400, 'El JSON no tiene el formato esperado (nodes/edges).');
+  const doc = { ...raw }; delete doc.page; // los metadatos de la página no se importan
+  return saveDocument(db, pageId, doc, null);
+}

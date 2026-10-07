@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "page.schema.json",
+  "title": "Page",
+  "description": "Metadatos de una página (lienzo). version es el contador optimista que viaja en If-Match/ETag.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "description": { "type": "string", "maxLength": 500, "default": "" },
+    "visibility": { "type": "string", "enum": ["org", "cells"], "default": "org" },
+    "status": { "type": "string", "enum": ["active", "archived", "deleted"], "default": "active" },
+    "version": { "type": "integer", "minimum": 0 },
+    "createdBy": { "type": ["string", "null"] },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

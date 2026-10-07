@@ -72,10 +72,10 @@ export function renderTagsTab(body) {
 /* --- Tipos de ramificación --- */
 export function renderEdgeTypesTab(body) {
   const usage = id => S.state.nodes.filter(n => n.parentId && n.branchTypeId === id).length;
-  body.innerHTML = `<h3>Tipos de ramificación (${S.state.edgeTypes.length})</h3><p>La ramificación es el anidamiento de un software dentro de otro. El tipo se muestra como chip en la cabecera del contenedor anidado.</p><div id="etRows"></div>
+  body.innerHTML = `<h3>Tipos de ramificación (${S.state.branchTypes.length})</h3><p>La ramificación es el anidamiento de un software dentro de otro. El tipo se muestra como chip en la cabecera del contenedor anidado.</p><div id="etRows"></div>
     <h3>Nuevo tipo</h3><form class="row" id="newEtForm"><input class="grow" placeholder="Nombre del tipo" required><button class="btn primary" type="submit">Agregar</button></form>`;
   const rows = $('#etRows', body);
-  for (const t of S.state.edgeTypes) {
+  for (const t of S.state.branchTypes) {
     const row = document.createElement('div'); row.className = 'row';
     const u = usage(t.id);
     row.innerHTML = `<button class="swatch tag-${t.color}" title="Cambiar color"></button><input class="inline grow" value="${esc(t.name)}"><span class="count">${u} anidado${u === 1 ? '' : 's'}</span><button class="icon-btn" title="Eliminar">🗑</button>`;
@@ -83,16 +83,16 @@ export function renderEdgeTypesTab(body) {
     sw.addEventListener('click', e => colorPicker(e.clientX, e.clientY, t.color, c => { pushHistory(); t.color = c; renderAll(); save(); }));
     inp.addEventListener('change', () => { const v = inp.value.trim(); if (!v) { inp.value = t.name; return; } pushHistory(); t.name = v; renderAll(); save(); });
     del.addEventListener('click', async () => {
-      if (S.state.edgeTypes.length === 1) return toast('Debe existir al menos un tipo', 'error');
-      const fallback = S.state.edgeTypes.find(x => x !== t);
+      if (S.state.branchTypes.length === 1) return toast('Debe existir al menos un tipo', 'error');
+      const fallback = S.state.branchTypes.find(x => x !== t);
       if (u && !(await confirmBox({ title: 'Eliminar tipo', message: `"${t.name}" se usa en ${u} software anidado${u > 1 ? 's' : ''}. Pasarán a "${fallback.name}".`, buttons: [{ label: 'Cancelar', value: '' }, { label: 'Eliminar', value: 'ok', kind: 'danger' }] }))) return;
-      pushHistory(); S.state.nodes.forEach(n => { if (n.branchTypeId === t.id) n.branchTypeId = fallback.id; }); S.state.edgeTypes = S.state.edgeTypes.filter(x => x !== t); renderAll(); save();
+      pushHistory(); S.state.nodes.forEach(n => { if (n.branchTypeId === t.id) n.branchTypeId = fallback.id; }); S.state.branchTypes = S.state.branchTypes.filter(x => x !== t); renderAll(); save();
     });
     rows.appendChild(row);
   }
   $('#newEtForm', body).addEventListener('submit', e => {
     e.preventDefault(); const name = e.target.querySelector('input').value.trim(); if (!name) return;
-    pushHistory(); S.state.edgeTypes.push({ id: uid(), name, color: TAG_COLORS[S.state.edgeTypes.length % TAG_COLORS.length] }); save(); renderAdmin();
+    pushHistory(); S.state.branchTypes.push({ id: uid(), name, color: TAG_COLORS[S.state.branchTypes.length % TAG_COLORS.length] }); save(); renderAdmin();
   });
 }
 
@@ -144,7 +144,7 @@ export function renderDataTab(body) {
   $('#btnClearAll', body).addEventListener('click', async () => {
     const ok = await confirmBox({ title: 'Borrar todo', message: 'Se eliminarán todas las cards, conexiones, etiquetas y tipos de ramificación. Esta acción se puede deshacer con Ctrl/⌘+Z mientras no recargues la página.', buttons: [{ label: 'Cancelar', value: '' }, { label: 'Borrar todo', value: 'ok', kind: 'danger' }] });
     if (!ok) return;
-    pushHistory(); const d = defaultState(); S.state.nodes = []; S.state.edges = []; S.state.tags = d.tags; S.state.edgeTypes = d.edgeTypes; clearSelection(); renderAll(); save(); toast('Todo borrado');
+    pushHistory(); const d = defaultState(); S.state.nodes = []; S.state.edges = []; S.state.tags = d.tags; S.state.branchTypes = d.branchTypes; clearSelection(); renderAll(); save(); toast('Todo borrado');
   });
 }
 export function removeDemo() {

@@ -3,15 +3,16 @@
 Fuente única de verdad para agencias: árbol de software → Design Systems / UI Kits, responsables, documentación y métricas Figma. Autoalojado, multi-página, roles admin/head/designer.
 
 ## Estado actual
-- Fase hecha: F0b (ESM con objeto `S`, docs, repo GitHub `carlosfis/destree`; `docs/handoff/F0b.md`).
-- Próxima: F1 (JSON Schema + Fastify 5 + SQLite; prompt en `PLAN.md` §8).
-- Deuda crítica: ninguna. Paridad verificada con `node scripts/smoke.js` (Chrome headless, 13 pasos, consola limpia).
+- Fase hecha: F1 (schema/, Fastify 5 + Ajv, SQLite `node:sqlite`, PUT If-Match, normalize compartido; `docs/handoff/F1.md`).
+- Próxima: F2 (auth + roles + invitaciones; prompt en `PLAN.md` §8).
+- Deuda crítica: ninguna. `npm test` 12/12; `node scripts/smoke.js` 13/13 (Chrome headless, consola limpia).
 
 ## Comandos (fijos desde F0a)
 ```
-npm run dev      # servidor local :5173
+npm run dev      # Fastify con --watch en :3000 (npm start sin watch)
 npm test         # única verificación
-npm run migrate  # migraciones SQLite
+npm run migrate  # migraciones SQLite (server/db/migrations) + seed
+npm run import -- archivo.json [pageId]  # importa JSON v1/v2/v3 en una página
 npm run backup   # respaldo a data/backups
 node scripts/smoke.js  # checklist de paridad en Chrome headless (requiere Chrome)
 ```
@@ -19,8 +20,8 @@ node scripts/smoke.js  # checklist de paridad en Chrome headless (requiere Chrom
 ## Mapa (detalle en docs/MAP.md)
 - `PLAN.md` — plan por fases, prompts y protocolo de handoff. Leer solo la sección de la fase activa.
 - `schema/` — JSON Schema draft-07 (desde F1). Fuente de verdad del modelo; valida API, import/export y tests.
-- `server/` — Fastify 5 (JS ESM), SQLite, `lib/permissions.js`, `lib/visibility.js`, `lib/figma/` (desde F1).
-- `client/` — vanilla JS ESM + CSS sin bundler. `js/core/state.js` exporta `S` (estado mutable compartido) y el modelo; `js/core/dom.js` nodos DOM; `js/canvas` lienzo; `js/ui`; `js/views`; `js/main.js` entrada única.
+- `server/` — Fastify 5 (JS ESM), SQLite vía `node:sqlite` (`db/sqlite.js`, sin binarios), `lib/normalize.js` (compartido: symlink en `client/js/core/`), `lib/pages.js`; `lib/permissions.js`, `lib/visibility.js`, `lib/figma/` (fases siguientes).
+- `client/` — vanilla JS ESM + CSS sin bundler. `js/core/state.js` exporta `S` (estado mutable compartido), `bootstrap()`/`persist()` vía `core/api.js`; `js/core/dom.js` nodos DOM; `js/canvas` lienzo; `js/ui`; `js/views`; `js/main.js` entrada única.
 - `figma-plugin/` — DesTree Companion (desde F10).
 - `legacy/arbol.html` — original. NUNCA leerlo entero: `grep -n` + `sed -n A,Bp`.
 - `docs/handoff/F<N>.md` — handoff por fase. `docs/DECISIONS.md` — append-only. `docs/MAP.md` — mapa de archivos.

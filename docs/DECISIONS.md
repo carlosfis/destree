@@ -10,3 +10,12 @@
 - 2026-10-06 F0b: `package.json` `"type": "module"`; scripts y tests en ESM (`import.meta.dirname`, Node ≥22).
 - 2026-10-06 F0b: `tests/split.test.js` se retira; `tests/client.test.js` mantiene la paridad CSS vs legacy y añade comprobaciones estructurales ESM. La paridad JS se verifica con `scripts/smoke.js` (Chrome headless, CDP), no en `npm test`.
 - 2026-10-06 F0b: `window.S` solo cuando `location.hostname` es localhost/127.0.0.1; ningún otro global.
+- 2026-10-06 F1: SQLite vía `node:sqlite` (DatabaseSync) en lugar de better-sqlite3: crash nativo reproducible en Node 24.19 con 11.10/12.2/12.4/12.11 (`RemoveEnvironmentCleanupHook` al recolectar Statement). Sin binarios nativos; `transaction(db, fn)` propia; Node ≥22.13.
+- 2026-10-06 F1: `server/lib/normalize.js` es la única normalización; el cliente lo importa por symlink `client/js/core/normalize.js` (sin imports en el módulo; `utils.js` re-exporta PAD/MIN_Z/MAX_Z/TAG_COLORS).
+- 2026-10-06 F1: page-document v3 = `{version:3, page, nodes, edges, tags, branchTypes, settings, camera}`; `edgeTypes` → `branchTypes` (v2 se acepta en import). `settings` y `camera` siguen top-level (mismo shape que el estado del cliente).
+- 2026-10-06 F1: `theme` y `tool` son preferencias por navegador (`localStorage destree:prefs`); el servidor persiste solo `{snap, grid, minimap}`.
+- 2026-10-06 F1: PUT sin `If-Match` → 428; se acepta `"3"`, `3` y `W/"3"`. 409 devuelve `version` actual; el cliente recarga y repinta vía evento DOM `destree:reload` (evita ciclos de import).
+- 2026-10-06 F1: dataURL legado de imagen se guarda en `nodes.image_legacy` hasta F5 (excepción temporal y acotada a "nunca dataURL en DB"; F5 migra a `images` y elimina la columna).
+- 2026-10-06 F1: ids fijos `org_default` / `p_default` para el seed; páginas nuevas con ULID propio (`server/lib/ids.js`).
+- 2026-10-06 F1: página virgen (version 0, sin nodos): el cliente migra `localStorage systree:v2` si existe o carga la demo y la persiste. localStorage solo se escribe sin servidor.
+- 2026-10-06 F1: `scripts/dev-server.js` eliminado; `npm run dev` = `node --watch server/index.js`; `smoke.js` arranca Fastify con `DATABASE_PATH` temporal.

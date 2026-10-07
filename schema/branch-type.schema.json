@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "branch-type.schema.json",
+  "title": "BranchType",
+  "description": "Tipo de ramificación (antes edgeTypes): califica el anidamiento de un software dentro de otro.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "color"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "name": { "type": "string", "maxLength": 60 },
+    "color": { "$ref": "tag.schema.json#/definitions/color" }
+  }
+}

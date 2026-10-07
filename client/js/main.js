@@ -3,10 +3,10 @@
    ========================================================= */
 import { $ } from './core/utils.js';
 import { viewport } from './core/dom.js';
-import { S, persist, setSaveStatus, nodeById } from './core/state.js';
+import { S, persist, setSaveStatus, nodeById, bootstrap } from './core/state.js';
 import { undo, redo, updateUndoButtons } from './core/history.js';
 import { measureViewport, applyCamera, zoomStep, setZoom, fitToScreen } from './canvas/camera.js';
-import { renderAll } from './canvas/selection.js';
+import { renderAll, clearSelection } from './canvas/selection.js';
 import { setTool } from './canvas/pointer-gestures.js';
 import { showNewMenu } from './ui/popover.js';
 import { adminPanel, toggleAdmin, applySettingsUI } from './views/admin.js';
@@ -25,8 +25,9 @@ $('#zoomFit').addEventListener('click', () => fitToScreen());
 $('#zoomLabel').addEventListener('click', () => setZoom(1));
 viewport.addEventListener('pointerdown', () => { if (innerWidth <= 720 && adminPanel.classList.contains('open')) toggleAdmin(false); });
 
-export function init() {
+export async function init() {
   measureViewport(); // F0b: antes era eager en camera.js (S.vpRect); debe preceder a applyTheme → drawMinimap
+  await bootstrap(); // F1: documento desde la API (o localStorage si no hay servidor)
   applyTheme();
   applySettingsUI();
   renderAll();
@@ -39,8 +40,10 @@ export function init() {
     fitToScreen(null, false);
     persist();
   } else applyCamera();
-  setSaveStatus('Guardado');
+  setSaveStatus(S.offline ? 'Sin conexión' : 'Guardado');
 }
+// F1: tras un 409 state.js recarga el documento del servidor y avisa aquí para repintar.
+document.addEventListener('destree:reload', () => { clearSelection(); applyTheme(); applySettingsUI(); renderAll(); applyCamera(); });
 init();
 
 

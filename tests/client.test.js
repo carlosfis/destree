@@ -1,4 +1,4 @@
-// F0b: estructura ESM del cliente + paridad CSS con legacy/arbol.html.
+// F0b: estructura ESM del cliente + paridad CSS con legacy/arbol.html. F1: +api.js, normalize.js (symlink), claves S de persistencia.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -24,7 +24,7 @@ const walk = (dir, out = []) => {
   return out;
 };
 const JS = walk(path.join(CLIENT, 'js')).map((p) => path.relative(CLIENT, p)).sort();
-const S_KEYS = ['firstRun', 'state', 'cam', 'vpRect', 'camRaf', 'mmScale', 'ptr', 'spaceDown', 'altDown', 'rafPending', 'nudgeTimer', 'popoverOpen', 'adminTab'];
+const S_KEYS = ['firstRun', 'state', 'cam', 'vpRect', 'camRaf', 'mmScale', 'ptr', 'spaceDown', 'altDown', 'rafPending', 'nudgeTimer', 'popoverOpen', 'adminTab', 'pageId', 'version', 'offline', 'saving', 'dirty'];
 const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 const exportsOf = (src) => {
   const names = new Set();
@@ -57,7 +57,7 @@ test('index.html: markup original y un único <script type="module" src="js/main
 });
 
 test('ESM: sin use strict, sin let/var top-level, sin globales window.* salvo S en main.js', () => {
-  assert.equal(JS.length, 21, JS.join(','));
+  assert.equal(JS.length, 23, JS.join(','));
   for (const f of JS) {
     const src = read(f);
     assert.ok(!src.includes("'use strict'"), `${f}: 'use strict' sobra en ESM`);
@@ -92,6 +92,13 @@ test('Imports: cada ruta existe y cada nombre importado lo exporta el módulo de
       for (const n of m[1].split(',').map((s) => s.trim()).filter(Boolean)) assert.ok(exp.has(n), `${f}: '${n}' no lo exporta ${target}`);
     }
   }
+});
+
+test('normalize.js del cliente es symlink a server/lib/normalize.js (una sola fuente)', () => {
+  const link = path.join(CLIENT, 'js/core/normalize.js');
+  assert.ok(fs.lstatSync(link).isSymbolicLink(), 'symlink');
+  assert.equal(fs.realpathSync(link), path.join(ROOT, 'server/lib/normalize.js'));
+  assert.ok(!/^import\s/m.test(read('js/core/normalize.js')), 'normalize.js no debe importar nada (compartido)');
 });
 
 test('main.js alcanza todos los módulos (imports estáticos)', () => {

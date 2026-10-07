@@ -2,14 +2,15 @@
 
 Fuente única de verdad para agencias: árbol de software → Design Systems / UI Kits, responsables, documentación y métricas de Figma. Autoalojado, multi-página, roles admin/head/designer.
 
-**Estado:** F0b — cliente vanilla JS (ESM) con persistencia en `localStorage`. Backend (Fastify 5 + SQLite) a partir de F1. Plan completo en `PLAN.md`.
+**Estado:** F1 — cliente vanilla JS (ESM) + Fastify 5 + SQLite (`node:sqlite`); documento validado con JSON Schema (`schema/`). Plan completo en `PLAN.md`.
 
 ## Uso
 ```
-npm run dev     # http://localhost:5173
+npm run migrate # crea data/destree.db
+npm start       # http://localhost:3000
 npm test        # verificación
 ```
-Requiere Node ≥ 22. Sin dependencias.
+Requiere Node ≥ 22.13 (`node:sqlite`). Dependencias: fastify, @fastify/static, ajv-formats.
 
 ## Documentación
 - `docs/MAP.md` — mapa de archivos · `docs/DECISIONS.md` — decisiones · `docs/handoff/` — handoff por fase.

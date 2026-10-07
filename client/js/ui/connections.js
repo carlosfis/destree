@@ -45,7 +45,7 @@ export function proposeConnection(aId, bId, x, y) {
     let typeSel = null;
     if (opts.some(o => o.kind === 'nest')) {
       const f = document.createElement('div'); f.className = 'menu-field';
-      f.innerHTML = `<label>Tipo de ramificación (al anidar)</label><select>${S.state.edgeTypes.map(t => `<option value="${t.id}" ${t.id === defaultBranchType() ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>`;
+      f.innerHTML = `<label>Tipo de ramificación (al anidar)</label><select>${S.state.branchTypes.map(t => `<option value="${t.id}" ${t.id === defaultBranchType() ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>`;
       typeSel = f.querySelector('select'); el.appendChild(f);
     }
     for (const o of opts) {

@@ -7,7 +7,7 @@ import { sel } from '../canvas/render-nodes.js';
 import { renderAll } from '../canvas/selection.js';
 import { toast } from '../ui/theme.js';
 export const history = { past: [], future: [] };
-export function snapshot() { return JSON.stringify({ nodes: S.state.nodes, edges: S.state.edges, tags: S.state.tags, edgeTypes: S.state.edgeTypes }); }
+export function snapshot() { return JSON.stringify({ nodes: S.state.nodes, edges: S.state.edges, tags: S.state.tags, branchTypes: S.state.branchTypes }); }
 export function pushHistory() {
   history.past.push(snapshot());
   if (history.past.length > HISTORY_MAX) history.past.shift();

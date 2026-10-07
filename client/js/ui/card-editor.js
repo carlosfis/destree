@@ -53,7 +53,7 @@ export function openEditor(id, preset = {}) {
       <div class="field" id="fNameField"><label>Nombre *</label><input name="name" maxlength="80" value="${esc(draft.name)}" placeholder="Nombre del software, DS o kit" autocomplete="off"><div class="error" hidden>El nombre es obligatorio.</div></div>
       <div class="field-row">
         <div class="field" id="fParentField"><label id="fParentLabel">Contenedor</label><select name="parent"></select><div class="error" hidden>Un DS o UI Kit debe vivir dentro de un software.</div></div>
-        <div class="field" id="fBranchField"><label>Tipo de ramificación</label><select name="branchType">${S.state.edgeTypes.map(t => `<option value="${t.id}" ${t.id === (draft.branchTypeId || defaultBranchType()) ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>
+        <div class="field" id="fBranchField"><label>Tipo de ramificación</label><select name="branchType">${S.state.branchTypes.map(t => `<option value="${t.id}" ${t.id === (draft.branchTypeId || defaultBranchType()) ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>
       </div>
       <div class="field"><label>Descripción breve <span class="counter" id="fCounter">${draft.description.length}/140</span></label><textarea name="description" maxlength="140" rows="2" placeholder="¿Qué es y para qué sirve?">${esc(draft.description)}</textarea></div>
       <div class="field"><label>Imagen</label>

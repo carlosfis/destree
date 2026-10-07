@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "edge.schema.json",
+  "title": "Edge",
+  "description": "ds: from=software, to=DS/UI Kit que usa. source: from=UI Kit, to=fuente (DS o software). El anidamiento padre→hijo no es arista (node.parentId).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "from", "to"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "kind": { "type": "string", "enum": ["ds", "source"] },
+    "from": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "to": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "demo": { "type": "boolean", "default": false }
+  }
+}
