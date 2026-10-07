@@ -102,3 +102,6 @@ Una línea por archivo. Actualizar al crear/mover archivos (protocolo de handoff
 
 ## legacy/
 - `arbol.html` — monolito original (2545 líneas). Nunca leerlo entero.
+
+## promo/ (motion graphics, sin fase)
+- `index.html` + `motion.css` + `timeline.js` (GSAP 3.12 desde cdnjs, línea de tiempo pausada/seekable) + `player.js` (escala 1920×1080 al viewport, play/scrub, `?render=1` expone `__seek`/`__duration`). `render.js` — vídeo 1080p vía Chrome headless (CDP, JPEG por fotograma): `.mp4` (por defecto) H.264 codificado dentro de Chrome con `encoder.js` (WebCodecs + mp4-muxer@5.2.2 desde jsdelivr, sin ffmpeg); `.webm` VP8 con el ffmpeg de Playwright (`~/Library/Caches/ms-playwright/ffmpeg-*`; `FFMPEG=` para otro binario). Env `BITRATE`, `MAX_SECONDS`. Salidas `promo/*.mp4|webm` gitignored.
