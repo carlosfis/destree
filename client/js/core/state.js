@@ -46,6 +46,9 @@ export const S = {
   dirty: false,          // state (F1): cambios pendientes mientras hay PUT en vuelo
   session: null,         // F2: { user, org, role, permissions, cellIds } de GET /api/me; null sin servidor
   readonly: false,       // F2: designer (sin pages.edit): sin edición ni PUT; core/readonly.js
+  cellList: [],          // F3: células (admin/head: todas vía /api/cells; designer: las suyas desde /api/me)
+  userDir: [],           // F3: directorio mínimo (admin/head) para responsable/asignados
+  docRefs: null,         // F3: `refs` del GET de página { users:[{id,name}], cells:[{id,name,color}] } para chips
 
 };
 // normalize.js (compartido con el servidor) es la única fuente de saneado y defaults.
@@ -109,7 +112,7 @@ export async function bootstrap() {
     const page = (await api.listPages())[0];
     if (!page) throw new Error('El servidor no tiene páginas');
     const doc = await api.getPage(page.id);
-    S.pageId = doc.page.id; S.version = doc.page.version; S.offline = false;
+    S.pageId = doc.page.id; S.version = doc.page.version; S.offline = false; S.docRefs = doc.refs || null;
     let s = normalizeState(doc);
     if (!s.nodes.length && doc.page.version === 0) {
       const raw = localRaw();
@@ -143,7 +146,7 @@ function persistLocal() {
 }
 async function reloadFromServer() {
   const doc = await api.getPage(S.pageId);
-  S.version = doc.page.version; S.state = applyPrefs(normalizeState(doc)); S.cam = { ...S.state.camera };
+  S.version = doc.page.version; S.docRefs = doc.refs || null; S.state = applyPrefs(normalizeState(doc)); S.cam = { ...S.state.camera };
   document.dispatchEvent(new CustomEvent('destree:reload'));
 }
 async function pushRemote(keepalive) {
@@ -194,6 +197,11 @@ export function ancestorsOf(id) { const out = []; let n = nodeById(id); while (n
 export function descendantsOf(id, acc = []) { for (const c of childrenOf(id)) { acc.push(c.id); descendantsOf(c.id, acc); } return acc; }
 /** Posición absoluta (mundo) de un nodo. */
 export function worldPos(n) { let x = n.x, y = n.y, p = parentOf(n), g = 0; while (p && g++ < 100) { x += p.x; y += p.y; p = parentOf(p); } return { x, y }; }
+/* --- F3: nombres de usuarios/células para chips (directorio si lo hay; si no, refs del documento) --- */
+export const userName = id => (S.userDir.find(u => u.id === id) || (S.docRefs?.users || []).find(u => u.id === id) || {}).name || (id === S.session?.user.id ? (S.session.user.name || S.session.user.email) : 'Usuario');
+export const cellById = id => S.cellList.find(c => c.id === id) || (S.docRefs?.cells || []).find(c => c.id === id) || null;
+/** Nodos donde el usuario actual está asignado o es responsable. */
+export const myNodes = () => { const me = S.session?.user.id; return me ? S.state.nodes.filter(n => (n.assigneeIds || []).includes(me) || n.ownerUserId === me) : []; };
 /** ¿La dependencia de DS cruza entre raíces distintas? */
 export const isExternalDs = e => { const a = nodeById(e.from), b = nodeById(e.to); return !!a && !!b && rootOf(a).id !== rootOf(b).id; };
 

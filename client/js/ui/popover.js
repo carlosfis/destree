@@ -9,6 +9,7 @@ import { edgeTitle } from '../canvas/render-edges.js';
 import { moveToRoot, deleteEdge } from './connections.js';
 import { openEditor } from './card-editor.js';
 import { deleteSelection, duplicateSelection } from './node-actions.js';
+import { openNodeView } from './node-view.js';
 export const popover = $('#popover');
 export function openPopover(x, y, build) {
   popover.innerHTML = '';
@@ -62,6 +63,7 @@ export function showNodeMenu(id, x, y) {
   const multi = sel.nodes.size > 1 && sel.nodes.has(id);
   const items = [
     { label: 'Editar', ico: '✎', kbd: 'Enter', action: () => openEditor(id) },
+    { label: 'Ver ficha', ico: 'ⓘ', action: () => openNodeView(id) },
   ];
   if (isContainer(n) && !multi) items.push('-', ...addItems(id).slice(1), '-');
   if (n.parentId && !multi) items.push({ label: 'Sacar a la raíz', ico: '⤴', action: () => moveToRoot(id) });

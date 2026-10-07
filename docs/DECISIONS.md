@@ -28,3 +28,9 @@
 - 2026-10-06 F2: en el cliente la sesión vive en `S.session` (no `S.me`: `me` es identificador local en `pointer-drag.js` y el test de símbolos sueltos lo detectaría). Modo lectura = `S.readonly` + `body.viewer`; nunca la palabra `readonly` en strings/atributos del cliente por el mismo test.
 - 2026-10-06 F2: topbar (chip de usuario, Salir) y pestaña Usuarios se inyectan por JS para mantener el markup legacy intacto (`tests/client.test.js` compara el body).
 - 2026-10-06 F2: 401 en `/api/me` al cargar sin sesión y 403 del PUT de designer son respuestas esperadas; `smoke.js` ignora esas dos entradas de red del log del navegador.
+- 2026-10-06 F3: desde esta fase las fases se encadenan en una misma sesión (handoff + commit + tag entre fases); lo que requiera al usuario va a `PENDIENTE.md` sin bloquear.
+- 2026-10-06 F3: rutas de nodo bajo `/api/pages/:pageId/nodes/:nodeId/…` (no `/api/nodes/:id`): `nodes.id` es PK compuesta por página. El cliente edita vía PUT del documento; las PATCH sirven a API/tests y bumpean `version`.
+- 2026-10-06 F3: PUT del documento reescribe `node_cells`/`node_assignees` desde `cellIds`/`assigneeIds` (ids desconocidos se descartan); GET añade `refs {users, cells}` (nombres citados) para que el designer pinte chips sin directorio.
+- 2026-10-06 F3: head "gestiona" una célula si es lead o miembro (`canManageCell`); solo puede invitar designers a esas células. Admin gestiona todas.
+- 2026-10-06 F3: claves de `S` `cellList`, `userDir`, `docRefs` (no `cells`/`users`/`refs`) porque `client.test.js` prohíbe esos identificadores sueltos en todo el cliente.
+- 2026-10-06 F3: markdown propio (`ui/markdown.js`): escape total antes de marcar; solo enlaces `http(s)`; sin HTML crudo, imágenes ni tablas. La ficha de lectura reutiliza `#editorDialog`.

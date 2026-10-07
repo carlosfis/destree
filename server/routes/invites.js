@@ -6,6 +6,7 @@ import { HttpError } from '../lib/pages.js';
 import { sessionCookie } from '../plugins/session.js';
 import { transaction } from '../db/sqlite.js';
 import { limited } from './auth.js';
+import { canManageCell, addCellMembers } from '../lib/cells.js';
 
 const tokenParam = { type: 'object', required: ['token'], properties: { token: { type: 'string', minLength: 20, maxLength: 64 } } };
 
@@ -17,14 +18,17 @@ export default async function inviteRoutes(app) {
     schema: { body: { type: 'object', required: ['email', 'role'], additionalProperties: false, properties: { email: { type: 'string', format: 'email', maxLength: 200 }, role: { enum: ROLES }, cellIds: { type: 'array', maxItems: 50, items: { type: 'string', maxLength: 64 } } } } },
   }, async (req, reply) => {
     if (req.role === 'head' && req.body.role !== 'designer') throw new HttpError(403, 'Un head solo invita designers');
+    const cellIds = [...new Set(req.body.cellIds || [])];
+    for (const c of cellIds) if (!canManageCell(app.db, { role: req.role, userId: req.user.id }, c)) throw new HttpError(403, 'Solo puedes invitar a tus células');
+    if (cellIds.some(c => !app.db.prepare('SELECT 1 FROM cells WHERE id = ? AND org_id = ?').get(c, req.orgId))) throw new HttpError(400, 'Célula desconocida');
     const inv = transaction(app.db, () => {
-      const r = createInvite(app.db, { orgId: req.orgId, email: req.body.email, role: req.body.role, cellIds: req.body.cellIds || [], invitedBy: req.user.id });
+      const r = createInvite(app.db, { orgId: req.orgId, email: req.body.email, role: req.body.role, cellIds, invitedBy: req.user.id });
       audit(app.db, { orgId: req.orgId, userId: req.user.id, action: 'invite.create', entity: 'invite', entityId: r.id, meta: { email: r.email, role: r.role } });
       return r;
     });
     reply.code(201);
     // Sin SMTP (F9b): el enlace se copia a mano.
-    return { id: inv.id, email: inv.email, role: inv.role, expiresAt: inv.expiresAt, link: link(req, inv.token), emailSent: false };
+    return { id: inv.id, email: inv.email, role: inv.role, cellIds, expiresAt: inv.expiresAt, link: link(req, inv.token), emailSent: false };
   });
 
   app.get('/api/invites', { onRequest: app.guard('invite') }, async (req) => ({ invites: listInvites(app.db, req.orgId) }));
@@ -49,6 +53,7 @@ export default async function inviteRoutes(app) {
   }, async (req, reply) => {
     const res = transaction(app.db, () => {
       const r = acceptInvite(app.db, { token: req.body.token, name: req.body.name || '', password: req.body.password, ua: req.headers['user-agent'], ip: req.ip });
+      addCellMembers(app.db, JSON.parse(r.invite.cell_ids_json || '[]'), r.user.id); // F3: hereda células de la invitación
       audit(app.db, { orgId: r.invite.org_id, userId: r.user.id, action: 'invite.accept', entity: 'invite', entityId: r.invite.id, meta: { role: r.user.role } });
       return r;
     });

@@ -10,7 +10,7 @@ import { $, esc, CARD_W, CTR_MIN_W, CTR_MIN_BODY, PAD, HEAD_GAP, GAP, TYPE_META 
 import { nodesLayer } from '../core/dom.js';
 import {
   S, nodeById, tagById, branchTypeById, isContainer, childrenOf, roots, sourceEdgeOf, parentOf, depthOf,
-  worldPos, isExternalDs,
+  worldPos, isExternalDs, userName, cellById,
 } from '../core/state.js';
 import { updateEdgePaths } from './render-edges.js';
 import { drawMinimap } from './minimap.js';
@@ -36,7 +36,11 @@ export function anchorRect(n) {
 export function commonHTML(n) {
   const tags = n.tags.map(tagById).filter(Boolean);
   let foot = '';
-  if (n.owner) foot += `<span class="owner">${esc(n.owner)}</span>`;
+  if (n.ownerUserId) foot += `<span class="owner person" title="Responsable">${esc(userName(n.ownerUserId))}</span>`;
+  else if (n.owner) foot += `<span class="owner">${esc(n.owner)}</span>`;
+  for (const u of n.assigneeIds || []) foot += `<span class="assignee" title="Asignado">${esc(userName(u))}</span>`; // F3
+  if (n.docs && n.docs.length) foot += `<span class="docs-ref" title="${n.docs.length} enlace${n.docs.length > 1 ? 's' : ''} de documentación">⎘ ${n.docs.length}</span>`;
+  if (n.hasExternalRefs) foot += `<span class="hidden-ref" title="Tiene conexiones con elementos que no puedes ver">⇢ ocultas</span>`;
   if (n.type === 'software') {
     const ds = S.state.edges.filter(e => e.kind === 'ds' && e.from === n.id).map(e => ({ n: nodeById(e.to), ext: isExternalDs(e) })).filter(x => x.n);
     foot += ds.length
@@ -60,6 +64,12 @@ export function commonHTML(n) {
     foot: foot ? `<div class="card-foot">${foot}</div>` : '',
   };
 }
+/** F3: badge de visibilidad en la cabecera de la raíz. */
+function visibilityChip(n) {
+  if (n.visibility !== 'cells') return '';
+  const cells = (n.cellIds || []).map(cellById).filter(Boolean);
+  return `<span class="chip vis-cells" title="Visible solo para células${cells.length ? ': ' + esc(cells.map(c => c.name).join(', ')) : ' (ninguna asignada)'}">◐ ${cells.length ? esc(cells.map(c => c.name).join(', ')) : 'Solo células'}</span>`;
+}
 export const PORTS = `<div class="port port-t" data-port="t"></div><div class="port port-r" data-port="r"></div><div class="port port-b" data-port="b"></div><div class="port port-l" data-port="l"></div>`;
 
 export function leafHTML(n) {
@@ -75,7 +85,7 @@ export function headHTML(n) {
   const bt = n.parentId ? branchTypeById(n.branchTypeId) : null;
   return `<div class="head-top">
       <span class="type-badge">${n.parentId ? 'Software' : 'Software · Raíz'}</span>
-      ${bt ? `<span class="chip tag-${bt.color}" title="Tipo de ramificación">↳ ${esc(bt.name)}</span>` : (n.parentId ? '<span class="chip tag-gray">↳ sin tipo</span>' : '')}
+      ${bt ? `<span class="chip tag-${bt.color}" title="Tipo de ramificación">↳ ${esc(bt.name)}</span>` : (n.parentId ? '<span class="chip tag-gray">↳ sin tipo</span>' : visibilityChip(n))}
       <span class="spacer"></span>
       <span class="head-actions"><button class="icon-btn" data-action="add" title="Agregar dentro">＋</button><button class="icon-btn" data-action="menu" title="Opciones">⋯</button></span>
     </div>

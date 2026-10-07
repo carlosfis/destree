@@ -2,25 +2,32 @@
 import { DEFAULT_ORG_ID, transaction } from '../db/sqlite.js';
 import { ulid, nowIso } from './ids.js';
 import { normalizeDocument, defaultDocument } from './normalize.js';
+import { filterDocumentForUser, pageVisibleFor, needsFilter } from './visibility.js';
 
 export class HttpError extends Error { constructor(status, message, extra) { super(message); this.status = status; Object.assign(this, extra); } }
 const j = v => JSON.stringify(v);
 const pj = (s, d) => { try { return JSON.parse(s) ?? d; } catch { return d; } };
 
-export function listPages(db, orgId = DEFAULT_ORG_ID) {
-  return db.prepare(`SELECT p.id, p.name, p.description, p.visibility, p.status, p.version, p.updated_at AS updatedAt,
+/** `ctx` (F3: { role, userId, cellIds }) filtra páginas no visibles para designer. */
+export function listPages(db, orgId = DEFAULT_ORG_ID, ctx = null) {
+  const rows = db.prepare(`SELECT p.id, p.name, p.description, p.visibility, p.status, p.version, p.updated_at AS updatedAt,
       (SELECT COUNT(*) FROM nodes n WHERE n.page_id = p.id) AS nodeCount
     FROM pages p WHERE p.org_id = ? AND p.status != 'deleted' ORDER BY p.created_at`).all(orgId);
+  return needsFilter(ctx) ? rows.filter(p => pageVisibleFor(db, p, ctx)) : rows;
 }
+const groupIds = (rows, key) => { const m = new Map(); for (const r of rows) { if (!m.has(r.node_id)) m.set(r.node_id, []); m.get(r.node_id).push(r[key]); } return m; };
 export function pageMeta(db, pageId) {
   const p = db.prepare('SELECT id, name, description, visibility, status, version, created_by AS createdBy, updated_at AS updatedAt FROM pages WHERE id = ?').get(pageId);
   if (!p) throw new HttpError(404, 'Página no encontrada');
   return p;
 }
-/** Documento completo de la página (v3). */
-export function getDocument(db, pageId) {
+/** Documento completo de la página (v3). F3: `ctx` aplica lib/visibility.js (designer) y añade `refs` (usuarios/células citados). */
+export function getDocument(db, pageId, ctx = null) {
   const p = db.prepare('SELECT * FROM pages WHERE id = ?').get(pageId);
   if (!p) throw new HttpError(404, 'Página no encontrada');
+  if (!pageVisibleFor(db, p, ctx)) throw new HttpError(403, 'Sin acceso a esta página');
+  const cellsByNode = groupIds(db.prepare('SELECT node_id, cell_id FROM node_cells WHERE page_id = ? ORDER BY rowid').all(pageId), 'cell_id');
+  const assigneesByNode = groupIds(db.prepare('SELECT node_id, user_id FROM node_assignees WHERE page_id = ? ORDER BY position').all(pageId), 'user_id');
   const tagsByNode = new Map();
   for (const r of db.prepare('SELECT node_id, tag_id FROM node_tags WHERE page_id = ? ORDER BY node_id, position').all(pageId)) {
     if (!tagsByNode.has(r.node_id)) tagsByNode.set(r.node_id, []); tagsByNode.get(r.node_id).push(r.tag_id);
@@ -29,13 +36,22 @@ export function getDocument(db, pageId) {
     id: n.id, type: n.type, name: n.name, description: n.description, image: n.image_legacy, imageId: n.image_id,
     tags: tagsByNode.get(n.id) || [], owner: n.owner_label, ownerUserId: n.owner_user_id, parentId: n.parent_id, branchTypeId: n.branch_type_id,
     x: n.x, y: n.y, w: n.w, h: n.h, demo: !!n.demo, notes: n.notes, docs: pj(n.docs_json, []), visibility: n.visibility, status: n.status,
+    cellIds: cellsByNode.get(n.id) || [], assigneeIds: assigneesByNode.get(n.id) || [],
   }));
   const edges = db.prepare('SELECT id, kind, from_node_id AS "from", to_node_id AS "to", demo FROM edges WHERE page_id = ? ORDER BY position').all(pageId).map(e => ({ ...e, demo: !!e.demo }));
   const tags = db.prepare('SELECT id, name, color FROM tags WHERE page_id = ? ORDER BY position').all(pageId);
   const branchTypes = db.prepare('SELECT id, name, color FROM branch_types WHERE page_id = ? ORDER BY position').all(pageId);
   const page = { id: p.id, name: p.name, description: p.description, visibility: p.visibility, status: p.status, version: p.version, createdBy: p.created_by, updatedAt: p.updated_at };
   const base = defaultDocument(page);
-  return { version: 3, page, nodes, edges, tags, branchTypes, settings: { ...base.settings, ...pj(p.settings_json, {}) }, camera: { ...base.camera, ...pj(p.camera_json, {}) } };
+  const doc = filterDocumentForUser({ version: 3, page, nodes, edges, tags, branchTypes, settings: { ...base.settings, ...pj(p.settings_json, {}) }, camera: { ...base.camera, ...pj(p.camera_json, {}) } }, ctx);
+  return { ...doc, refs: documentRefs(db, doc) };
+}
+/** Nombres de usuarios y células citados por el documento (para chips sin exponer el directorio). */
+function documentRefs(db, doc) {
+  const users = new Set(), cells = new Set();
+  for (const n of doc.nodes) { if (n.ownerUserId) users.add(n.ownerUserId); n.assigneeIds.forEach(u => users.add(u)); n.cellIds.forEach(c => cells.add(c)); }
+  const q = (table, cols, ids) => ids.length ? db.prepare(`SELECT ${cols} FROM ${table} WHERE id IN (${ids.map(() => '?').join(',')})`).all(...ids) : [];
+  return { users: q('users', 'id, name, email', [...users]).map(u => ({ id: u.id, name: u.name || u.email })), cells: q('cells', 'id, name, color', [...cells]) };
 }
 /** Reemplaza el contenido de la página en una transacción. `expected` (If-Match) ≠ version actual → 409. */
 export function saveDocument(db, pageId, doc, expected) {
@@ -63,7 +79,49 @@ export function saveDocument(db, pageId, doc, expected) {
     });
     const insEdge = db.prepare('INSERT INTO edges (id, page_id, kind, from_node_id, to_node_id, demo, position) VALUES (?, ?, ?, ?, ?, ?, ?)');
     d.edges.forEach((e, i) => insEdge.run(e.id, pageId, e.kind, e.from, e.to, e.demo ? 1 : 0, i));
+    writeNodeRelations(db, pageId, d.nodes);
     return { version, nodes: d.nodes.length, edges: d.edges.length, updatedAt: now };
+  });
+}
+/** node_cells / node_assignees desde el documento; ids desconocidos (célula o usuario ajeno a la org) se descartan. */
+function writeNodeRelations(db, pageId, nodes) {
+  const cells = new Set(db.prepare('SELECT id FROM cells').all().map(r => r.id));
+  const users = new Set(db.prepare('SELECT user_id FROM memberships').all().map(r => r.user_id));
+  const insCell = db.prepare('INSERT OR IGNORE INTO node_cells (page_id, node_id, cell_id) VALUES (?, ?, ?)');
+  const insAss = db.prepare('INSERT OR IGNORE INTO node_assignees (page_id, node_id, user_id, position) VALUES (?, ?, ?, ?)');
+  for (const n of nodes) {
+    if (n.visibility === 'cells') n.cellIds.filter(c => cells.has(c)).forEach(c => insCell.run(pageId, n.id, c));
+    n.assigneeIds.filter(u => users.has(u)).forEach((u, i) => insAss.run(pageId, n.id, u, i));
+    if (n.ownerUserId && !users.has(n.ownerUserId)) db.prepare('UPDATE nodes SET owner_user_id = NULL WHERE page_id = ? AND id = ?').run(pageId, n.id);
+  }
+}
+/** F3: parche de un nodo (visibility+cellIds | assigneeIds | ownerUserId) sin PUT completo; version += 1. */
+export function patchNode(db, pageId, nodeId, patch) {
+  return transaction(db, () => {
+    const cur = db.prepare('SELECT * FROM nodes WHERE page_id = ? AND id = ?').get(pageId, nodeId);
+    if (!cur) throw new HttpError(404, 'Nodo no encontrado');
+    const now = nowIso();
+    if (patch.visibility !== undefined) {
+      if (cur.parent_id) throw new HttpError(400, 'Solo una raíz tiene visibilidad propia (los hijos heredan)');
+      const vis = patch.visibility === 'cells' ? 'cells' : 'org';
+      db.prepare('UPDATE nodes SET visibility = ?, updated_at = ? WHERE page_id = ? AND id = ?').run(vis, now, pageId, nodeId);
+      db.prepare('DELETE FROM node_cells WHERE page_id = ? AND node_id = ?').run(pageId, nodeId);
+      if (vis === 'cells') writeNodeRelations(db, pageId, [{ id: nodeId, visibility: vis, cellIds: patch.cellIds || [], assigneeIds: [], ownerUserId: null }]);
+    }
+    if (patch.assigneeIds !== undefined) {
+      db.prepare('DELETE FROM node_assignees WHERE page_id = ? AND node_id = ?').run(pageId, nodeId);
+      writeNodeRelations(db, pageId, [{ id: nodeId, visibility: 'inherit', cellIds: [], assigneeIds: [...new Set(patch.assigneeIds)], ownerUserId: null }]);
+      db.prepare('UPDATE nodes SET updated_at = ? WHERE page_id = ? AND id = ?').run(now, pageId, nodeId);
+    }
+    if (patch.ownerUserId !== undefined) {
+      const ok = !patch.ownerUserId || db.prepare('SELECT 1 FROM memberships WHERE user_id = ?').get(patch.ownerUserId);
+      if (!ok) throw new HttpError(400, 'Usuario responsable desconocido');
+      db.prepare('UPDATE nodes SET owner_user_id = ?, updated_at = ? WHERE page_id = ? AND id = ?').run(patch.ownerUserId || null, now, pageId, nodeId);
+    }
+    const version = db.prepare('SELECT version FROM pages WHERE id = ?').get(pageId).version + 1;
+    db.prepare('UPDATE pages SET version = ?, updated_at = ? WHERE id = ?').run(version, now, pageId);
+    const node = getDocument(db, pageId).nodes.find(n => n.id === nodeId);
+    return { version, node, updatedAt: now };
   });
 }
 export function createPage(db, { name, description = '' }, orgId = DEFAULT_ORG_ID) {

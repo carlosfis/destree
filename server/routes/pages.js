@@ -2,12 +2,13 @@
 import { listPages, getDocument, saveDocument, createPage, importDocument, HttpError } from '../lib/pages.js';
 import { DEFAULT_PAGE_ID } from '../db/sqlite.js';
 import { audit } from '../lib/audit.js';
+import { visibilityCtx } from '../lib/cells.js';
 
 const idParam = { type: 'object', required: ['id'], properties: { id: { type: 'string', minLength: 1, maxLength: 64 } } };
 const parseIfMatch = h => { if (h == null) return null; const m = String(h).trim().match(/^(?:W\/)?"?(\d+)"?$/); if (!m) throw new HttpError(400, 'If-Match inválido: se espera la versión numérica'); return Number(m[1]); };
 
 export default async function pageRoutes(app) {
-  app.get('/api/pages', { onRequest: app.guard('pages.read') }, async () => ({ pages: listPages(app.db) }));
+  app.get('/api/pages', { onRequest: app.guard('pages.read') }, async (req) => ({ pages: listPages(app.db, req.orgId, visibilityCtx(req)) }));
 
   app.post('/api/pages', {
     onRequest: app.guard('pages.create'),
@@ -20,7 +21,7 @@ export default async function pageRoutes(app) {
   });
 
   app.get('/api/pages/:id', { onRequest: app.guard('pages.read'), schema: { params: idParam } }, async (req, reply) => {
-    const doc = getDocument(app.db, req.params.id);
+    const doc = getDocument(app.db, req.params.id, visibilityCtx(req));
     reply.header('ETag', `"${doc.page.version}"`).header('Cache-Control', 'no-store');
     return doc;
   });

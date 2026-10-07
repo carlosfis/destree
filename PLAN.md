@@ -166,7 +166,7 @@ Principio: honesto con la REST API (solo lectura de archivos/proyectos). Todo de
 
 ## 5. Fases
 
-Cada fase = 1 sesión de Claude Code. Regla de corte: si se alarga, handoff ⚠️ parcial antes de agotar contexto.
+Cada fase cierra con handoff + commit + tag y encadena la siguiente en la misma sesión (desde F3). Regla de corte: si se alarga, handoff ⚠️ parcial antes de agotar contexto.
 
 ### Paso previo (manual, antes de pegar el prompt F0a)
 - [x] `PLAN.md`, `CLAUDE.md` y `docs/handoff/TEMPLATE.md` ya están en disco
@@ -226,15 +226,15 @@ Cada fase = 1 sesión de Claude Code. Regla de corte: si se alarga, handoff ⚠�
 - **Handoff:** `F2.md` con matriz aplicada y rutas.
 - **Verificación:** `npm test`.
 
-### F3 — Células + visibilidad de raíces + asignaciones + documentación
+### F3 — Células + visibilidad de raíces + asignaciones + documentación ✅
 - **Objetivo:** Raíces públicas para la org o solo células; designer ve solo lo asignado; documentación real por nodo.
 - **Entregables:**
-  - [ ] `003_cells.sql` (cells, cell_members, node_cells, node_assignees; nodes.visibility, owner_user_id, status, notes, docs_json)
-  - [ ] `/api/cells` CRUD + miembros; `PATCH /api/nodes/:id/visibility {visibility, cellIds}`, `PUT /api/nodes/:id/assignees`, `PATCH /api/nodes/:id/owner`
-  - [ ] `lib/visibility.js` (`filterDocumentForUser`, reglas 1–6) aplicado en GET página
-  - [ ] Schema node actualizado (visibility, cellIds, assigneeIds, ownerId, status, `docs: [{label,url}]` ≤20, `notes` markdown ≤4000); `normalize` migra `doc_url` legado → `docs[0]`
-  - [ ] UI: selector visibilidad en editor de raíz, chips célula/asignados/responsable, badge en canvas; `card-editor`: lista de enlaces (label+url, añadir/quitar) + textarea notas con render markdown mínimo (títulos, listas, enlaces, código) en modo lectura; vista `#/me` "Mis asignaciones" con deep-link al nodo centrado
-  - [ ] `tests/visibility.test.js`
+  - [x] `003_cells.sql` (cells, cell_members, node_cells, node_assignees; nodes.visibility, owner_user_id, status, notes, docs_json)
+  - [x] `/api/cells` CRUD + miembros; `PATCH /api/pages/:pageId/nodes/:nodeId/visibility {visibility, cellIds}`, `PUT …/assignees`, `PATCH …/owner`
+  - [x] `lib/visibility.js` (`filterDocumentForUser`, reglas 1–6) aplicado en GET página
+  - [x] Schema node actualizado (visibility, cellIds, assigneeIds, ownerId, status, `docs: [{label,url}]` ≤20, `notes` markdown ≤4000); `normalize` migra `doc_url` legado → `docs[0]`
+  - [x] UI: selector visibilidad en editor de raíz, chips célula/asignados/responsable, badge en canvas; `card-editor`: lista de enlaces (label+url, añadir/quitar) + textarea notas con render markdown mínimo (títulos, listas, enlaces, código) en modo lectura; vista `#/me` "Mis asignaciones" con deep-link al nodo centrado
+  - [x] `tests/visibility.test.js`
 - **Aceptación:** designer de célula A no recibe raíz solo-célula-B ni hijos ni aristas cruzadas (test) · head asigna diseñador a feature → ve la raíz completa · `hasExternalRefs` presente · nodo con 3 enlaces + notas se guarda, valida contra schema y designer lo lee sin editar.
 - **Riesgos:** rendimiento → un recorrido por raíz; XSS en notas → render markdown propio sin HTML crudo (escape total).
 - **Handoff:** `F3.md`.
@@ -415,7 +415,7 @@ Al cerrar cada fase, en la misma sesión y en este orden:
 4. `git add -A && git commit -m "F<N>: <resumen>" && git tag f<N> && git push --tags origin main` (desde F0b; F0a solo commit local).
 5. Imprimir el prompt de la fase siguiente (§8) como último mensaje.
 
-Reglas: un chat = una fase; nunca iniciar la siguiente en el mismo chat; fase parcial → handoff ⚠️ con pendientes y el prompt siguiente empieza por "Termina F<N> (pendientes en handoff) y luego F<N+1>"; toda memoria vive en repo (CLAUDE.md, PLAN.md, handoffs, schema, migraciones, tests), nunca en el chat.
+Reglas: desde F3 las fases se encadenan en la misma sesión (handoff + commit + tag entre fases; lo que requiera intervención del usuario se anota en `PENDIENTE.md` y no bloquea); fase parcial → handoff ⚠️ con pendientes y el prompt siguiente empieza por "Termina F<N> (pendientes en handoff) y luego F<N+1>"; toda memoria vive en repo (CLAUDE.md, PLAN.md, handoffs, schema, migraciones, tests), nunca en el chat.
 
 Plantilla `docs/handoff/TEMPLATE.md`:
 ```

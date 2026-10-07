@@ -154,6 +154,44 @@ await step('arrastre de nodo + marquee + rueda zoom', async () => {
   await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: vp.x, y: vp.y, deltaX: 0, deltaY: -120, modifiers: META }); await sleep(80);
   return { moved: before[0] !== after[0] || before[1] !== after[1], z: await ev(`S.cam.z`), ptr: await ev(`S.ptr`) };
 });
+// F3: célula → editor de raíz (visibilidad solo-células, enlaces, notas, asignarse) → badges → ficha con markdown escapado → #/me.
+const NOTES = '# Título\n\n- item <b>x</b>\n\n[link](https://ok.io) [mal](javascript:alert(1)) `code`';
+await step('F3: célula + editor raíz (visibilidad, 2 enlaces, notas, asignado) → chips', async () => {
+  const cell = await ev(`fetch('/api/cells', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Célula Smoke', color: 'green' }) }).then(r => r.json())`);
+  await ev(`document.querySelector('#btnAdmin').click(); document.querySelector('#adminTabs [data-tab=cells]').click(); true`); await sleep(400);
+  const tab = await ev(`({ rows: document.querySelectorAll('#cellRows .cell-row').length, cells: S.cellList.length, dir: S.userDir.length })`);
+  await ev(`document.querySelector('#closeAdmin').click(); true`);
+  const rootId = await ev(`S.state.nodes.find(n => !n.parentId).id`);
+  await ev(`import('/js/ui/card-editor.js').then(m => m.openEditor(${JSON.stringify(rootId)}))`); await sleep(150);
+  const r = await ev(`(() => { const f = document.querySelector('#editorForm');
+    f.querySelector('#fVis [data-v=cells]').click(); f.querySelector('#fCells input').checked = true;
+    f.querySelector('#fDocAdd').click(); f.querySelector('#fDocAdd').click();
+    const rows = f.querySelectorAll('.doc-row'); rows[0].querySelector('.doc-label').value = 'Figma'; rows[0].querySelector('.doc-url').value = 'https://www.figma.com/design/x';
+    rows[1].querySelector('.doc-url').value = 'https://notion.so/y';
+    f.elements.notes.value = ${JSON.stringify(NOTES)};
+    f.querySelector('#fAssignees input').checked = true; f.elements.ownerUserId.value = S.session.user.id;
+    f.requestSubmit(); return { visHidden: f.querySelector('#fVisField').hidden }; })()`); await sleep(1200);
+  const n = await ev(`(() => { const n = S.state.nodes.find(n => n.id === ${JSON.stringify(rootId)}); const el = document.querySelector('.node[data-id="' + n.id + '"]');
+    return { vis: n.visibility, cells: n.cellIds, docs: n.docs.length, notes: n.notes.length, ass: n.assigneeIds.length, owner: n.ownerUserId === S.session.user.id, chip: !!el.querySelector('.vis-cells'), person: el.querySelectorAll('.assignee, .owner.person').length, docsRef: el.querySelector('.docs-ref')?.textContent, status: document.querySelector('#saveStatus').textContent }; })()`);
+  const server = await ev(`fetch('/api/pages/' + S.pageId).then(r => r.json()).then(d => { const n = d.nodes.find(n => n.id === ${JSON.stringify(rootId)}); return { vis: n.visibility, cells: n.cellIds.length, docs: n.docs.length, refs: d.refs.cells.map(c => c.name) }; })`);
+  if (!tab.cells || !tab.dir || !tab.rows) throw new Error('pestaña Células vacía ' + JSON.stringify(tab));
+  if (server.vis !== 'cells' || server.cells !== 1 || server.docs !== 2) throw new Error('servidor: ' + JSON.stringify(server));
+  return { ...n, cellName: cell.name, ...r, serverRefs: server.refs };
+});
+await step('F3: ficha (Ver ficha) con markdown escapado + #/me con deep-link', async () => {
+  const rootId = await ev(`S.state.nodes.find(n => !n.parentId).id`);
+  await ev(`import('/js/ui/node-view.js').then(m => m.openNodeView(${JSON.stringify(rootId)}))`); await sleep(100);
+  const view = await ev(`(() => { const d = document.querySelector('#editorDialog'); const md = d.querySelector('.md'); return { open: d.open, h3: md.querySelector('h3')?.textContent, li: md.querySelectorAll('li').length, rawB: !!md.querySelector('li b'), escaped: md.innerHTML.includes('&lt;b&gt;'), links: [...md.querySelectorAll('a')].map(a => a.getAttribute('href')), code: !!md.querySelector('code'), docs: d.querySelectorAll('.doc-list a').length, people: d.querySelectorAll('.person').length }; })()`);
+  if (view.rawB || !view.escaped) throw new Error('HTML sin escapar en notas');
+  if (view.links.some(h => !/^https:/.test(h))) throw new Error('enlace inseguro: ' + view.links);
+  await ev(`document.querySelector('#editorDialog [data-cancel]').click(); true`);
+  await ev(`location.hash = '#/me'; true`); await sleep(200);
+  const me = await ev(`({ open: document.querySelector('#editorDialog').open, items: document.querySelectorAll('#editorDialog .me-list li').length, title: document.querySelector('#editorDialog h2')?.textContent })`);
+  await ev(`document.querySelector('#editorDialog .me-list a').click(); true`); await sleep(600);
+  const go = await ev(`({ hash: location.hash, selected: [...document.querySelectorAll('.node.selected')].map(e => e.dataset.id), open: document.querySelector('#editorDialog').open })`);
+  await ev(`document.querySelector('#editorDialog [data-cancel]').click(); location.hash = ''; true`); await sleep(100);
+  return { view, me, go };
+});
 await step('recarga: persistencia SQLite vía API', async () => { await send('Page.reload'); await sleep(1200); return ev(`({ nodes: S.state.nodes.length, theme: document.documentElement.dataset.theme })`); });
 // F2: invitación (enlace copiable) → alta de designer → modo lectura; PUT → 403; logout → login.
 await step('invitación → designer en modo lectura (403 en PUT)', async () => {
@@ -166,6 +204,17 @@ await step('invitación → designer en modo lectura (403 en PUT)', async () => 
   await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: 400, y: 300, button: 'right', clickCount: 1 }); await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 400, y: 300, button: 'right', clickCount: 1 }); await sleep(100);
   await key('n', 'KeyN'); await sleep(100);
   return ev(`({ role: S.session.role, ro: S.readonly, viewer: document.body.classList.contains('viewer'), nodes: S.state.nodes.length, newHidden: document.querySelector('#btnNew').hidden, adminHidden: document.querySelector('#btnAdmin').hidden, ports: getComputedStyle(document.querySelector('.port')).display, popover: document.querySelector('#popover').hidden, status: document.querySelector('#saveStatus').textContent, put: ${'${put}'} })`.replace('${put}', JSON.stringify(put)));
+});
+await step('F3: designer → doble clic abre ficha; raíz solo-células oculta (no es miembro)', async () => {
+  const roots = await ev(`S.state.nodes.filter(n => !n.parentId).map(n => n.visibility)`);
+  if (roots.includes('cells')) throw new Error('el designer recibió una raíz solo-células ajena');
+  await ev(`document.querySelector('#zoomFit').click(); true`); await sleep(500);
+  const c = await center('.node');
+  const under = await ev(`document.elementFromPoint(${c.x}, ${c.y + 10})?.closest('.node')?.dataset.id || null`);
+  await mouse('mousePressed', c.x, c.y + 10); await mouse('mouseReleased', c.x, c.y + 10); await mouse('mousePressed', c.x, c.y + 10, { clickCount: 2 }); await mouse('mouseReleased', c.x, c.y + 10, { clickCount: 2 }); await sleep(150);
+  const r = await ev(`({ open: document.querySelector('#editorDialog').open, isView: !!document.querySelector('#editorDialog .node-view'), isForm: !!document.querySelector('#editorForm'), under: ${JSON.stringify(under)}, roots: ${JSON.stringify(roots)}.length, mine: document.querySelector('#btnMe')?.textContent })`);
+  await ev(`document.querySelector('#editorDialog [data-cancel]')?.click(); true`);
+  return r;
 });
 await step('logout → login (admin)', async () => {
   await ev(`document.querySelector('#btnLogout').click(); true`); await sleep(1200);

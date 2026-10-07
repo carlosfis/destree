@@ -6,6 +6,8 @@ const MATRIX = {
   'invite': ['admin', 'head'],            // head: solo designer (regla extra en routes/invites.js)
   'cells.manage': ['admin'],
   'cells.read': ['admin', 'head'],
+  'cells.members': ['admin', 'head'],   // head: solo sus células (regla extra en routes/cells.js)
+  'directory.read': ['admin', 'head'],  // listado mínimo de usuarios para asignar
   'org.settings': ['admin'],
   'figma.connect': ['admin'],
   'backups': ['admin'],

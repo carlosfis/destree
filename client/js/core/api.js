@@ -36,3 +36,10 @@ export const revokeInvite = id => req('DELETE', `/invites/${encodeURIComponent(i
 export const listUsers = () => req('GET', '/users').then(r => r.users);
 export const createUser = body => req('POST', '/users', body);
 export const updateUser = (id, body) => req('PATCH', `/users/${encodeURIComponent(id)}`, body);
+/* --- F3: células, directorio --- */
+export const listCells = () => req('GET', '/cells').then(r => r.cells);
+export const createCell = body => req('POST', '/cells', body);
+export const updateCell = (id, body) => req('PATCH', `/cells/${encodeURIComponent(id)}`, body);
+export const deleteCell = id => req('DELETE', `/cells/${encodeURIComponent(id)}`);
+export const setCellMembers = (id, userIds) => req('PUT', `/cells/${encodeURIComponent(id)}/members`, { userIds });
+export const directory = () => req('GET', '/users/directory').then(r => r.users);

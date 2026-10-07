@@ -5,6 +5,7 @@ import { audit } from '../lib/audit.js';
 import { HttpError } from '../lib/pages.js';
 import { sessionCookie } from '../plugins/session.js';
 import { transaction, DEFAULT_ORG_ID } from '../db/sqlite.js';
+import { userCellIds } from '../lib/cells.js';
 
 const email = { type: 'string', format: 'email', maxLength: 200 };
 const password = { type: 'string', minLength: 8, maxLength: 200 };
@@ -56,6 +57,9 @@ export default async function authRoutes(app) {
   app.get('/api/me', { onRequest: app.guard('pages.read') }, async (req) => me(app, req.user));
 
   function me(app, user) {
-    return { user: { id: user.id, email: user.email, name: user.name }, org: orgRow(), role: user.role, permissions: permissionsFor(user.role), cellIds: [] };
+    return { user: { id: user.id, email: user.email, name: user.name }, org: orgRow(), role: user.role, permissions: permissionsFor(user.role), cellIds: userCellIds(app.db, user.id), cells: userCells(user.id) };
+  }
+  function userCells(userId) {
+    return app.db.prepare('SELECT c.id, c.name, c.color FROM cells c JOIN cell_members m ON m.cell_id = c.id WHERE m.user_id = ? ORDER BY c.name').all(userId);
   }
 }

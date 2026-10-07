@@ -16,6 +16,8 @@ import { applyReadonly, canEdit } from './core/readonly.js';
 import { toast } from './ui/theme.js';
 import { computeLayout, autoLayout } from './canvas/layout.js';
 import { applyTheme, openShortcuts } from './ui/theme.js';
+import { openMyAssignments, goToNode } from './views/me.js';
+import { refreshCells } from './views/cells.js';
 import './canvas/keyboard.js'; // solo efectos (listeners)
 $('#btnNew').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(); showNewMenu(r.left, r.bottom + 4); });
 $('#btnLayout').addEventListener('click', autoLayout);
@@ -30,7 +32,7 @@ $('#zoomLabel').addEventListener('click', () => setZoom(1));
 viewport.addEventListener('pointerdown', () => { if (innerWidth <= 720 && adminPanel.classList.contains('open')) toggleAdmin(false); });
 
 /* --- F2: router mínimo por hash (#/login, #/setup, #/invite/<token>) + sesión --- */
-const route = () => { const m = location.hash.match(/^#\/(login|setup|invite)(?:\/([^/]+))?/); return m ? { name: m[1], arg: m[2] } : null; };
+const route = () => { const m = location.hash.match(/^#\/(login|setup|invite|me|n)(?:\/([^/]+))?/); return m ? { name: m[1], arg: m[2] } : null; };
 /** Resuelve S.session (o null sin servidor). Muestra setup/login/invitación cuando hace falta. */
 async function authenticate() {
   const r = route();
@@ -51,10 +53,24 @@ function renderUserChip() {
   chip.innerHTML = `<b>${esc(S.session.user.name || S.session.user.email)}</b><span class="role">${esc(ROLE_LABEL[S.session.role] || S.session.role)}</span>`;
   const out = document.createElement('button'); out.className = 'btn'; out.id = 'btnLogout'; out.title = 'Cerrar sesión'; out.textContent = 'Salir';
   out.addEventListener('click', async () => { await api.logout().catch(() => {}); location.hash = '#/login'; location.reload(); });
-  $('#btnAdmin').before(chip, out);
+  const me = document.createElement('button'); me.className = 'btn'; me.id = 'btnMe'; me.title = 'Mis asignaciones'; me.textContent = '★ Mías'; // F3
+  me.addEventListener('click', () => { location.hash = '#/me'; });
+  $('#btnAdmin').before(chip, me, out);
+}
+/** F3: carga células (admin/head: todas; designer: las suyas) y directorio (admin/head). */
+async function loadTeamData() {
+  if (!S.session) return;
+  if (S.session.permissions.includes('cells.read')) await refreshCells(); else S.cellList = S.session.cells || [];
+  if (S.session.permissions.includes('directory.read')) { try { S.userDir = await api.directory(); } catch { S.userDir = []; } }
+}
+/** F3: rutas de app (#/me, #/n/<id>) tras cargar el documento. */
+function appRoute() {
+  const r = route(); if (!r || !S.state) return;
+  if (r.name === 'me') openMyAssignments();
+  else if (r.name === 'n' && r.arg && !goToNode(decodeURIComponent(r.arg))) toast('Esa card no existe o no es visible para ti.', 'error', 5000);
 }
 document.addEventListener('destree:unauthorized', () => { if (!$('#authView').hidden) return; showLogin('Tu sesión ha caducado. Vuelve a entrar.').then(() => location.reload()); });
-window.addEventListener('hashchange', () => { const r = route(); if (r && r.name === 'invite' && S.session) location.reload(); });
+window.addEventListener('hashchange', () => { const r = route(); if (r && r.name === 'invite' && S.session) location.reload(); else appRoute(); });
 
 export async function init() {
   S.session = await authenticate();
@@ -62,6 +78,7 @@ export async function init() {
   renderUserChip();
   enableUsersTab();
   if (!canEdit()) applyReadonly();
+  await loadTeamData();
   measureViewport(); // F0b: antes era eager en camera.js (S.vpRect); debe preceder a applyTheme → drawMinimap
   await bootstrap(); // F1: documento desde la API (o localStorage si no hay servidor)
   applyTheme();
@@ -77,6 +94,7 @@ export async function init() {
     persist();
   } else applyCamera();
   setSaveStatus(S.offline ? 'Sin conexión' : S.readonly ? 'Solo lectura' : 'Guardado');
+  appRoute();
 }
 // F1: tras un 409 state.js recarga el documento del servidor y avisa aquí para repintar.
 document.addEventListener('destree:reload', () => { clearSelection(); applyTheme(); applySettingsUI(); renderAll(); applyCamera(); });

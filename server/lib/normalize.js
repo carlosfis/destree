@@ -42,8 +42,11 @@ export function defaultDocument(page) {
 /** ¿Respaldo v1 (ramificaciones como aristas `branch`)? */
 export const isLegacyV1 = raw => !!raw && Array.isArray(raw.edges) && raw.edges.some(e => e && e.kind === 'branch');
 
+const idList = (v, max = 50) => (Array.isArray(v) ? [...new Set(v.filter(x => x != null && x !== '').map(x => String(x).slice(0, 64)))].slice(0, max) : []);
 function normalizeNode(n) {
-  const docs = Array.isArray(n.docs) ? n.docs.filter(d => d && typeof d.url === 'string').slice(0, 20).map(d => ({ label: str(d.label, 80), url: str(d.url, 2048) })) : [];
+  let docs = Array.isArray(n.docs) ? n.docs.filter(d => d && typeof d.url === 'string' && d.url.trim()).slice(0, 20).map(d => ({ label: str(d.label, 80), url: str(d.url.trim(), 2048) })) : [];
+  const legacyUrl = n.docUrl ?? n.doc_url; // F3: campo legado → docs[0]
+  if (!docs.length && typeof legacyUrl === 'string' && legacyUrl.trim()) docs = [{ label: 'Documentación', url: str(legacyUrl.trim(), 2048) }];
   return {
     id: String(n.id), type: TYPES.includes(n.type) ? n.type : 'software', name: str(n.name, 120, 'Sin nombre') || 'Sin nombre',
     description: str(n.description, 140), image: typeof n.image === 'string' && n.image.startsWith('data:image') ? n.image : null, imageId: n.imageId ? String(n.imageId) : null,
@@ -52,6 +55,7 @@ function normalizeNode(n) {
     x: num(n.x), y: num(n.y), w: Math.max(0, num(n.w)), h: Math.max(0, num(n.h)), demo: !!n.demo,
     notes: str(n.notes, 4000), docs, visibility: ['org', 'cells'].includes(n.visibility) ? n.visibility : 'inherit',
     status: NODE_STATUS.includes(n.status) ? n.status : 'active',
+    cellIds: idList(n.cellIds), assigneeIds: idList(n.assigneeIds),
   };
 }
 const normalizeColorList = (list, fallback, cycle) => (Array.isArray(list) && list.length
@@ -112,6 +116,7 @@ export function normalizeDocument(raw, page) {
   for (const n of s.nodes) {
     if (n.parentId && n.type === 'software' && !etIds.has(n.branchTypeId)) n.branchTypeId = s.branchTypes[0].id;
     n.visibility = n.parentId ? 'inherit' : (n.visibility === 'cells' ? 'cells' : 'org');
+    if (n.visibility !== 'cells') n.cellIds = [];
   }
 
   const ids2 = new Set(s.nodes.map(n => n.id));

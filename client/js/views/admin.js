@@ -18,6 +18,7 @@ import { normalizeOwner } from '../ui/card-editor.js';
 import { computeLayout } from '../canvas/layout.js';
 import { applyTheme, toast } from '../ui/theme.js';
 import { renderUsersTab } from './users.js';
+import { renderCellsTab } from './cells.js';
 export const adminPanel = $('#adminPanel');
 export function toggleAdmin(open) {
   const willOpen = open ?? !adminPanel.classList.contains('open');
@@ -35,13 +36,13 @@ $('#adminTabs').addEventListener('click', e => {
 export function renderAdmin() {
   const body = $('#adminBody');
   body.innerHTML = '';
-  ({ tags: renderTagsTab, edgeTypes: renderEdgeTypesTab, owners: renderOwnersTab, data: renderDataTab, settings: renderSettingsTab, users: renderUsersTab })[S.adminTab](body);
+  ({ tags: renderTagsTab, edgeTypes: renderEdgeTypesTab, owners: renderOwnersTab, data: renderDataTab, settings: renderSettingsTab, users: renderUsersTab, cells: renderCellsTab })[S.adminTab](body);
 }
 /** F2: pestaña Usuarios solo para quien puede invitar (admin/head). Se inserta por JS para no tocar el markup legacy. */
 export function enableUsersTab() {
-  if (!S.session || !S.session.permissions.includes('invite') || $('#adminTabs [data-tab="users"]')) return;
-  const b = document.createElement('button'); b.dataset.tab = 'users'; b.textContent = 'Usuarios';
-  $('#adminTabs').appendChild(b);
+  if (!S.session) return;
+  const add = (tab, label, perm) => { if (S.session.permissions.includes(perm) && !$(`#adminTabs [data-tab="${tab}"]`)) { const b = document.createElement('button'); b.dataset.tab = tab; b.textContent = label; $('#adminTabs').appendChild(b); } };
+  add('users', 'Usuarios', 'invite'); add('cells', 'Células', 'cells.read'); // F3
 }
 export function colorPicker(x, y, current, onPick) {
   openPopover(x, y, el => {

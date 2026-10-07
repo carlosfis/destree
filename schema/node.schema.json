@@ -27,6 +27,9 @@
     "docs": { "type": "array", "maxItems": 20, "default": [], "items": { "type": "object", "additionalProperties": false, "required": ["label", "url"], "properties": { "label": { "type": "string", "maxLength": 80 }, "url": { "type": "string", "format": "uri", "maxLength": 2048 } } } },
     "visibility": { "type": "string", "enum": ["org", "cells", "inherit"], "default": "inherit", "description": "raíz: org|cells; hijos: inherit" },
     "status": { "type": "string", "enum": ["active", "draft", "deprecated", "archived"], "default": "active" },
+    "cellIds": { "type": "array", "maxItems": 50, "default": [], "items": { "type": "string", "minLength": 1, "maxLength": 64 }, "description": "solo raíces con visibility=cells" },
+    "assigneeIds": { "type": "array", "maxItems": 50, "default": [], "items": { "type": "string", "minLength": 1, "maxLength": 64 } },
+    "hasExternalRefs": { "type": "boolean", "default": false, "description": "solo en GET filtrado (designer): aristas omitidas por visibilidad" },
     "updatedAt": { "type": "string", "format": "date-time" }
   }
 }

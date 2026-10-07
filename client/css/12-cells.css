@@ -1,0 +1,38 @@
+/* F3: células, chips de equipo/visibilidad, ficha de lectura, documentación (enlaces + markdown) */
+.chip.vis-cells { background: var(--accent-soft); color: var(--accent); }
+.assignee, .owner.person { font-size: 11.5px; padding: 0 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.owner.person { font-family: inherit; font-weight: 500; }
+.docs-ref, .hidden-ref { font-size: 11.5px; color: var(--fg-3); white-space: nowrap; }
+.hidden-ref { color: var(--warning, #b7791f); }
+.cell-row { padding: 6px 0; border-bottom: 1px solid var(--border); }
+.cell-row:last-child { border-bottom: 0; }
+.cell-meta { font-size: 12px; color: var(--fg-3); padding: 0 0 4px 30px; }
+.cell-members { padding: 6px 0 8px 30px; display: flex; flex-direction: column; gap: 8px; }
+.cell-members .check-list { max-height: 220px; }
+.chips-select#inviteCells { margin: 6px 0 2px; }
+.chips-select .hint { font-size: 11.5px; color: var(--fg-3); }
+.check-list .t-dot[class*="tag-"] { width: 9px; height: 9px; border-radius: 3px; }
+dialog h3.section { margin: 10px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--fg-3); font-weight: 600; border-top: 1px solid var(--border); padding-top: 12px; }
+.doc-row { display: grid; grid-template-columns: 1fr 2fr auto; gap: 6px; margin-bottom: 6px; }
+#fDocAdd { margin-top: 2px; }
+.node-view h2 { display: flex; align-items: center; gap: 8px; font-size: 17px; }
+.node-view .desc { margin: 0; color: var(--fg-2); font-size: 13.5px; line-height: 1.5; }
+.node-view .meta { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 4px 0; font-size: 13px; }
+.node-view .meta dt { color: var(--fg-3); font-weight: 500; }
+.node-view .meta dd { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.node-view h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--fg-3); margin: 10px 0 0; font-weight: 600; }
+.doc-list, .me-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.doc-list li, .me-list a { display: flex; align-items: baseline; gap: 8px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; color: inherit; text-decoration: none; }
+.me-list a:hover { background: var(--hover); }
+.doc-list a { color: var(--accent); font-weight: 500; }
+.doc-list .url, .me-list .url { color: var(--fg-3); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.me-list .chip { margin-left: auto; }
+.md { font-size: 13.5px; line-height: 1.55; color: var(--fg); }
+.md h3, .md h4, .md h5 { margin: 10px 0 4px; font-size: 14px; text-transform: none; letter-spacing: 0; color: var(--fg); }
+.md h3 { font-size: 15px; } .md h5 { font-size: 13px; }
+.md p { margin: 4px 0; } .md ul, .md ol { margin: 4px 0; padding-left: 22px; }
+.md code { font-family: var(--mono); font-size: 12px; background: var(--hover); padding: 0 4px; border-radius: 3px; }
+.md pre { background: var(--hover); padding: 8px 10px; border-radius: var(--radius); overflow-x: auto; margin: 6px 0; }
+.md pre code { background: none; padding: 0; }
+.md a { color: var(--accent); }
+#btnMe { white-space: nowrap; }

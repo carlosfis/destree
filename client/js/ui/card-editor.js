@@ -12,6 +12,7 @@ import { selectOnly, renderAll } from '../canvas/selection.js';
 import { wouldCycle } from './connections.js';
 import { deleteNodes } from './node-actions.js';
 import { toast } from './theme.js';
+import { docsSection, teamSection, visibilitySection } from './card-editor-docs.js';
 export const editorDialog = $('#editorDialog');
 export const normalizeOwner = s => { s = String(s || '').trim().replace(/\s+/g, ''); return s ? (s.startsWith('@') ? s : '@' + s) : ''; };
 
@@ -41,7 +42,8 @@ export function openEditor(id, preset = {}) {
   if (S.readonly) return; // F2: designer no edita
   const node = id ? nodeById(id) : null;
   if (id && !node) return;
-  const draft = node ? { ...node, tags: [...node.tags] } : { id: null, type: preset.type || 'software', name: '', description: '', image: null, tags: [], owner: '', parentId: preset.parentId || null, branchTypeId: null, x: preset.x ?? 0, y: preset.y ?? 0 };
+  const draft = node ? { ...node, tags: [...node.tags], docs: (node.docs || []).map(d => ({ ...d })) } : { id: null, type: preset.type || 'software', name: '', description: '', image: null, tags: [], owner: '', parentId: preset.parentId || null, branchTypeId: null, x: preset.x ?? 0, y: preset.y ?? 0, notes: '', docs: [], ownerUserId: null, assigneeIds: [], visibility: 'org', cellIds: [] };
+  const docsSec = docsSection(draft), teamSec = teamSection(draft), visSec = visibilitySection(draft); // F3
   draft.sourceId = node ? (sourceEdgeOf(node.id)?.to || '') : '';
   draft.dsIds = node ? new Set(dsOf(node.id).map(n => n.id)) : new Set();
   const hasKids = node ? childrenOf(node.id).length : 0;
@@ -63,8 +65,10 @@ export function openEditor(id, preset = {}) {
         <div class="hint">Se recorta a 16:9 (320×180) y se comprime a ~100 KB para caber en localStorage.</div></div>
       <div class="field"><label>Etiquetas</label><div class="chips-select" id="fTags"></div></div>
       <div class="field"><label>Responsable</label><input name="owner" value="${esc(draft.owner)}" placeholder="@nombre" autocomplete="off"><div class="hint">Texto libre con formato @nombre; no se vincula a ningún usuario.</div></div>
+      ${teamSec.html}${visSec.html}
       <div class="field" id="fSourceField"><label>Fuente * (DS o software del que deriva)</label><select name="source"></select><div class="error" hidden>Un UI Kit debe tener fuente.</div></div>
       <div class="field" id="fDSField"><label>Sistemas de diseño que usa</label><div class="check-list" id="fDS"></div><div class="hint">Si el DS vive en otro software raíz, la línea se dibuja discontinua.</div></div>
+      <h3 class="section">Documentación</h3>${docsSec.html}
     </div>
     <footer>${node ? '<button type="button" class="btn danger left" id="fDelete">Eliminar</button>' : ''}<button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn primary">${node ? 'Guardar cambios' : 'Crear card'}</button></footer>
   </form>`;
@@ -91,7 +95,7 @@ export function openEditor(id, preset = {}) {
     $('#fDS').innerHTML = dsList.length ? dsList.map(n => `<label><input type="checkbox" value="${n.id}" ${draft.dsIds.has(n.id) ? 'checked' : ''}><span class="t-dot" style="background:${TYPE_META[n.type].color}"></span>${esc(n.name)}<span class="where">${TYPE_META[n.type].label} · en ${esc(rootOf(n).name)}</span></label>`).join('')
       : '<div class="empty">Aún no hay sistemas de diseño ni UI Kits.</div>';
   };
-  const refreshBranch = () => { $('#fBranchField').hidden = !(draft.type === 'software' && form.parent.value); };
+  const refreshBranch = () => { $('#fBranchField').hidden = !(draft.type === 'software' && form.parent.value); $('#fVisField').hidden = !(draft.type === 'software' && !form.parent.value); };
   const refreshTags = () => {
     const box = $('#fTags');
     box.innerHTML = S.state.tags.map(t => `<span class="chip tag-${t.color} ${draft.tags.includes(t.id) ? 'on' : ''}" data-id="${t.id}">${esc(t.name)}</span>`).join('') +
@@ -107,7 +111,7 @@ export function openEditor(id, preset = {}) {
     });
   };
   const refreshImg = () => { $('#fImgPreview').innerHTML = draft.image ? `<img src="${draft.image}" alt="">` : 'Sin imagen'; $('#fImgRemove').hidden = !draft.image; };
-  refreshType(); refreshTags(); refreshImg();
+  refreshType(); refreshTags(); refreshImg(); docsSec.bind(form); visSec.bind(form);
 
   $('#fType').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -140,7 +144,8 @@ export function openEditor(id, preset = {}) {
     if (!ok) return;
     if (parentId && (parentId === draft.id || (draft.id && isAncestor(draft.id, parentId)))) return toast('No se puede anidar dentro de sí mismo', 'error');
     pushHistory();
-    const data = { type: draft.type, name, description: form.description.value.trim().slice(0, 140), image: draft.image, tags: draft.tags.filter(tagById), owner: normalizeOwner(form.owner.value) };
+    const isRoot = draft.type === 'software' && !parentId;
+    const data = { type: draft.type, name, description: form.description.value.trim().slice(0, 140), image: draft.image, tags: draft.tags.filter(tagById), owner: normalizeOwner(form.owner.value), ...docsSec.read(form), ...teamSec.read(form), ...visSec.read(form, isRoot) };
     let target = node;
     if (node) {
       Object.assign(node, data);
@@ -149,7 +154,7 @@ export function openEditor(id, preset = {}) {
         else { const w = worldPos(node); node.x = w.x; node.y = w.y; }
       }
     } else {
-      target = { id: uid(), ...data, parentId: null, branchTypeId: null, x: Math.round(draft.x), y: Math.round(draft.y), w: 0, h: 0, demo: false };
+      target = { id: uid(), ...data, parentId: null, branchTypeId: null, x: Math.round(draft.x), y: Math.round(draft.y), w: 0, h: 0, demo: false, status: 'active', imageId: null, ownerUserId: data.ownerUserId ?? null, assigneeIds: data.assigneeIds || [] };
       if (parentId) { const spot = freeSpot(parentId); target.x = spot.x; target.y = spot.y; }
       S.state.nodes.push(target);
     }

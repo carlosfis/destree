@@ -9,6 +9,8 @@ import { confirmBox } from '../ui/dialogs.js';
 import { ROLE_LABEL } from './auth-views.js';
 
 const has = p => !!S.session && S.session.permissions.includes(p);
+/** F3: células que este usuario puede asignar al invitar (admin: todas; head: las suyas). */
+const manageable = () => S.session.role === 'admin' ? S.cellList : S.cellList.filter(c => c.leadUserId === S.session.user.id || (c.memberIds || []).includes(S.session.user.id));
 const fmtDate = s => s ? new Date(s).toLocaleDateString() : '—';
 async function copyText(text) {
   try { await navigator.clipboard.writeText(text); toast('Enlace copiado'); } catch { window.prompt('Copia el enlace de invitación:', text); }
@@ -18,14 +20,17 @@ export async function renderUsersTab(body) {
   const roles = S.session.role === 'admin' ? ['designer', 'head', 'admin'] : ['designer'];
   body.innerHTML = `<h3>Invitar</h3><p>Se genera un enlace para compartir (válido 7 días). ${S.session.role === 'head' ? 'Como head solo puedes invitar designers.' : ''}</p>
     <form id="inviteForm" class="row"><input type="email" name="email" placeholder="correo@ejemplo.com" required class="grow"><select name="role">${roles.map(r => `<option value="${r}">${ROLE_LABEL[r]}</option>`).join('')}</select><button class="btn primary" type="submit">Invitar</button></form>
+    ${manageable().length ? `<div class="chips-select" id="inviteCells">${manageable().map(c => `<span class="chip tag-${esc(c.color)}" data-id="${c.id}">${esc(c.name)}</span>`).join('')}<span class="hint">Células del invitado</span></div>` : ''}
     <div id="inviteResult"></div>
     <h3>Invitaciones pendientes</h3><div id="inviteRows"><div class="empty">Cargando…</div></div>
     ${has('users.manage') ? '<h3>Usuarios</h3><div id="userRows"><div class="empty">Cargando…</div></div>' : ''}`;
+  $('#inviteCells', body)?.addEventListener('click', e => { const c = e.target.closest('.chip'); if (c) c.classList.toggle('on'); });
   $('#inviteForm', body).addEventListener('submit', async e => {
     e.preventDefault();
     const f = e.currentTarget, data = Object.fromEntries(new FormData(f));
+    const cellIds = [...body.querySelectorAll('#inviteCells .chip.on')].map(c => c.dataset.id);
     try {
-      const inv = await api.createInvite({ email: data.email, role: data.role });
+      const inv = await api.createInvite({ email: data.email, role: data.role, cellIds });
       f.reset();
       $('#inviteResult', body).innerHTML = `<div class="invite-link"><input type="text" value="${esc(inv.link)}" disabled><button class="btn" type="button">Copiar</button></div><p class="hint">Enlace para ${esc(inv.email)} (${esc(ROLE_LABEL[inv.role])}). No se envía correo: cópialo y compártelo.</p>`;
       $('#inviteResult .btn', body).addEventListener('click', () => copyText(inv.link));
