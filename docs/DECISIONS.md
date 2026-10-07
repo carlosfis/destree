@@ -56,3 +56,4 @@
 - 2026-10-06 F7: imagen única `ghcr.io/carlosfis/destree` multi-arch construida solo en CI (tag `v*`); en local `docker compose up --build`. Sin Docker en la máquina de desarrollo, la verificación de F7 queda en `PENDIENTE.md`.
 - 2026-10-06 F7: el MVP se cierra sin Figma (PLAN §5 F8a: detenerse). `docs/FIGMA.md` solo documenta capacidades de la API.
 - 2026-10-06 F3: markdown propio (`ui/markdown.js`): escape total antes de marcar; solo enlaces `http(s)`; sin HTML crudo, imágenes ni tablas. La ficha de lectura reutiliza `#editorDialog`.
+- 2026-10-06 UI: contenedores opacos (`--ctr-bg`/`--ctr-root-bg` sólidos, claro y oscuro) por accesibilidad; la profundidad se marca con dos tonos fijos. Los cambios al CSS legacy van en `css/15-overrides.css` para no romper la paridad de `css/01..10`.

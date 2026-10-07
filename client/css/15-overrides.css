@@ -1,0 +1,12 @@
+/* =========================================================
+   15. Overrides del tema legacy (css/01..10 se mantienen 1:1 con legacy/arbol.html)
+   ========================================================= */
+/* Contenedores opacos (accesibilidad): el anidado es un tono más oscuro que la raíz para marcar profundidad. */
+:root {
+  --ctr-root-bg: #f4f4f2;
+  --ctr-bg: #ededeb;
+}
+:root[data-theme="dark"] {
+  --ctr-root-bg: #222222;
+  --ctr-bg: #282828;
+}

@@ -53,7 +53,7 @@ test('index.html: markup original y un único <script type="module" src="js/main
   assert.ok(html.includes(range(503, 587)), 'body');
   const scripts = [...html.matchAll(/<script[^>]*>/g)].map((m) => m[0]);
   assert.deepEqual(scripts, ['<script type="module" src="js/main.js">']);
-  assert.deepEqual([...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]), [...CSS.map(([f]) => f), 'css/11-auth.css', 'css/12-cells.css', 'css/13-lobby.css', 'css/14-admin.css']); // F2: +auth · F3: +cells · F4a: +lobby · F4b: +admin
+  assert.deepEqual([...html.matchAll(/<link rel="stylesheet" href="([^"]+)">/g)].map((m) => m[1]), [...CSS.map(([f]) => f), 'css/11-auth.css', 'css/12-cells.css', 'css/13-lobby.css', 'css/14-admin.css', 'css/15-overrides.css']); // F2: +auth · F3: +cells · F4a: +lobby · F4b: +admin · post-F7: +overrides
 });
 
 test('ESM: sin use strict, sin let/var top-level, sin globales window.* salvo S en main.js', () => {
