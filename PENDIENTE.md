@@ -4,7 +4,7 @@
 
 ## Cómo retomar (para otro agente)
 1. Leer `CLAUDE.md` (reglas) y este archivo entero.
-2. Tomar la primera fase abierta cuyas tareas de agente no dependan de una tarea «usuario» sin hacer. Orden recomendado: P1 → P3 → P6 → P4 (parte agente) → P7 → P8. P2 y P5 son del usuario y pueden avanzar en paralelo.
+2. Estado al 2026-10-07: todas las fases de agente (P1, P3, P4, P5 guías, P6, P7, P8) están cerradas y v1.0.0 etiquetada. Lo abierto es «usuario» (despliegue real, descripción/topics del repo, vídeo, operación diaria, anuncio). Cuando Carlos informe del despliegue real o pase el enlace del vídeo, el agente retoma la casilla correspondiente (P2 último punto, P4 vídeo).
 3. Verificación antes de cerrar: `npm test` · `npm run lint` · `node scripts/smoke.js` (si hubo UI). Actualizar `docs/MAP.md` si se crean o mueven archivos, `docs/API.md` si cambian endpoints, `CHANGELOG.md` en cada release.
 4. Lo que surja y no pueda resolverse solo se añade aquí como casilla «usuario», nunca bloquea.
 
@@ -90,6 +90,7 @@
 ---
 
 ## Resueltos
+- 2026-10-07 P8 Release v1.0.0: tag `v1.0.0` → `release.yml` en verde (run 37729916325); release https://github.com/carlosfis/destree/releases/tag/v1.0.0 con `destree-1.0.0.zip`; imagen `ghcr.io/carlosfis/destree:1.0.0` y `:latest` (manifiesto público); instalación limpia con `docker compose pull && up -d` → `/api/health` version 1.0.0 y asistente 201. Queda «usuario»: comprobar y anunciar.
 - 2026-10-07 P7 Correo SMTP: `lib/mailer.js` (SMTP propio), invitaciones por correo con estado, «Probar envío», `forgot`/`reset` con token de un solo uso, pantallas `#/forgot` y `#/reset/<token>`, Mailpit en perfil `dev`, migración `010_mail.sql`, `tests/mail.test.js`.
 - 2026-10-07 P5 (agente): recorrido de 10 minutos en `docs/USER.md` (designer y head) y checklist operativa en `docs/ADMIN.md`.
 - 2026-10-07 P4 (agente): capturas + `scripts/screenshots.js`, `README.en.md`, `CODE_OF_CONDUCT.md`, audit limpio tras actualizar `@fastify/static` y `sharp`.
