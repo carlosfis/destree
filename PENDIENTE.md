@@ -51,14 +51,14 @@
 - [ ] «usuario» Decidir idioma de la UI a futuro (solo español hoy; i18n sería una fase propia) y si se borran los tags remotos `f5`, `f6a`, `f6b`, `f7` (rastro de fases; no afectan a nada).
 **Aceptación:** README con imagen y vídeo, versión en inglés, archivos de comunidad presentes, paquete e imagen descargables sin login.
 
-## P5 — Operación diaria para Design Ops (usuario, con apoyo del agente)
+## P5 — Operación diaria para Design Ops (usuario, con apoyo del agente) — guías del agente hechas 2026-10-07
 **Objetivo:** que el equipo pueda vivir con la herramienta sin depender de quien la construyó.
 - [ ] «usuario» Nombrar a una persona dueña del servidor (actualiza con `docker compose pull && up -d` tras `npm run backup`, revisa `/api/health`).
 - [ ] «usuario» Respaldos fuera del host: `BACKUP_CRON` activo + copia de `data/backups` a S3/Drive/NAS (rclone o cron). Hacer **un simulacro de restauración** con `node scripts/restore.js` en una máquina limpia.
 - [ ] «usuario» Monitorización: `/api/health` en Uptime Kuma, Better Uptime o similar, con aviso al dueño.
 - [ ] «usuario» Convenciones del equipo: una página por cliente o área, nombres de tipo por página (Administrar → Tipos), células = squads, roles de Staff (`@usuario / rol`). Escribirlas en la descripción de cada página o en una página «Guía».
-- [ ] Agente: `docs/USER.md` ampliado con un recorrido de 10 minutos para designers (entrar, encontrar sus cards en ★ Mías, leer una ficha) y para heads (crear página, Main instance, anidar, conectar DS, Staff, documentación, historial).
-- [ ] Agente: `docs/ADMIN.md` con la checklist operativa (respaldo, actualización, restauración, invitar, desactivar, auditar).
+- [x] Agente: `docs/USER.md` ampliado con un recorrido de 10 minutos para designers (entrar, encontrar sus cards en ★ Mías, leer una ficha) y para heads (crear página, Main instance, anidar, conectar DS, Staff, documentación, historial).
+- [x] Agente: `docs/ADMIN.md` con la checklist operativa (respaldo, actualización, restauración, invitar, desactivar, auditar).
 **Aceptación:** restauración probada una vez, alerta de caída recibida en una prueba, guías publicadas.
 
 ## P6 — Hardening (agente) ✅ 2026-10-07
@@ -90,6 +90,7 @@
 ---
 
 ## Resueltos
+- 2026-10-07 P5 (agente): recorrido de 10 minutos en `docs/USER.md` (designer y head) y checklist operativa en `docs/ADMIN.md`.
 - 2026-10-07 P4 (agente): capturas + `scripts/screenshots.js`, `README.en.md`, `CODE_OF_CONDUCT.md`, audit limpio tras actualizar `@fastify/static` y `sharp`.
 - 2026-10-07 P6 Hardening: cabeceras + CSP estricta (sin inline), logs sin secretos, rate-limit por cupos, purga de sesiones, cerrar las demás sesiones, cierre ordenado SIGTERM, `tests/e2e.test.js`, `docs/SECURITY.md` + `SECURITY.md`.
 - 2026-10-07 P3 Contraseñas: `PATCH /api/me` (name, contraseña con verificación de la actual, cierra las demás sesiones, rate-limit), diálogo «Mi cuenta» desde el chip, 🔑 «Restablecer contraseña» en Administración → Usuarios (temporal mostrada una vez), docs y smoke.

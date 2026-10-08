@@ -1,5 +1,19 @@
 # Administración
 
+## Checklist operativa (quien cuida el servidor)
+| Cuándo | Qué | Cómo |
+|---|---|---|
+| Diario (automático) | Respaldo programado | `BACKUP_CRON="30 3 * * *"` y `BACKUP_KEEP=10` en `.env`; comprueba en `#/admin → Respaldos` que aparecen con estado `ok`. |
+| Semanal | Copia fuera del host | Sincroniza `data/backups/` a S3/Drive/NAS (rclone, cron). Un respaldo que solo vive en el servidor no es un respaldo. |
+| Semanal | Salud | `curl -s https://tu.dominio/api/health` → `ok:true`, `db:"ok"`. Ideal: Uptime Kuma / Better Uptime con aviso. |
+| Al publicar una versión | Actualizar | 1) respaldo manual (`#/admin → Respaldos → Crear` o `npm run backup`); 2) `docker compose pull && docker compose up -d` (sin Docker: `git pull && npm ci && npm start`); 3) revisa `CHANGELOG.md`; las migraciones se aplican solas. |
+| Una vez al trimestre | Simulacro de restauración | En una máquina limpia: `docker compose run --rm destree node scripts/restore.js /data/backups/<archivo>` con el servicio parado (o `node scripts/restore.js <archivo>`), arranca y entra. Lo anterior queda en `data/restore-prev-<fecha>/`. |
+| Cuando entra alguien | Invitar | `#/admin → Usuarios → Invitar` (rol + células). Si hay SMTP configurado el correo sale solo; si no, copia el enlace (7 días). |
+| Cuando alguien se va | Desactivar | `#/admin → Usuarios → Desactivar` (cierra sus sesiones; no borra nada). Reasigna sus cards desde el lienzo si hace falta. |
+| Contraseña olvidada | Restablecer | 🔑 en su fila (temporal, mostrada una vez) o «¿Olvidaste tu contraseña?» en el login si hay correo. |
+| Ante una duda | Auditar | `#/admin → Audit log`, filtra por `user.`, `page.`, `cell.`, `version.`, `backup.`. |
+| Al exponer a Internet | Seguridad | TLS (`--profile https` o tu proxy) + `TRUST_PROXY=1`; `curl -I` para ver las cabeceras; lee `docs/SECURITY.md`. |
+
 ## Primer arranque
 `/` muestra el asistente: nombre de la organización + correo/contraseña del primer admin. Solo ocurre una vez (`GET /api/setup` → `needed:false` después).
 
