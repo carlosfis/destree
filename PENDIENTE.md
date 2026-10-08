@@ -22,9 +22,9 @@
 
 ## P2 — Verificar Docker y desplegar una instancia de prueba (usuario)
 **Objetivo:** confirmar que la instalación documentada funciona antes de regalar o anunciar nada.
-- [ ] «usuario» En una máquina con Docker: `git clone … && cp .env.example .env && docker compose up -d --build && curl -s localhost:3000/api/health`. Completar el asistente en :3000. Si `sharp` falla en el build, pegar el log en una issue.
+- [ ] «usuario» Instalar Docker Desktop en el Mac y abrirlo una vez (acepta los términos y arranca el daemon). El 2026-10-07 el agente comprobó que no estaba instalado (Rosetta sí) y lanzó `brew install --cask docker-desktop`; si no quedó, descárgalo de docker.com. Luego el agente ejecuta: clone limpio en una carpeta temporal, `cp .env.example .env`, `docker compose up -d --build`, `curl -s localhost:3000/api/health`, asistente, `down && up` conserva `./data`. Si `sharp` falla en el build, se anota aquí.
 - [ ] «usuario» `docker compose down && docker compose up -d` conserva `./data` (login sigue funcionando).
-- [ ] «usuario» GHCR: hacer público el paquete `ghcr.io/carlosfis/destree` (GitHub → Packages → destree → Package settings → Change visibility). Comprobar `docker manifest inspect ghcr.io/carlosfis/destree:0.1.0` (amd64 + arm64) y `docker compose pull` sin login.
+- [x] GHCR público: comprobado el 2026-10-07 sin login (`ghcr.io/v2/carlosfis/destree/manifests/0.1.0` → 200, índice OCI con amd64 + arm64). Falta solo `docker compose pull` real cuando haya Docker.
 - [ ] «usuario» Despliegue real: VPS (1 CPU / 512 MB basta) o máquina interna, dominio apuntando, puertos 80/443, `.env` con `DOMAIN` y `TRUST_PROXY=1`, `docker compose --profile https up -d`. Alternativa sin dominio: red local o Tailscale.
 - [ ] Agente, tras el informe del usuario: corregir lo que falle y actualizar `docs/INSTALL.md`.
 **Aceptación:** una instancia accesible por HTTPS con el asistente completado y un segundo usuario invitado que entra.
@@ -40,7 +40,9 @@
 
 ## P4 — Publicación a la comunidad (mixto)
 **Objetivo:** que alguien que llega al repo entienda qué es, lo vea y lo instale sin ayuda.
-- [ ] «usuario» Repo público; descripción, topics (`design-systems`, `design-ops`, `self-hosted`, `fastify`, `sqlite`) y Discussions activadas. Si GitHub no responde desde la red del agente, estas comprobaciones las hace el usuario.
+- [x] Repo público (comprobado 2026-10-07).
+- [ ] «usuario» Descripción del repo (aún dice «métricas Figma»), topics y Discussions. El agente no tiene permiso para escribir en GitHub; ejecutar:
+  `gh repo edit carlosfis/destree --description "Fuente única de verdad para agencias: árbol de software, Design Systems, UI Kits, responsables y documentación. Autoalojado (Node 22 + SQLite), roles admin/head/designer." --add-topic design-systems --add-topic design-ops --add-topic self-hosted --add-topic fastify --add-topic sqlite --add-topic agency --enable-discussions`
 - [ ] «usuario» Subir el vídeo promo (`node promo/render.js` → `promo/destree-motion.mp4`) a YouTube/Vimeo o como asset de la release y pasar el enlace.
 - [ ] Agente: 2–3 capturas (lienzo, drawer, lobby) en `docs/img/` tomadas con el smoke o Chrome headless, enlazadas en el README junto al vídeo.
 - [ ] Agente: `README.en.md` (traducción fiel del README) y enlace cruzado en la cabecera de ambos.
