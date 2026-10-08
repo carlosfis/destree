@@ -7,6 +7,7 @@ Fuente única de verdad para agencias y equipos de producto: un lienzo con el **
 - **Lienzo**: contenedores anidados (ramificaciones), DS y UI Kits dentro de cada software, conexiones "usa DS" y "deriva de", etiquetas, auto-layout, minimapa, undo/redo.
 - **Equipo**: células con miembros; raíces y páginas visibles para toda la organización o solo para ciertas células; asignados y responsable por card; los designers ven solo lo suyo, en modo lectura.
 - **Documentación**: enlaces (Figma, Notion, repos…) y notas en markdown por card; imágenes seguras (WebP + miniatura).
+- **Cuentas**: invitaciones por enlace o por correo (SMTP opcional), cambio y recuperación de contraseña, cierre de sesiones, audit log.
 - **Historial**: versiones automáticas y manuales por página, diff y restauración; respaldos tar.gz programables; export/import de la organización.
 - **Sin dependencias pesadas**: Node 22 + Fastify 5 + SQLite (`node:sqlite`), cliente vanilla ESM sin bundler. Única dependencia nativa: `sharp`.
 
@@ -58,7 +59,7 @@ Docker: `docker compose pull && docker compose up -d` (o `--build` si clonaste).
 `docs/INSTALL.md` (instalación y variables) · `docs/ADMIN.md` (administración) · `docs/USER.md` (uso del lienzo) · `docs/API.md` · `docs/SECURITY.md` (modelo de amenazas y cabeceras) · `docs/MAP.md` (mapa del código) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CODE_OF_CONDUCT.md` · `SECURITY.md` (reportar vulnerabilidades) · `CHANGELOG.md` · `PENDIENTE.md` (roadmap detallado por fases).
 
 ## Roadmap
-Hecho: cambio de contraseña propio y restablecimiento desde Administración · cabeceras de seguridad y CSP estricta · README en inglés y capturas. Pendiente (detalle y estado en `PENDIENTE.md`): vídeo publicado · correo SMTP para invitaciones y recuperación de contraseña · v1.0.0. Fuera de alcance por ahora: integración con Figma, SSO/OAuth.
+v1.0.0 incluye: cambio de contraseña propio y restablecimiento desde Administración · correo SMTP para invitaciones y recuperación de contraseña · cabeceras de seguridad y CSP estricta · README en inglés y capturas. Pendiente (detalle y estado en `PENDIENTE.md`): vídeo publicado · despliegue de referencia. Fuera de alcance por ahora: integración con Figma, SSO/OAuth.
 
 ## Licencia
 MIT — ver `LICENSE`.

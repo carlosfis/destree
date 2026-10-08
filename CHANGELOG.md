@@ -1,6 +1,7 @@
 # Changelog
 
-## Sin publicar
+## 1.0.0 — 2026-10-07
+Primera versión estable para uso diario: contraseñas, correo, hardening y material de comunidad sobre la base de 0.1.0.
 - Correo SMTP (P7): cliente SMTP propio sin dependencias (`SMTP_URL`, `MAIL_FROM`, `PUBLIC_URL`); las invitaciones se envían por correo (estado enviada/pendiente) y el login ofrece «¿Olvidaste tu contraseña?» (`POST /api/auth/forgot` siempre 204, `POST /api/auth/reset` con token de un solo uso, 1 h); «Probar envío» en Administración → Usuarios; perfil `dev` de compose con Mailpit; migración `010_mail.sql`.
 - Docs (P5): recorrido de 10 minutos para designers y heads en `docs/USER.md`; checklist operativa (respaldo, actualización, restauración, invitar, desactivar, auditar) en `docs/ADMIN.md`.
 - Dependencias: `@fastify/static` 8 → 10.1.5 y `sharp` 0.33 → 0.35.5 (avisos GHSA de path traversal en static y de libvips/libheif/librsvg en sharp). `npm audit --omit=dev` (2026-10-07): 0 vulnerabilidades.

@@ -81,11 +81,11 @@
 - [x] Tests con un servidor SMTP falso en memoria.
 **Aceptación:** invitación llega a Mailpit y el enlace funciona; reset completo de contraseña sin intervención del admin. Cumplida con el servidor SMTP falso de `tests/mail.test.js` (34 tests, lint OK, smoke 30/30); la prueba real con Mailpit (`docker compose --profile dev up -d`) queda para el usuario al desplegar («usuario», no bloquea).
 
-## P8 — Release v1.0.0 (agente; publicación «usuario»)
-- [ ] Revisión final de README/INSTALL/ADMIN/USER/API; `CHANGELOG.md` 1.0.0.
-- [ ] `package.json` 1.0.0; `git tag v1.0.0` + push → `release.yml` publica imagen `:1.0.0` y `:latest` y el zip.
+## P8 — Release v1.0.0 (agente; publicación «usuario») — etiquetada 2026-10-07
+- [x] Revisión final de README/INSTALL/ADMIN/USER/API (hecha fase a fase); `CHANGELOG.md` 1.0.0. Verificación Docker de `main` antes de etiquetar: build con `sharp` 0.35, cabeceras, migración 010, `docker compose stop` libera `.server.lock`, login tras reinicio.
+- [x] `package.json` 1.0.0; `git tag v1.0.0` + push → `release.yml` publica imagen `:1.0.0` y `:latest` y el zip (resultado del workflow anotado en Resueltos).
 - [ ] «usuario» Comprobar la release en GitHub y anunciar (enlace al vídeo y al README).
-**Aceptación:** instalación limpia desde la release cumple `docs/INSTALL.md`.
+**Aceptación:** instalación limpia desde la release cumple `docs/INSTALL.md` (el agente lo comprueba con `docker compose pull` de `:1.0.0` cuando el workflow termina).
 
 ---
 

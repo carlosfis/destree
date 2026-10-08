@@ -7,6 +7,7 @@ Single source of truth for agencies and product teams: a canvas with the **softw
 - **Canvas**: nested containers (branches), DS and UI Kits inside each software, "uses DS" and "derives from" connections, tags, auto-layout, minimap, undo/redo.
 - **Team**: cells with members; roots and pages visible to the whole organization or only to certain cells; assignees and owner per card; designers only see what is theirs, in read-only mode.
 - **Documentation**: links (Figma, Notion, repos…) and markdown notes per card; safe images (WebP + thumbnail).
+- **Accounts**: invitations by link or email (optional SMTP), password change and recovery, session management, audit log.
 - **History**: automatic and manual versions per page, diff and restore; schedulable tar.gz backups; organization export/import.
 - **No heavy dependencies**: Node 22 + Fastify 5 + SQLite (`node:sqlite`), vanilla ESM client without a bundler. Only native dependency: `sharp`.
 
@@ -58,7 +59,7 @@ Docker: `docker compose pull && docker compose up -d` (or `--build` if you clone
 Product docs are in Spanish (the UI language): `docs/INSTALL.md` (installation and variables) · `docs/ADMIN.md` (administration) · `docs/USER.md` (using the canvas) · `docs/API.md` · `docs/SECURITY.md` (threat model and headers) · `docs/MAP.md` (code map) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CODE_OF_CONDUCT.md` · `SECURITY.md` (reporting vulnerabilities) · `CHANGELOG.md` · `PENDIENTE.md` (detailed roadmap by phases).
 
 ## Roadmap
-Done: own password change and reset from Administration · security headers and strict CSP · English README and screenshots. Pending (details and status in `PENDIENTE.md`): published video · SMTP mail for invitations and password recovery · v1.0.0. Out of scope for now: Figma integration, SSO/OAuth.
+v1.0.0 includes: own password change and reset from Administration · SMTP mail for invitations and password recovery · security headers and strict CSP · English README and screenshots. Pending (details and status in `PENDIENTE.md`): published video · reference deployment. Out of scope for now: Figma integration, SSO/OAuth.
 
 ## License
 MIT — see `LICENSE`.
