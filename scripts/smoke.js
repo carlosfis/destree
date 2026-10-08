@@ -379,13 +379,14 @@ await step('P3: chip de usuario → Mi cuenta → cambiar contraseña (designer)
   const err = await ev(`document.querySelector('#accPassword .form-error').textContent`);
   await key('Escape', 'Escape'); await sleep(150);
   const closed = await ev(`!document.querySelector('#confirmDialog').open`);
-  const relogin = await ev(`fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'des@smoke.io', password: 'smoke-5678' }) }).then(r => r.status)`);
+  const relogin = await ev(`fetch('/api/auth/login', { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'des@smoke.io', password: 'smoke-5678' }) }).then(r => r.status)`);
   return { mismatch: !!mismatch, err, closed, relogin, chipIsButton: await ev(`document.querySelector('#userChip').tagName`) };
 });
 await step('logout → login (admin)', async () => {
   await ev(`document.querySelector('#btnLogout').click(); true`); await sleep(1200);
   const login = await ev(`!document.querySelector('#authView').hidden && !!document.querySelector('#authView [name=password]') && !document.querySelector('#authView [name=orgName]')`);
   if (!login) throw new Error('no apareció el login');
+  if (await ev(`!!document.querySelector('#forgotLink')`)) throw new Error('sin SMTP no debe ofrecerse «¿Olvidaste tu contraseña?»');
   await fill([['email', 'ana@smoke.io'], ['password', 'smoke-1234']]); await sleep(1200);
   return ev(`({ role: S.session.role, ro: S.readonly, hash: location.hash, nodes: S.state.nodes.length })`);
 });
@@ -398,9 +399,19 @@ await step('P3: admin → #/admin Usuarios → 🔑 restablecer contraseña de D
   const pw = await ev(`document.querySelector('#confirmDialog .invite-link input')?.value || ''`);
   if (!/^[A-Za-z2-9]{14}$/.test(pw)) throw new Error('temporal inválida: ' + pw);
   await key('Escape', 'Escape'); await sleep(150);
-  const login = await ev(`fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'des@smoke.io', password: ${JSON.stringify(pw)} }) }).then(r => r.status)`);
+  const login = await ev(`fetch('/api/auth/login', { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'des@smoke.io', password: ${JSON.stringify(pw)} }) }).then(r => r.status)`);
   await ev(`location.hash = ''; true`); await sleep(300);
   return { login, closed: await ev(`!document.querySelector('#confirmDialog').open`), role: await ev(`S.session.role`) };
+});
+await step('P7: sin SMTP → /api/setup mail:false; Usuarios muestra estado de correo e invitación «pendiente»', async () => {
+  const setup = await ev(`fetch('/api/setup').then(r => r.json())`);
+  const inv = await ev(`fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'p7@smoke.io', role: 'designer' }) }).then(r => r.json())`);
+  await ev(`location.hash = '#/admin/users'; true`); await sleep(900);
+  const r = await ev(`({ mailStatus: document.querySelector('#orgBody .mail-status')?.textContent.slice(0, 8), chips: [...document.querySelectorAll('#inviteRows .chip')].map(c => c.textContent), test: !!document.querySelector('#mailTest') })`);
+  await ev(`document.querySelector('#adminBack').click(); true`); await sleep(300);
+  await ev(`fetch('/api/invites/${'${inv.id}'}', { method: 'DELETE' }).then(r => r.status)`.replace('${inv.id}', inv.id));
+  if (inv.emailSent !== false || !r.chips.includes('pendiente')) throw new Error('estado de invitación: ' + JSON.stringify({ inv, r }));
+  return { mail: setup.mail, ...r };
 });
 drain();
 console.log(results.join('\n'));

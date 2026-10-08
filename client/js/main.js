@@ -18,7 +18,7 @@ import { adminPanel, toggleAdmin, applySettingsUI, enablePageTab } from './ui/pa
 import { openAdminView, closeAdminView, adminTabsFor } from './views/admin-view.js';
 import { openVersionsPanel } from './views/versions-panel.js';
 import * as api from './core/api.js';
-import { showSetup, showLogin, showInvite, hideAuth, ROLE_LABEL } from './views/auth-views.js';
+import { showSetup, showLogin, showInvite, showForgot, showReset, hideAuth, ROLE_LABEL } from './views/auth-views.js';
 import { applyReadonly, canEdit } from './core/readonly.js';
 import { toast } from './ui/theme.js';
 import { computeLayout, autoLayout } from './canvas/layout.js';
@@ -40,15 +40,17 @@ $('#zoomLabel').addEventListener('click', () => setZoom(1));
 viewport.addEventListener('pointerdown', () => { if (innerWidth <= 720 && adminPanel.classList.contains('open')) toggleAdmin(false); });
 
 /* --- F2: router mínimo por hash (#/login, #/setup, #/invite/<token>) + sesión --- */
-const route = () => { const m = location.hash.match(/^#\/(login|setup|invite|me|n|p|lobby|admin)(?:\/([^/]+))?(?:\/n\/([^/]+))?/); return m ? { name: m[1], arg: m[2], node: m[3] } : null; };
+const route = () => { const m = location.hash.match(/^#\/(login|setup|invite|forgot|reset|me|n|p|lobby|admin)(?:\/([^/]+))?(?:\/n\/([^/]+))?/); return m ? { name: m[1], arg: m[2], node: m[3] } : null; };
 /** Resuelve S.session (o null sin servidor). Muestra setup/login/invitación cuando hace falta. */
 async function authenticate() {
   const r = route();
   if (r && r.name === 'invite' && r.arg) { if (await showInvite(decodeURIComponent(r.arg))) { location.hash = ''; return authenticate(); } return new Promise(() => {}); }
+  if (r && r.name === 'reset' && r.arg && !S.session) { await showReset(decodeURIComponent(r.arg)); location.hash = '#/login'; return authenticate(); } // P7
   try { return await api.getMe(); } catch (err) {
     if (err.status === 401) {
       const needsSetup = err.data?.setup ?? (r && r.name === 'setup');
-      await (needsSetup ? showSetup() : showLogin(r && r.name === 'setup' ? 'La instalación ya está configurada.' : ''));
+      const res = await (needsSetup ? showSetup() : showLogin(r && r.name === 'setup' ? 'La instalación ya está configurada.' : '', { mail: !!err.data?.mail }));
+      if (res === 'forgot') { await showForgot(); return authenticate(); } // P7
       location.hash = ''; return authenticate();
     }
     if (err.status) { toast('El servidor respondió ' + err.status + ': ' + err.message, 'error', 8000); return null; }

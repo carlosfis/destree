@@ -28,6 +28,14 @@ services:
       - caddy_config:/config
     depends_on:
       - destree
+  # Perfil dev: buzón de pruebas Mailpit (UI en :8025, SMTP en :1025). En .env: SMTP_URL=smtp://mailpit:1025, MAIL_FROM=DesTree <dev@localhost>
+  mailpit:
+    image: axllent/mailpit
+    profiles: ["dev"]
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
 volumes:
   caddy_data:
   caddy_config:

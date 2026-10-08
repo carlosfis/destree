@@ -34,6 +34,11 @@ Para producción usa un gestor de procesos (systemd, pm2) y un proxy TLS (Caddy/
 | `LOG_LEVEL` | info | pino |
 | `VERSIONS_KEEP`, `VERSIONS_COALESCE_MIN` | 50, 5 | Versiones automáticas por página |
 | `BACKUP_CRON`, `BACKUP_KEEP` | —, 10 | Respaldos programados (cron 5 campos, hora local) |
+| `SMTP_URL`, `MAIL_FROM` | — | Correo para invitaciones y recuperación de contraseña: `smtp://usuario:contraseña@host:587` (STARTTLS), `smtps://…:465` (TLS), `?starttls=0`, `?insecure=1`. Sin ellas la app funciona copiando enlaces a mano |
+| `PUBLIC_URL` | deducida de la petición | Base de los enlaces en los correos (`https://destree.ejemplo.com`) |
+
+## Correo (opcional)
+Con `SMTP_URL` y `MAIL_FROM` las invitaciones salen por correo y el login ofrece «¿Olvidaste tu contraseña?». Comprueba en `#/admin → Usuarios → Probar envío`. Para desarrollo: `docker compose --profile dev up -d` arranca **Mailpit** (buzón en `http://localhost:8025`) y en `.env` pones `SMTP_URL=smtp://mailpit:1025` y `MAIL_FROM=DesTree <dev@localhost>`. La contraseña en la URL va codificada (`ñ` → `%C3%B1`, `@` → `%40`).
 
 ## Actualización
 1. Respaldo (`npm run backup` o `#/admin → Respaldos`).

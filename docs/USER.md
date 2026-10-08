@@ -37,7 +37,7 @@
 Modo lectura: pan/zoom, doble clic o Enter abren la **ficha** en el sidebar, con las mismas pestañas (General, Staff, Documentación, Notas). Solo ves las raíces de la organización, las de tus células y aquellas donde estás asignado o eres responsable; `⇢ ocultas` indica conexiones con elementos que no ves.
 
 ## Mi cuenta (chip de usuario)
-Pulsa tu nombre arriba a la derecha: cambia tu **nombre** o tu **contraseña** (actual, nueva, repetir; mínimo 8). Al cambiar la contraseña se cierran tus demás sesiones; también puedes cerrarlas sin cambiarla con **Cerrar las demás sesiones**. Si la olvidaste, un admin te da una temporal desde Administración → Usuarios.
+Pulsa tu nombre arriba a la derecha: cambia tu **nombre** o tu **contraseña** (actual, nueva, repetir; mínimo 8). Al cambiar la contraseña se cierran tus demás sesiones; también puedes cerrarlas sin cambiarla con **Cerrar las demás sesiones**. Si la olvidaste: «¿Olvidaste tu contraseña?» en el login (cuando la instalación tiene correo) o pide a un admin una temporal desde Administración → Usuarios.
 
 ## Mis asignaciones (`★ Mías` o `#/me`)
 Lista de cards donde eres responsable o asignado en todas las páginas; cada una centra el lienzo en la card.

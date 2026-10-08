@@ -72,14 +72,14 @@
 - [x] `docs/SECURITY.md` con el modelo de amenazas resumido y las cabeceras aplicadas; `curl -I` documentado en `docs/INSTALL.md`.
 **Aceptación:** `curl -I` muestra las cabeceras; la app funciona con CSP activa (smoke verde); tests verdes. Cumplida: 30 tests (e2e incluye SIGTERM en proceso real y logs sin secretos), lint OK, smoke 29/29 sin violaciones de CSP en consola.
 
-## P7 — Correo SMTP (agente)
+## P7 — Correo SMTP (agente) ✅ 2026-10-07
 **Objetivo:** invitaciones y recuperación de contraseña sin copiar enlaces a mano.
-- [ ] `server/lib/mailer.js` sin dependencias pesadas (SMTP con `node:net`/`node:tls` + AUTH LOGIN/PLAIN, o una dependencia pequeña si se decide y se anota en `docs/DECISIONS.md`); config `SMTP_URL`, `MAIL_FROM`, `PUBLIC_URL` en `.env.example` y `docs/INSTALL.md`.
-- [ ] Botón «Probar envío» en Administración (admin) y perfil `dev` de compose con Mailpit (`:8025`) para pruebas locales.
-- [ ] Invitación: si hay SMTP, se envía el correo con el enlace además de mostrarlo; estado `sent`/`pending` visible.
-- [ ] «Olvidé mi contraseña»: `POST /api/auth/forgot` (siempre 204, rate-limit) + `POST /api/auth/reset` con token de un solo uso (hash en BD, 1 h); pantalla en `auth-views.js`.
-- [ ] Tests con un servidor SMTP falso en memoria.
-**Aceptación:** invitación llega a Mailpit y el enlace funciona; reset completo de contraseña sin intervención del admin.
+- [x] `server/lib/mailer.js` sin dependencias pesadas (SMTP con `node:net`/`node:tls` + AUTH LOGIN/PLAIN, o una dependencia pequeña si se decide y se anota en `docs/DECISIONS.md`); config `SMTP_URL`, `MAIL_FROM`, `PUBLIC_URL` en `.env.example` y `docs/INSTALL.md`.
+- [x] Botón «Probar envío» en Administración (admin) y perfil `dev` de compose con Mailpit (`:8025`) para pruebas locales.
+- [x] Invitación: si hay SMTP, se envía el correo con el enlace además de mostrarlo; estado `sent`/`pending` visible.
+- [x] «Olvidé mi contraseña»: `POST /api/auth/forgot` (siempre 204, rate-limit) + `POST /api/auth/reset` con token de un solo uso (hash en BD, 1 h); pantalla en `auth-views.js`.
+- [x] Tests con un servidor SMTP falso en memoria.
+**Aceptación:** invitación llega a Mailpit y el enlace funciona; reset completo de contraseña sin intervención del admin. Cumplida con el servidor SMTP falso de `tests/mail.test.js` (34 tests, lint OK, smoke 30/30); la prueba real con Mailpit (`docker compose --profile dev up -d`) queda para el usuario al desplegar («usuario», no bloquea).
 
 ## P8 — Release v1.0.0 (agente; publicación «usuario»)
 - [ ] Revisión final de README/INSTALL/ADMIN/USER/API; `CHANGELOG.md` 1.0.0.
@@ -90,6 +90,7 @@
 ---
 
 ## Resueltos
+- 2026-10-07 P7 Correo SMTP: `lib/mailer.js` (SMTP propio), invitaciones por correo con estado, «Probar envío», `forgot`/`reset` con token de un solo uso, pantallas `#/forgot` y `#/reset/<token>`, Mailpit en perfil `dev`, migración `010_mail.sql`, `tests/mail.test.js`.
 - 2026-10-07 P5 (agente): recorrido de 10 minutos en `docs/USER.md` (designer y head) y checklist operativa en `docs/ADMIN.md`.
 - 2026-10-07 P4 (agente): capturas + `scripts/screenshots.js`, `README.en.md`, `CODE_OF_CONDUCT.md`, audit limpio tras actualizar `@fastify/static` y `sharp`.
 - 2026-10-07 P6 Hardening: cabeceras + CSP estricta (sin inline), logs sin secretos, rate-limit por cupos, purga de sesiones, cerrar las demás sesiones, cierre ordenado SIGTERM, `tests/e2e.test.js`, `docs/SECURITY.md` + `SECURITY.md`.

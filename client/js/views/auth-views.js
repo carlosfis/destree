@@ -1,5 +1,5 @@
 /* =========================================================
-   F2. Vistas de acceso: setup inicial, login, invitación (overlay #authView)
+   F2. Vistas de acceso: setup inicial, login, invitación (overlay #authView) · P7: olvidé mi contraseña / restablecer
    ========================================================= */
 import { $, esc } from '../core/utils.js';
 import * as api from '../core/api.js';
@@ -38,12 +38,51 @@ export function showSetup() {
   return form(v, d => api.setup(d));
 }
 
-export function showLogin(message = '') {
+/** `mail`: el servidor tiene SMTP → se ofrece «¿Olvidaste tu contraseña?» (resuelve con 'forgot'). */
+export function showLogin(message = '', { mail = false } = {}) {
   const v = show('Inicia sesión', message, `<form>
     ${field('email', 'Correo', 'email', 'required autocomplete="username"')}
     ${field('password', 'Contraseña', 'password', 'required autocomplete="current-password"')}
-    <div class="form-error"></div><button class="btn primary" type="submit">Entrar</button></form>`);
-  return form(v, d => api.login(d.email, d.password));
+    <div class="form-error"></div><button class="btn primary" type="submit">Entrar</button></form>
+    ${mail ? '<p class="hint"><button type="button" class="linkish" id="forgotLink">¿Olvidaste tu contraseña?</button></p>' : ''}`);
+  return new Promise(resolve => {
+    form(v, d => api.login(d.email, d.password)).then(resolve);
+    $('#forgotLink', v)?.addEventListener('click', () => resolve('forgot'));
+  });
+}
+
+/** P7: pide el correo; el servidor siempre responde 204. Resuelve cuando el usuario vuelve al login. */
+export function showForgot() {
+  const v = show('Recuperar contraseña', 'Escribe tu correo: si existe una cuenta activa, recibirás un enlace válido durante una hora.', `<form>
+    ${field('email', 'Correo', 'email', 'required autocomplete="username"')}
+    <div class="form-error"></div><button class="btn primary" type="submit">Enviar enlace</button></form>
+    <p class="hint"><button type="button" class="linkish" data-back>Volver al inicio de sesión</button></p>`);
+  return new Promise(resolve => {
+    $('[data-back]', v).addEventListener('click', () => resolve());
+    form(v, async d => {
+      await api.forgotPassword(d.email);
+      const w = show('Revisa tu correo', `Si <b>${esc(d.email)}</b> tiene cuenta, en unos minutos llegará un enlace para elegir una contraseña nueva. Mira también la carpeta de spam.`, `<p><button type="button" class="btn primary" data-back>Volver al inicio de sesión</button></p>`);
+      $('[data-back]', w).addEventListener('click', () => resolve());
+    });
+  });
+}
+
+/** P7: `#/reset/<token>`: nueva contraseña + repetir. Resuelve al terminar (o al volver). */
+export function showReset(token) {
+  const v = show('Nueva contraseña', 'Elige una contraseña nueva (mínimo 8 caracteres). Se cerrarán todas tus sesiones.', `<form>
+    ${field('password', 'Nueva contraseña', 'password', 'required minlength="8" maxlength="200" autocomplete="new-password"')}
+    ${field('repeat', 'Repite la contraseña', 'password', 'required minlength="8" maxlength="200" autocomplete="new-password"')}
+    <div class="form-error"></div><button class="btn primary" type="submit">Guardar y entrar</button></form>
+    <p class="hint"><button type="button" class="linkish" data-back>Volver al inicio de sesión</button></p>`);
+  return new Promise(resolve => {
+    $('[data-back]', v).addEventListener('click', () => resolve());
+    form(v, async d => {
+      if (d.password !== d.repeat) throw new Error('Las contraseñas no coinciden');
+      await api.resetPassword(token, d.password);
+      const w = show('Contraseña actualizada', 'Ya puedes entrar con la nueva contraseña.', `<p><button type="button" class="btn primary" data-back>Ir al inicio de sesión</button></p>`);
+      $('[data-back]', w).addEventListener('click', () => resolve());
+    });
+  });
 }
 
 /** Pantalla de alta por invitación. Resuelve con el usuario creado (ya con sesión) o null si el token no vale. */

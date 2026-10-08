@@ -18,9 +18,9 @@
 `/` muestra el asistente: nombre de la organización + correo/contraseña del primer admin. Solo ocurre una vez (`GET /api/setup` → `needed:false` después).
 
 ## Invitar y gestionar usuarios (`#/admin → Usuarios`)
-- Invitar genera un **enlace** (7 días) que copias y envías tú (no hay correo). El invitado crea su contraseña y entra con el rol y las células de la invitación.
+- Invitar genera un **enlace** (7 días). Con SMTP configurado (`SMTP_URL`, `MAIL_FROM`) el correo sale solo y la invitación aparece como «enviada»; sin SMTP, o si el envío falla, copias el enlace y lo compartes tú («pendiente»). El invitado crea su contraseña y entra con el rol y las células de la invitación. «Probar envío» (admin) manda un correo de prueba a tu propia dirección.
 - Admin: cambia rol, desactiva/activa (desactivar cierra sesiones). Head: solo invita designers a sus células.
-- Contraseña olvidada: no hay recuperación por correo. Un admin pulsa 🔑 **Restablecer contraseña** en la fila del usuario: se genera una temporal, se muestra **una sola vez** para copiarla y se cierran las sesiones de esa persona; pásala por un canal seguro. La persona la cambia después desde su chip de usuario (**Mi cuenta**).
+- Contraseña olvidada: con SMTP, la persona usa «¿Olvidaste tu contraseña?» en el login (enlace de un solo uso, 1 h, cierra sus sesiones). Sin SMTP, un admin pulsa 🔑 **Restablecer contraseña** en la fila del usuario: se genera una temporal, se muestra **una sola vez** para copiarla y se cierran las sesiones de esa persona; pásala por un canal seguro. La persona la cambia después desde su chip de usuario (**Mi cuenta**).
 - Cada usuario cambia su propia contraseña y su nombre desde el chip de usuario (arriba a la derecha → **Mi cuenta**); cambiarla cierra sus demás sesiones.
 
 ## Células (`#/admin → Células`)

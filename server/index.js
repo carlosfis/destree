@@ -26,6 +26,7 @@ import auditRoutes from './routes/audit.js';
 import imageRoutes from './routes/images.js';
 import versionRoutes from './routes/versions.js';
 import backupRoutes from './routes/backups.js';
+import mailRoutes from './routes/mail.js'; // P7
 import { createBackup, scheduleBackups, acquireLock } from './lib/backup.js';
 import { migrateLegacyImages, purgeOrphans } from './lib/images.js';
 
@@ -51,7 +52,7 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
     if (err.validation) return reply.code(400).send({ error: 'validation', message: err.message, errors: formatErrors(err.validation) });
     if (err instanceof HttpError) {
       const code = { 401: 'unauthorized', 403: 'forbidden', 409: 'conflict', 410: 'gone', 413: 'too_large', 415: 'unsupported', 429: 'rate_limited' }[err.status] || 'error';
-      return reply.code(err.status).send({ error: code, message: err.message, ...(err.version != null ? { version: err.version } : {}), ...(err.setup != null ? { setup: err.setup } : {}) });
+      return reply.code(err.status).send({ error: code, message: err.message, ...(err.version != null ? { version: err.version } : {}), ...(err.setup != null ? { setup: err.setup } : {}), ...(err.mail != null ? { mail: err.mail } : {}) });
     }
     if (err.statusCode && err.statusCode < 500) return reply.code(err.statusCode).send({ error: 'error', message: err.message });
     req.log.error(err);
@@ -77,6 +78,7 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   await app.register(imageRoutes);
   await app.register(versionRoutes);
   await app.register(backupRoutes);
+  await app.register(mailRoutes); // P7
   app.addHook('onReady', async () => { try { purgeOrphans(db, app.uploadsDir); } catch (err) { app.log.warn(err, 'purga de imágenes huérfanas'); } });
   // F6b: lock para scripts/restore.js + respaldos programados (BACKUP_CRON)
   let releaseLock = () => {};

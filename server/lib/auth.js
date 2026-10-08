@@ -7,6 +7,7 @@ import { DEFAULT_ORG_ID } from '../db/sqlite.js';
 export const SESSION_COOKIE = 'destree_sid';
 export const SESSION_DAYS = 30;
 export const INVITE_DAYS = 7;
+export const RESET_MINUTES = 60; // P7
 const SCRYPT_N = 16384;
 
 export function hashPassword(pw) {
@@ -80,7 +81,7 @@ export function createInvite(db, { orgId = DEFAULT_ORG_ID, email, role, cellIds 
     .run(id, orgId, email, role, JSON.stringify(cellIds), sha256(token), invitedBy, addDays(INVITE_DAYS));
   return { id, token, email, role, expiresAt: addDays(INVITE_DAYS) };
 }
-export const publicInvite = r => ({ id: r.id, email: r.email, role: r.role, cellIds: JSON.parse(r.cell_ids_json || '[]'), invitedBy: r.invited_by, expiresAt: r.expires_at, usedAt: r.used_at, createdAt: r.created_at });
+export const publicInvite = r => ({ id: r.id, email: r.email, role: r.role, cellIds: JSON.parse(r.cell_ids_json || '[]'), invitedBy: r.invited_by, expiresAt: r.expires_at, usedAt: r.used_at, emailSentAt: r.email_sent_at || null, createdAt: r.created_at });
 export function listInvites(db, orgId = DEFAULT_ORG_ID) {
   return db.prepare('SELECT * FROM invites WHERE org_id = ? AND used_at IS NULL ORDER BY created_at DESC').all(orgId).map(publicInvite);
 }
@@ -99,6 +100,24 @@ export function acceptInvite(db, { token, name, password, ua, ip }) {
   return { invite: inv, user, token: createSession(db, { userId: user.id, orgId: inv.org_id, ua, ip }) };
 }
 
+/* --- P7: restablecimiento de contraseña por correo (token de un solo uso, hash en BD) --- */
+export function createPasswordReset(db, userId) {
+  db.prepare('DELETE FROM password_resets WHERE user_id = ? AND used_at IS NULL').run(userId);
+  const token = newToken();
+  db.prepare('INSERT INTO password_resets (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)').run(ulid(), userId, sha256(token), new Date(Date.now() + RESET_MINUTES * 60e3).toISOString());
+  return token;
+}
+/** Marca el token como usado y devuelve la fila; 404 si no existe, 410 si usado o caducado (o usuario inactivo). */
+export function consumePasswordReset(db, token) {
+  const r = db.prepare('SELECT * FROM password_resets WHERE token_hash = ?').get(sha256(String(token || '')));
+  if (!r) throw new HttpError(404, 'Enlace de restablecimiento no válido');
+  if (r.used_at) throw new HttpError(410, 'Este enlace ya se usó');
+  if (r.expires_at <= nowIso()) throw new HttpError(410, 'Este enlace ha caducado; pide uno nuevo');
+  const u = db.prepare('SELECT is_active FROM users WHERE id = ?').get(r.user_id);
+  if (!u || !u.is_active) throw new HttpError(410, 'Cuenta desactivada');
+  db.prepare('UPDATE password_resets SET used_at = ? WHERE id = ?').run(nowIso(), r.id);
+  return r;
+}
 /** P6: borra sesiones caducadas (al arrancar). Devuelve cuántas. */
 export function purgeExpiredSessions(db) { return db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(nowIso()).changes; }
 

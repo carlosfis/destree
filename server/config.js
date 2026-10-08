@@ -19,6 +19,9 @@ export const config = {
   backupCron: process.env.BACKUP_CRON ?? '', // F6b: p. ej. "30 3 * * *" (vacío = sin programación)
   versionsKeep: Math.max(1, Number(process.env.VERSIONS_KEEP) || 50), // F6a: versiones auto conservadas por página
   versionsCoalesceMs: Math.max(0, Number(process.env.VERSIONS_COALESCE_MIN ?? 5) * 60e3), // F6a: autos del mismo usuario se funden en esta ventana
+  smtpUrl: process.env.SMTP_URL || '', // P7: smtp://user:pass@host:587 (STARTTLS) | smtps://…:465; vacío = sin correo
+  mailFrom: process.env.MAIL_FROM || '', // P7: "DesTree <no-reply@dominio>"
+  publicUrl: (process.env.PUBLIC_URL || '').replace(/\/+$/, ''), // P7: base de los enlaces en correos (si falta, se deduce de la petición)
   trustProxy: /^(1|true|yes)$/i.test(process.env.TRUST_PROXY || ''), // detrás de proxy TLS: cookie Secure + X-Forwarded-*
   logLevel: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'test' ? 'silent' : 'info'),
 };

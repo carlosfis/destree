@@ -7,11 +7,13 @@ import { sessionCookie } from '../plugins/session.js';
 import { transaction } from '../db/sqlite.js';
 import { limited } from './auth.js';
 import { canManageCell, addCellMembers } from '../lib/cells.js';
+import { sendMail, mailConfigured, publicBase, inviteMail } from '../lib/mailer.js'; // P7
+import { nowIso } from '../lib/ids.js';
 
 const tokenParam = { type: 'object', required: ['token'], properties: { token: { type: 'string', minLength: 20, maxLength: 64 } } };
 
 export default async function inviteRoutes(app) {
-  const link = (req, token) => `${req.headers['x-forwarded-proto'] || req.protocol}://${req.headers['x-forwarded-host'] || req.headers.host}/#/invite/${token}`;
+  const link = (req, token) => `${publicBase(req)}/#/invite/${token}`;
 
   app.post('/api/invites', {
     onRequest: app.guard('invite'),
@@ -27,8 +29,14 @@ export default async function inviteRoutes(app) {
       return r;
     });
     reply.code(201);
-    // Sin SMTP (F9b): el enlace se copia a mano.
-    return { id: inv.id, email: inv.email, role: inv.role, cellIds, expiresAt: inv.expiresAt, link: link(req, inv.token), emailSent: false };
+    // P7: con SMTP se envía el correo (y se anota email_sent_at); sin SMTP o si falla, el enlace se copia a mano.
+    let emailSent = false, mailError = null;
+    if (mailConfigured()) {
+      const org = app.db.prepare('SELECT name FROM orgs WHERE id = ?').get(req.orgId);
+      try { await sendMail({ to: inv.email, ...inviteMail({ orgName: org?.name || 'DesTree', role: inv.role, link: link(req, inv.token), expiresAt: inv.expiresAt }) }); emailSent = true; app.db.prepare('UPDATE invites SET email_sent_at = ? WHERE id = ?').run(nowIso(), inv.id); }
+      catch (err) { mailError = err.message; req.log.warn({ err: err.message }, 'correo de invitación'); }
+    }
+    return { id: inv.id, email: inv.email, role: inv.role, cellIds, expiresAt: inv.expiresAt, link: link(req, inv.token), emailSent, ...(mailError ? { mailError } : {}) };
   });
 
   app.get('/api/invites', { onRequest: app.guard('invite') }, async (req) => ({ invites: listInvites(app.db, req.orgId) }));

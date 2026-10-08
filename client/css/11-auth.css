@@ -10,6 +10,8 @@
 .auth-card .form-error { color: var(--danger); font-size: 13px; min-height: 1em; }
 .auth-card .form-error:empty { display: none; }
 .auth-card .btn.primary { justify-content: center; padding: 8px 12px; }
+.linkish { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; } /* P7 */
+.mail-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .user-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--fg-2); white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
 .user-chip b { color: var(--fg); font-weight: 500; }
 button.user-chip { background: none; border: 1px solid transparent; border-radius: 8px; padding: 3px 6px; cursor: pointer; font: inherit; } /* P3: abre Mi cuenta */

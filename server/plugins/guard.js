@@ -2,12 +2,13 @@
 import { can } from '../lib/permissions.js';
 import { HttpError } from '../lib/pages.js';
 import { userCount } from '../lib/auth.js';
+import { mailConfigured } from '../lib/mailer.js'; // P7
 
 function guardPlugin(app, opts, done) {
   app.decorate('guard', (action) => {
     can({ role: 'admin' }, action); // valida el nombre de la acción al registrar la ruta
     return async (req) => {
-      if (!req.user) throw new HttpError(401, 'Inicia sesión', { setup: userCount(app.db) === 0 });
+      if (!req.user) throw new HttpError(401, 'Inicia sesión', { setup: userCount(app.db) === 0, mail: mailConfigured() });
       if (!can({ role: req.role }, action)) throw new HttpError(403, 'Sin permisos para esta acción');
     };
   });

@@ -60,6 +60,10 @@ export const logout = () => req('POST', '/auth/logout');
 export const getMe = () => req('GET', '/me');
 export const patchMe = body => req('PATCH', '/me', body); // P3: { name? , currentPassword?, newPassword? }
 export const closeOtherSessions = () => req('DELETE', '/me/sessions'); // P6
+/* --- P7: correo --- */
+export const forgotPassword = email => req('POST', '/auth/forgot', { email });
+export const resetPassword = (token, password) => req('POST', '/auth/reset', { token, password });
+export const mailTest = () => req('POST', '/mail/test');
 export const getInvite = token => req('GET', `/invites/${encodeURIComponent(token)}`);
 export const acceptInvite = body => req('POST', '/invites/accept', body);
 export const createInvite = body => req('POST', '/invites', body);

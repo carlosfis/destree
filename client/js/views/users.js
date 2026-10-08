@@ -19,7 +19,9 @@ async function copyText(text) {
 
 export async function renderUsersTab(body) {
   const roles = S.session.role === 'admin' ? ['designer', 'head', 'admin'] : ['designer'];
-  body.innerHTML = `<h3>Invitar</h3><p>Se genera un enlace para compartir (válido 7 días). ${S.session.role === 'head' ? 'Como head solo puedes invitar designers.' : ''}</p>
+  const mail = !!S.session.mail; // P7
+  body.innerHTML = `${has('users.manage') ? `<h3>Correo</h3><p class="mail-status">${mail ? 'SMTP configurado: las invitaciones y la recuperación de contraseña se envían por correo.' : 'Sin SMTP: las invitaciones se comparten copiando el enlace y no hay recuperación de contraseña por correo. Configura <code>SMTP_URL</code> y <code>MAIL_FROM</code> en <code>.env</code>.'}${mail ? ' <button class="btn" type="button" id="mailTest">Probar envío</button>' : ''}</p>` : ''}
+    <h3>Invitar</h3><p>${mail ? 'Se envía un correo con el enlace (válido 7 días); también puedes copiarlo.' : 'Se genera un enlace para compartir (válido 7 días).'} ${S.session.role === 'head' ? 'Como head solo puedes invitar designers.' : ''}</p>
     <form id="inviteForm" class="row"><input type="email" name="email" placeholder="correo@ejemplo.com" required class="grow"><select name="role">${roles.map(r => `<option value="${r}">${ROLE_LABEL[r]}</option>`).join('')}</select><button class="btn primary" type="submit">Invitar</button></form>
     ${manageable().length ? `<div class="chips-select" id="inviteCells">${manageable().map(c => `<span class="chip tag-${esc(c.color)}" data-id="${c.id}">${esc(c.name)}</span>`).join('')}<span class="hint">Células del invitado</span></div>` : ''}
     <div id="inviteResult"></div>
@@ -33,10 +35,16 @@ export async function renderUsersTab(body) {
     try {
       const inv = await api.createInvite({ email: data.email, role: data.role, cellIds });
       f.reset();
-      $('#inviteResult', body).innerHTML = `<div class="invite-link"><input type="text" value="${esc(inv.link)}" disabled><button class="btn" type="button">Copiar</button></div><p class="hint">Enlace para ${esc(inv.email)} (${esc(ROLE_LABEL[inv.role])}). No se envía correo: cópialo y compártelo.</p>`;
+      $('#inviteResult', body).innerHTML = `<div class="invite-link"><input type="text" value="${esc(inv.link)}" disabled><button class="btn" type="button">Copiar</button></div><p class="hint">${inv.emailSent ? `Correo enviado a ${esc(inv.email)} (${esc(ROLE_LABEL[inv.role])}). Si no le llega, cópiale el enlace.` : `Enlace para ${esc(inv.email)} (${esc(ROLE_LABEL[inv.role])}). ${inv.mailError ? 'El correo falló (' + esc(inv.mailError) + '): ' : 'No se envía correo: '}cópialo y compártelo.`}</p>`;
       $('#inviteResult .btn', body).addEventListener('click', () => copyText(inv.link));
-      copyText(inv.link); renderInvites(body);
+      if (!inv.emailSent) copyText(inv.link); else toast('Invitación enviada por correo');
+      renderInvites(body);
     } catch (err) { toast('No se pudo invitar: ' + err.message, 'error', 6000); }
+  });
+  $('#mailTest', body)?.addEventListener('click', async e => { // P7
+    e.currentTarget.disabled = true;
+    try { const r = await api.mailTest(); toast(`Correo de prueba enviado a ${r.to}`); } catch (err) { toast(err.message, 'error', 8000); }
+    e.currentTarget.disabled = false;
   });
   renderInvites(body);
   if (has('users.manage')) renderUsers(body);
@@ -49,7 +57,7 @@ async function renderInvites(body) {
   box.innerHTML = invites.length ? '' : '<div class="empty">Sin invitaciones pendientes.</div>';
   for (const inv of invites) {
     const row = document.createElement('div'); row.className = 'row';
-    row.innerHTML = `<span class="grow">${esc(inv.email)}</span><span class="chip tag-gray">${esc(ROLE_LABEL[inv.role])}</span><span class="count">caduca ${fmtDate(inv.expiresAt)}</span><button class="btn danger">Revocar</button>`;
+    row.innerHTML = `<span class="grow">${esc(inv.email)}</span><span class="chip tag-gray">${esc(ROLE_LABEL[inv.role])}</span><span class="chip ${inv.emailSentAt ? 'tag-green' : 'tag-yellow'}" title="${inv.emailSentAt ? 'Correo enviado el ' + esc(fmtDate(inv.emailSentAt)) : 'Enlace copiado a mano'}">${inv.emailSentAt ? 'enviada' : 'pendiente'}</span><span class="count">caduca ${fmtDate(inv.expiresAt)}</span><button class="btn danger">Revocar</button>`;
     row.querySelector('.btn').addEventListener('click', async () => {
       try { await api.revokeInvite(inv.id); toast('Invitación revocada'); renderInvites(body); } catch (err) { toast(err.message, 'error'); }
     });

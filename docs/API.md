@@ -3,22 +3,25 @@
 Base `/api`. JSON. Errores: `{ error, message, errors?, version?, setup? }` con `error` ∈ `validation|unauthorized|forbidden|not_found|conflict|gone|rate_limited|error`.
 Auth: cookie `destree_sid` (HttpOnly, SameSite=Lax, `Secure` si `TRUST_PROXY`), 30 días. Sin sesión → 401 (`setup:true` si aún no hay usuarios). Rol sin la acción → 403.
 Cada ruta lleva `app.guard('action')` (hook onRequest; matriz en `server/lib/permissions.js`). Mutaciones (`POST/PUT/PATCH/DELETE`) pasan por origin-check: `Origin`/`Referer` debe coincidir con `Host`; rutas con `config.skipOriginCheck` exentas.
-Rate-limit por IP → 429: cupo `auth` (10/15 min) en `/setup`, `/auth/login`, `/invites/accept`, `PATCH /me`; cupo `images` (60/min) en `POST /api/images`.
+Rate-limit por IP → 429: cupo `auth` (10/15 min) en `/setup`, `/auth/login`, `/auth/forgot`, `/auth/reset`, `/invites/accept`, `PATCH /me`; cupo `images` (60/min) en `POST /api/images`.
 Cabeceras (P6): `X-Content-Type-Options: nosniff` y `Referrer-Policy` en todo; HTML/estáticos/uploads además con CSP estricta, `X-Frame-Options`, `Permissions-Policy` (ver `docs/SECURITY.md`). Los logs enmascaran el token de `GET /api/invites/:token` y nunca incluyen cookies ni cuerpos. Toda escritura deja fila en `audit_log`.
 Validación: JSON Schema de `/schema` vía Ajv (`strict:false`, `allErrors`, ajv-formats). 400 → `errors: [{ path, message, keyword, params }]`.
 
 | Método | Ruta | Acción | Cuerpo / cabeceras | Respuesta |
 |---|---|---|---|---|
 | GET | `/api/health` | pública | — | `{ ok, version, db, pages, time }` |
-| GET | `/api/setup` | pública | — | `{ needed }` (true si no hay usuarios) |
+| GET | `/api/setup` | pública | — | `{ needed, mail }` (`needed` true si no hay usuarios; `mail` true si hay SMTP → el login ofrece recuperar contraseña) |
+| POST | `/api/auth/forgot` | pública | `{ email }` | siempre 204 (si la cuenta existe, está activa y hay SMTP, envía un enlace `#/reset/<token>` válido 1 h; el envío es asíncrono) |
+| POST | `/api/auth/reset` | pública | `{ token, password≥8 }` | `{ ok }`; cambia la contraseña, cierra todas las sesiones y consume el token · 404 token desconocido · 410 usado/caducado/cuenta desactivada |
+| POST | `/api/mail/test` | org.settings (admin) | — | `{ sent, to }` (correo de prueba al admin) · 409 sin SMTP · 502 si el servidor SMTP falla |
 | POST | `/api/setup` | pública (solo sin usuarios) | `{ orgName, name?, email, password≥8 }` | 201 + me, cookie · 409 si ya configurado |
 | POST | `/api/auth/login` | pública | `{ email, password }` | me + cookie · 401 credenciales · 403 cuenta desactivada |
 | POST | `/api/auth/logout` | sesión | — | 204, borra cookie |
-| GET | `/api/me` | pages.read | — | `{ user{id,email,name}, org{id,name,slug}, role, permissions[], cellIds[], cells[{id,name,color}] }` |
+| GET | `/api/me` | pages.read | — | `{ user{id,email,name}, org{id,name,slug}, role, permissions[], cellIds[], cells[{id,name,color}], mail }` |
 | PATCH | `/api/me` | pages.read (cualquier rol) | `{ name? }` y/o `{ currentPassword, newPassword≥8 }` | me + `sessionsClosed` · 400 falta la actual o la nueva · 403 actual incorrecta. Cambiar la contraseña cierra las demás sesiones (la actual sigue); audit `user.password` (sin la contraseña) |
 | DELETE | `/api/me/sessions` | pages.read | — | `{ sessionsClosed }` (cierra las demás sesiones del usuario; la actual sigue); audit `user.sessions` |
-| POST | `/api/invites` | invite (head: solo designer, solo a sus células) | `{ email, role, cellIds? }` | 201 `{ id, email, role, cellIds, expiresAt, link, emailSent:false }` · 409 correo con cuenta · 400 célula desconocida. Al aceptar, el usuario entra en `cell_members` |
-| GET | `/api/invites` | invite | — | `{ invites: [{ id, email, role, cellIds, invitedBy, expiresAt, createdAt }] }` (pendientes) |
+| POST | `/api/invites` | invite (head: solo designer, solo a sus células) | `{ email, role, cellIds? }` | 201 `{ id, email, role, cellIds, expiresAt, link, emailSent, mailError? }` (con SMTP se envía el correo y `emailSent:true`; si falla, 201 con `emailSent:false` y `mailError`) · 409 correo con cuenta · 400 célula desconocida. Al aceptar, el usuario entra en `cell_members` |
+| GET | `/api/invites` | invite | — | `{ invites: [{ id, email, role, cellIds, invitedBy, expiresAt, emailSentAt, createdAt }] }` (pendientes) |
 | DELETE | `/api/invites/:id` | invite | — | 204 · 404 |
 | GET | `/api/invites/:token` | pública | — | `{ email, role, orgName, expiresAt }` · 404 · 410 caducada/usada |
 | POST | `/api/invites/accept` | pública | `{ token, name?, password≥8 }` | 201 `{ user, invite }` + cookie · 410 |
@@ -68,4 +71,5 @@ Notas
 - PUT reemplaza el contenido completo en una transacción (tags, branch_types, nodes, node_tags, edges, node_cells, node_assignees) y `version += 1`. `cellIds` solo cuenta en raíces `visibility:'cells'`; ids de célula/usuario desconocidos se descartan.
 - El servidor normaliza (`server/lib/normalize.js`) tras validar; `page.name/description/visibility` solo cambian si vienen en `page`.
 - `settings` persiste `{ snap, grid, minimap }`; `theme`/`tool` son preferencias del navegador.
+- Enlaces de invitación y de reset usan `PUBLIC_URL` si está definida; si no, protocolo y host de la petición (`X-Forwarded-*` detrás de proxy).
 - Límite de cuerpo 32 MB. `/` sirve `client/`; `/js/core/normalize.js` es el mismo módulo que usa el servidor.
