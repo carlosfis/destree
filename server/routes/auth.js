@@ -1,5 +1,5 @@
-// F2: GET /api/setup · POST /api/setup · POST /api/auth/login · POST /api/auth/logout · GET /api/me
-import { userCount, createUser, findUserByEmail, verifyPassword, createSession, deleteSession, rateLimit, getUser } from '../lib/auth.js';
+// F2: GET /api/setup · POST /api/setup · POST /api/auth/login · POST /api/auth/logout · GET /api/me · P3: PATCH /api/me (name, contraseña propia)
+import { userCount, createUser, findUserByEmail, verifyPassword, createSession, deleteSession, deleteOtherSessions, setPassword, rateLimit, getUser } from '../lib/auth.js';
 import { permissionsFor } from '../lib/permissions.js';
 import { audit } from '../lib/audit.js';
 import { HttpError } from '../lib/pages.js';
@@ -55,6 +55,26 @@ export default async function authRoutes(app) {
   });
 
   app.get('/api/me', { onRequest: app.guard('pages.read') }, async (req) => me(app, req.user));
+
+  // P3: cuenta propia. Cambiar contraseña exige la actual y cierra las demás sesiones; `name` opcional.
+  app.patch('/api/me', {
+    onRequest: [app.guard('pages.read'), limited],
+    schema: { body: { type: 'object', additionalProperties: false, minProperties: 1, properties: { name, currentPassword: { type: 'string', minLength: 1, maxLength: 200 }, newPassword: password } } },
+  }, async (req) => {
+    const { name: newName, currentPassword, newPassword } = req.body;
+    if ((newPassword && !currentPassword) || (currentPassword && !newPassword)) throw new HttpError(400, 'Indica la contraseña actual y la nueva');
+    if (newPassword) {
+      const row = app.db.prepare('SELECT password_hash FROM users WHERE id = ?').get(req.user.id);
+      if (!verifyPassword(currentPassword, row.password_hash)) throw new HttpError(403, 'La contraseña actual no es correcta');
+    }
+    const closed = transaction(app.db, () => {
+      let n = 0;
+      if (newName != null) { app.db.prepare('UPDATE users SET name = ? WHERE id = ?').run(newName.trim(), req.user.id); audit(app.db, { orgId: req.orgId, userId: req.user.id, action: 'user.update', entity: 'user', entityId: req.user.id, meta: { name: newName.trim(), self: true } }); }
+      if (newPassword) { setPassword(app.db, req.user.id, newPassword); n = deleteOtherSessions(app.db, req.user.id, req.sessionToken); audit(app.db, { orgId: req.orgId, userId: req.user.id, action: 'user.password', entity: 'user', entityId: req.user.id, meta: { sessionsClosed: n } }); }
+      return n;
+    });
+    return { ...me(app, getUser(app.db, req.user.id, req.orgId)), sessionsClosed: closed };
+  });
 
   function me(app, user) {
     return { user: { id: user.id, email: user.email, name: user.name }, org: orgRow(), role: user.role, permissions: permissionsFor(user.role), cellIds: userCellIds(app.db, user.id), cells: userCells(user.id) };

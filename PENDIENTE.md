@@ -20,23 +20,23 @@
 - [x] Smoke: pasos nuevos para estado vacío, Escape en lobby y viewport 360×740 sin scroll horizontal.
 **Aceptación:** `npm test`, `npm run lint` y `node scripts/smoke.js` verdes; smoke incluye los tres pasos nuevos. Cumplida: 24 tests, lint OK, smoke 27/27 (los dos pasos P1 cubren estado vacío + Escape y viewport 360×740).
 
-## P2 — Verificar Docker y desplegar una instancia de prueba (usuario)
+## P2 — Verificar Docker y desplegar una instancia de prueba (usuario) — instalación verificada 2026-10-07; falta el despliegue real
 **Objetivo:** confirmar que la instalación documentada funciona antes de regalar o anunciar nada.
-- [ ] «usuario» Instalar Docker Desktop en el Mac y abrirlo una vez (acepta los términos y arranca el daemon). El 2026-10-07 el agente comprobó que no estaba instalado (Rosetta sí). `brew install --cask docker-desktop` necesita tu contraseña de administrador (sudo) y, sin ella, se revirtió: ejecútalo tú en una terminal interactiva o descarga Docker Desktop de docker.com. Alternativa sin sudo ni GUI que el agente puede operar solo: `brew install colima docker docker-compose && colima start`. Luego el agente ejecuta: clone limpio en una carpeta temporal, `cp .env.example .env`, `docker compose up -d --build`, `curl -s localhost:3000/api/health`, asistente, `down && up` conserva `./data`. Si `sharp` falla en el build, se anota aquí.
-- [ ] «usuario» `docker compose down && docker compose up -d` conserva `./data` (login sigue funcionando).
-- [x] GHCR público: comprobado el 2026-10-07 sin login (`ghcr.io/v2/carlosfis/destree/manifests/0.1.0` → 200, índice OCI con amd64 + arm64). Falta solo `docker compose pull` real cuando haya Docker.
+- [x] Docker Desktop 4.94 instalado por el usuario (2026-10-07). El agente verificó en clone limpio: `cp .env.example .env` → `docker compose up -d --build` (build OK, `sharp` resuelto sin compilar) → `/api/health` 200 → `POST /api/setup` 201.
+- [x] `docker compose down && docker compose up -d` conserva `./data` (login 200 tras reiniciar). Observado: `.server.lock` queda en `./data` tras `down` porque el proceso no atiende SIGTERM → lo resuelve el cierre ordenado de P6.
+- [x] GHCR público: manifiesto 0.1.0 accesible sin login (amd64 + arm64) y `docker compose pull` real OK (2026-10-07, arm64).
 - [ ] «usuario» Despliegue real: VPS (1 CPU / 512 MB basta) o máquina interna, dominio apuntando, puertos 80/443, `.env` con `DOMAIN` y `TRUST_PROXY=1`, `docker compose --profile https up -d`. Alternativa sin dominio: red local o Tailscale.
-- [ ] Agente, tras el informe del usuario: corregir lo que falle y actualizar `docs/INSTALL.md`.
+- [ ] Agente, tras el informe del despliegue real del usuario: corregir lo que falle y actualizar `docs/INSTALL.md`.
 **Aceptación:** una instancia accesible por HTTPS con el asistente completado y un segundo usuario invitado que entra.
 
-## P3 — Contraseñas (agente)
+## P3 — Contraseñas (agente) ✅ 2026-10-07
 **Objetivo:** quitar la fricción número uno del uso diario: hoy no hay cambio de contraseña propio y el reset del admin es solo por API.
-- [ ] `PATCH /api/me` con `{ currentPassword, newPassword }` (verifica la actual, invalida las demás sesiones, audit `user.password`); test en `tests/permissions.test.js` o nuevo `tests/account.test.js`.
-- [ ] UI: «Cambiar contraseña» accesible desde el chip de usuario (diálogo con actual / nueva / repetir, mín. 8).
-- [ ] UI admin (Administrar → Usuarios): acción «Restablecer contraseña» que fija una temporal y la muestra una sola vez para copiar (usa el `PATCH /api/users/:id` existente).
-- [ ] Opcional: `PATCH /api/me` también permite cambiar `name`.
-- [ ] Docs: `docs/ADMIN.md` (quitar la mención a curl), `docs/API.md`, `docs/USER.md`.
-**Aceptación:** un designer cambia su contraseña y vuelve a entrar; un admin restablece la de otro usuario desde la UI; tests verdes.
+- [x] `PATCH /api/me` con `{ currentPassword, newPassword }` (verifica la actual, invalida las demás sesiones, audit `user.password`); test en `tests/permissions.test.js` o nuevo `tests/account.test.js`.
+- [x] UI: «Cambiar contraseña» accesible desde el chip de usuario (diálogo con actual / nueva / repetir, mín. 8).
+- [x] UI admin (Administrar → Usuarios): acción «Restablecer contraseña» que fija una temporal y la muestra una sola vez para copiar (usa el `PATCH /api/users/:id` existente).
+- [x] Opcional: `PATCH /api/me` también permite cambiar `name`.
+- [x] Docs: `docs/ADMIN.md` (quitar la mención a curl), `docs/API.md`, `docs/USER.md`.
+**Aceptación:** un designer cambia su contraseña y vuelve a entrar; un admin restablece la de otro usuario desde la UI; tests verdes. Cumplida: 26 tests (`tests/account.test.js` nuevo), lint OK, smoke 29/29 con dos pasos P3 (designer cambia contraseña desde el chip; admin restablece y la temporal entra).
 
 ## P4 — Publicación a la comunidad (mixto)
 **Objetivo:** que alguien que llega al repo entienda qué es, lo vea y lo instale sin ayuda.
@@ -90,6 +90,8 @@
 ---
 
 ## Resueltos
+- 2026-10-07 P3 Contraseñas: `PATCH /api/me` (name, contraseña con verificación de la actual, cierra las demás sesiones, rate-limit), diálogo «Mi cuenta» desde el chip, 🔑 «Restablecer contraseña» en Administración → Usuarios (temporal mostrada una vez), docs y smoke.
+- 2026-10-07 P2 (parte verificable): Docker Desktop instalado; clone limpio + `compose up --build` + health + setup + `down/up` conserva datos + `pull` GHCR, todo OK.
 - 2026-10-07 P1 UI acotada: estado vacío del lienzo, «Cargando…», Escape en overlays, foco en pestañas, aria-labels, marca «DesTree», responsive ≥360 px, dos pasos nuevos en el smoke.
 - 2026-10-07 P0 Limpieza: fuera `PLAN.md`, `docs/handoff/`, `legacy/`, `docs/FIGMA.md`, restos de Figma en código/config/docs y el perfil Mailpit; `PENDIENTE.md` reorganizado en fases; `CLAUDE.md` reescrito; tests sin dependencia del prototipo. Trabajo promo commiteado.
 - 2026-10-07 CI (`ci.yml`) verde en main; release `v0.1.0` creada por `release.yml` (imagen multi-arch + zip). Nota: GitHub no dispara workflows al subir >3 tags a la vez.

@@ -1,5 +1,5 @@
 /* =========================================================
-   13. Diálogos genéricos (confirmar / pedir texto)
+   13. Diálogos genéricos (confirmar / pedir texto / mostrar un secreto una vez)
    ========================================================= */
 import { $, esc } from '../core/utils.js';
 export const confirmDialog = $('#confirmDialog');
@@ -30,3 +30,17 @@ export function promptBox({ title, label, value = '', okLabel = 'Guardar' }) {
   });
 }
 
+/** P3: muestra un valor sensible (p. ej. contraseña temporal) una sola vez, con botón Copiar. Resuelve al cerrar. */
+export function secretBox({ title, message, secret, okLabel = 'Listo' }) {
+  return new Promise(resolve => {
+    confirmDialog.innerHTML = `<div class="dialog-inner"><header><h2>${esc(title)}</h2><button class="icon-btn" data-close aria-label="Cerrar">✕</button></header>
+      <div class="dialog-body"><div class="confirm-msg">${esc(message)}</div><div class="invite-link"><input type="text" value="${esc(secret)}" disabled aria-label="Valor"><button class="btn" type="button" data-copy>Copiar</button></div></div>
+      <footer><button class="btn primary" data-close>${esc(okLabel)}</button></footer></div>`;
+    const done = () => { confirmDialog.close(); resolve(); };
+    confirmDialog.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', done));
+    confirmDialog.querySelector('[data-copy]').addEventListener('click', async () => { try { await navigator.clipboard.writeText(secret); confirmDialog.querySelector('[data-copy]').textContent = 'Copiado'; } catch { window.prompt('Copia el valor:', secret); } });
+    confirmDialog.oncancel = ev => { ev.preventDefault(); done(); };
+    confirmDialog.showModal();
+    confirmDialog.querySelector('[data-copy]').focus();
+  });
+}

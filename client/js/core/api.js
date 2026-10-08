@@ -58,6 +58,7 @@ export const setup = body => req('POST', '/setup', body);
 export const login = (email, password) => req('POST', '/auth/login', { email, password });
 export const logout = () => req('POST', '/auth/logout');
 export const getMe = () => req('GET', '/me');
+export const patchMe = body => req('PATCH', '/me', body); // P3: { name? , currentPassword?, newPassword? }
 export const getInvite = token => req('GET', `/invites/${encodeURIComponent(token)}`);
 export const acceptInvite = body => req('POST', '/invites/accept', body);
 export const createInvite = body => req('POST', '/invites', body);

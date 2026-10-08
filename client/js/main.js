@@ -25,6 +25,7 @@ import { computeLayout, autoLayout } from './canvas/layout.js';
 import { applyTheme, openShortcuts } from './ui/theme.js';
 import { openMyAssignments, goToNode } from './views/me.js';
 import { refreshCells } from './views/cells.js';
+import { openAccountDialog } from './views/account.js'; // P3
 import './canvas/keyboard.js'; // solo efectos (listeners)
 $('#btnNew').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(); showNewMenu(r.left, r.bottom + 4); });
 $('#btnLayout').addEventListener('click', autoLayout);
@@ -54,10 +55,12 @@ async function authenticate() {
     return null; // sin servidor: bootstrap() entra en modo local
   }
 }
+const chipHTML = () => `<b>${esc(S.session.user.name || S.session.user.email)}</b><span class="role">${esc(ROLE_LABEL[S.session.role] || S.session.role)}</span>`;
 function renderUserChip() {
   if (!S.session || $('#userChip')) return;
-  const chip = document.createElement('span'); chip.className = 'user-chip'; chip.id = 'userChip';
-  chip.innerHTML = `<b>${esc(S.session.user.name || S.session.user.email)}</b><span class="role">${esc(ROLE_LABEL[S.session.role] || S.session.role)}</span>`;
+  const chip = document.createElement('button'); chip.className = 'user-chip'; chip.id = 'userChip'; chip.type = 'button'; chip.title = 'Mi cuenta (nombre, contraseña)'; // P3
+  chip.innerHTML = chipHTML();
+  chip.addEventListener('click', openAccountDialog);
   const out = document.createElement('button'); out.className = 'btn'; out.id = 'btnLogout'; out.title = 'Cerrar sesión'; out.textContent = 'Salir';
   out.addEventListener('click', async () => { await api.logout().catch(() => {}); location.hash = '#/login'; location.reload(); });
   const me = document.createElement('button'); me.className = 'btn'; me.id = 'btnMe'; me.title = 'Mis asignaciones'; me.innerHTML = '★ <span class="hide-sm">Mías</span>'; // F3
@@ -142,6 +145,7 @@ export async function init() {
 // F1: tras un 409 state.js recarga el documento del servidor y avisa aquí para repintar.
 document.addEventListener('destree:reload', () => { clearSelection(); applyTheme(); applySettingsUI(); renderAll(); applyCamera(); renderPageButton(); });
 document.addEventListener('destree:page-meta', renderPageButton); // F4b
+document.addEventListener('destree:account', () => { const c = $('#userChip'); if (c && S.session) c.innerHTML = chipHTML(); }); // P3: nombre cambiado
 document.addEventListener('destree:load-page', e => loadPage(e.detail.pageId)); // F6a: recarga tras restaurar una versión
 init();
 

@@ -12,6 +12,10 @@
 .auth-card .btn.primary { justify-content: center; padding: 8px 12px; }
 .user-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--fg-2); white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
 .user-chip b { color: var(--fg); font-weight: 500; }
+button.user-chip { background: none; border: 1px solid transparent; border-radius: 8px; padding: 3px 6px; cursor: pointer; font: inherit; } /* P3: abre Mi cuenta */
+button.user-chip:hover, button.user-chip:focus-visible { border-color: var(--border); background: var(--bg); }
+.account-dialog h3 { margin: 18px 0 8px; font-size: 14px; }
+.account-form .form-error { color: var(--danger); font-size: 12.5px; min-height: 1em; margin: 4px 0; }
 .user-chip .role { font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
 .invite-link { display: flex; gap: 6px; margin: 8px 0 4px; }
 .invite-link input { flex: 1; font-family: var(--mono); font-size: 12px; }

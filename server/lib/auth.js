@@ -66,6 +66,9 @@ export function resolveSession(db, token) {
 }
 export function deleteSession(db, token) { if (token) db.prepare('DELETE FROM sessions WHERE id = ?').run(sha256(token)); }
 export function deleteUserSessions(db, userId) { db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId); }
+/** P3: cierra las demás sesiones del usuario (conserva la del token actual). Devuelve cuántas cerró. */
+export function deleteOtherSessions(db, userId, keepToken) { return db.prepare('DELETE FROM sessions WHERE user_id = ? AND id != ?').run(userId, sha256(String(keepToken || ''))).changes; }
+export function setPassword(db, userId, password) { db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(password), userId); }
 
 /* --- Invitaciones --- */
 export function createInvite(db, { orgId = DEFAULT_ORG_ID, email, role, cellIds = [], invitedBy }) {

@@ -5,7 +5,8 @@ import { $, esc } from '../core/utils.js';
 import { S } from '../core/state.js';
 import * as api from '../core/api.js';
 import { toast } from '../ui/theme.js';
-import { confirmBox } from '../ui/dialogs.js';
+import { confirmBox, secretBox } from '../ui/dialogs.js';
+import { tempPassword } from './account.js'; // P3
 import { ROLE_LABEL } from './auth-views.js';
 
 const has = p => !!S.session && S.session.permissions.includes(p);
@@ -66,9 +67,17 @@ async function renderUsers(body) {
     const row = document.createElement('div'); row.className = 'row' + (u.isActive ? '' : ' inactive');
     row.innerHTML = `<span class="grow"><b>${esc(u.name || u.email)}</b>${self ? ' (tú)' : ''}<br><span class="count">${esc(u.email)} · ${u.isActive ? 'último acceso ' + fmtDate(u.lastLoginAt) : 'desactivado'}</span></span>
       <select ${self || !u.isActive ? 'disabled' : ''}>${['designer', 'head', 'admin'].map(r => `<option value="${r}" ${r === u.role ? 'selected' : ''}>${ROLE_LABEL[r]}</option>`).join('')}</select>
+      ${self || !u.isActive ? '' : '<button class="icon-btn" data-reset title="Restablecer contraseña" aria-label="Restablecer contraseña">🔑</button>'}
       ${self ? '' : `<button class="btn ${u.isActive ? 'danger' : ''}">${u.isActive ? 'Desactivar' : 'Activar'}</button>`}`;
     row.querySelector('select').addEventListener('change', async e => {
       try { await api.updateUser(u.id, { role: e.target.value }); toast(`Rol de ${u.email}: ${ROLE_LABEL[e.target.value]}`); renderUsers(body); } catch (err) { toast(err.message, 'error', 5000); renderUsers(body); }
+    });
+    row.querySelector('[data-reset]')?.addEventListener('click', async () => { // P3: contraseña temporal, visible una sola vez
+      const ok = await confirmBox({ title: 'Restablecer contraseña', message: `Se fijará una contraseña temporal para ${u.email} y se cerrarán sus sesiones. Deberás pasársela por un canal seguro.`, buttons: [{ label: 'Cancelar', value: '' }, { label: 'Restablecer', value: 'ok', kind: 'primary' }] });
+      if (!ok) return;
+      const pw = tempPassword();
+      try { await api.updateUser(u.id, { password: pw }); } catch (err) { toast(err.message, 'error', 5000); return; }
+      await secretBox({ title: 'Contraseña temporal', message: `Nueva contraseña de ${u.email}. Se muestra una sola vez: cópiala y compártela; la persona podrá cambiarla desde su chip de usuario.`, secret: pw });
     });
     const btn = row.querySelector('.btn');
     if (btn) btn.addEventListener('click', async () => {

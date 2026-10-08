@@ -31,7 +31,7 @@ await send('Browser.setDownloadBehavior', { behavior: 'deny' }).catch(() => {});
 const ev = async (expr) => { const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error('eval: ' + (r.exceptionDetails.exception?.description || r.exceptionDetails.text)); return r.result.value; };
 const mouse = async (type, x, y, extra = {}) => send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1, pointerType: 'mouse', ...extra });
 const drag = async (x1, y1, x2, y2) => { await mouse('mousePressed', x1, y1); for (let i = 1; i <= 6; i++) await mouse('mouseMoved', x1 + (x2 - x1) * i / 6, y1 + (y2 - y1) * i / 6, { buttons: 1 }); await sleep(50); await mouse('mouseReleased', x2, y2); await sleep(60); };
-const key = async (k, code, modifiers = 0, text) => { await send('Input.dispatchKeyEvent', { type: text ? 'keyDown' : 'rawKeyDown', key: k, code, modifiers, text, windowsVirtualKeyCode: k.length === 1 ? k.toUpperCase().charCodeAt(0) : undefined }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, modifiers }); await sleep(40); };
+const key = async (k, code, modifiers = 0, text) => { await send('Input.dispatchKeyEvent', { type: text ? 'keyDown' : 'rawKeyDown', key: k, code, modifiers, text, windowsVirtualKeyCode: k.length === 1 ? k.toUpperCase().charCodeAt(0) : k === 'Escape' ? 27 : undefined }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code, modifiers }); await sleep(40); };
 const META = 4, SHIFT = 8;
 const results = [];
 const step = async (name, fn) => { try { const v = await fn(); drain(); results.push(`✔ ${name}${v !== undefined ? ' → ' + JSON.stringify(v) : ''}`); } catch (e) { drain(); results.push(`✖ ${name}: ${e.message}`); } };
@@ -369,12 +369,38 @@ await step('F3: designer → doble clic abre ficha; raíz solo-células oculta (
   await ev(`document.querySelector('#nodeDrawer [data-cancel]')?.click(); true`);
   return r;
 });
+await step('P3: chip de usuario → Mi cuenta → cambiar contraseña (designer) → Escape cierra', async () => {
+  await ev(`document.querySelector('#userChip').click(); true`); await sleep(150);
+  const open = await ev(`document.querySelector('#confirmDialog').open && !!document.querySelector('#accPassword')`);
+  if (!open) throw new Error('no se abrió Mi cuenta');
+  await ev(`(() => { const f = document.querySelector('#accPassword'); f.currentPassword.value = 'smoke-1234'; f.newPassword.value = 'smoke-5678'; f.repeatPassword.value = 'smoke-9999'; f.requestSubmit(); return true; })()`); await sleep(150);
+  const mismatch = await ev(`document.querySelector('#accPassword .form-error').textContent`);
+  await ev(`(() => { const f = document.querySelector('#accPassword'); f.currentPassword.value = 'smoke-1234'; f.newPassword.value = 'smoke-5678'; f.repeatPassword.value = 'smoke-5678'; f.requestSubmit(); return true; })()`); await sleep(900);
+  const err = await ev(`document.querySelector('#accPassword .form-error').textContent`);
+  await key('Escape', 'Escape'); await sleep(150);
+  const closed = await ev(`!document.querySelector('#confirmDialog').open`);
+  const relogin = await ev(`fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'des@smoke.io', password: 'smoke-5678' }) }).then(r => r.status)`);
+  return { mismatch: !!mismatch, err, closed, relogin, chipIsButton: await ev(`document.querySelector('#userChip').tagName`) };
+});
 await step('logout → login (admin)', async () => {
   await ev(`document.querySelector('#btnLogout').click(); true`); await sleep(1200);
   const login = await ev(`!document.querySelector('#authView').hidden && !!document.querySelector('#authView [name=password]') && !document.querySelector('#authView [name=orgName]')`);
   if (!login) throw new Error('no apareció el login');
   await fill([['email', 'ana@smoke.io'], ['password', 'smoke-1234']]); await sleep(1200);
   return ev(`({ role: S.session.role, ro: S.readonly, hash: location.hash, nodes: S.state.nodes.length })`);
+});
+await step('P3: admin → #/admin Usuarios → 🔑 restablecer contraseña de Dani → temporal visible una vez → entra con ella', async () => {
+  await ev(`location.hash = '#/admin/users'; true`); await sleep(900);
+  const btn = await ev(`[...document.querySelectorAll('#userRows .row')].find(r => r.textContent.includes('des@smoke.io'))?.querySelector('[data-reset]') ? true : false`);
+  if (!btn) throw new Error('sin botón 🔑 en la fila del designer');
+  await ev(`[...document.querySelectorAll('#userRows .row')].find(r => r.textContent.includes('des@smoke.io')).querySelector('[data-reset]').click(); true`); await sleep(150);
+  await ev(`document.querySelector('#confirmDialog footer .btn.primary').click(); true`); await sleep(900);
+  const pw = await ev(`document.querySelector('#confirmDialog .invite-link input')?.value || ''`);
+  if (!/^[A-Za-z2-9]{14}$/.test(pw)) throw new Error('temporal inválida: ' + pw);
+  await key('Escape', 'Escape'); await sleep(150);
+  const login = await ev(`fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'des@smoke.io', password: ${JSON.stringify(pw)} }) }).then(r => r.status)`);
+  await ev(`location.hash = ''; true`); await sleep(300);
+  return { login, closed: await ev(`!document.querySelector('#confirmDialog').open`), role: await ev(`S.session.role`) };
 });
 drain();
 console.log(results.join('\n'));

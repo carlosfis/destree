@@ -3,7 +3,7 @@
 Base `/api`. JSON. Errores: `{ error, message, errors?, version?, setup? }` con `error` ∈ `validation|unauthorized|forbidden|not_found|conflict|gone|rate_limited|error`.
 Auth: cookie `destree_sid` (HttpOnly, SameSite=Lax, `Secure` si `TRUST_PROXY`), 30 días. Sin sesión → 401 (`setup:true` si aún no hay usuarios). Rol sin la acción → 403.
 Cada ruta lleva `app.guard('action')` (hook onRequest; matriz en `server/lib/permissions.js`). Mutaciones (`POST/PUT/PATCH/DELETE`) pasan por origin-check: `Origin`/`Referer` debe coincidir con `Host`; rutas con `config.skipOriginCheck` exentas.
-Rate-limit (10/15 min por IP → 429) en `/setup`, `/auth/login`, `/invites/accept`. Toda escritura deja fila en `audit_log`.
+Rate-limit (10/15 min por IP → 429) en `/setup`, `/auth/login`, `/invites/accept`, `PATCH /me`. Toda escritura deja fila en `audit_log`.
 Validación: JSON Schema de `/schema` vía Ajv (`strict:false`, `allErrors`, ajv-formats). 400 → `errors: [{ path, message, keyword, params }]`.
 
 | Método | Ruta | Acción | Cuerpo / cabeceras | Respuesta |
@@ -14,6 +14,7 @@ Validación: JSON Schema de `/schema` vía Ajv (`strict:false`, `allErrors`, ajv
 | POST | `/api/auth/login` | pública | `{ email, password }` | me + cookie · 401 credenciales · 403 cuenta desactivada |
 | POST | `/api/auth/logout` | sesión | — | 204, borra cookie |
 | GET | `/api/me` | pages.read | — | `{ user{id,email,name}, org{id,name,slug}, role, permissions[], cellIds[], cells[{id,name,color}] }` |
+| PATCH | `/api/me` | pages.read (cualquier rol) | `{ name? }` y/o `{ currentPassword, newPassword≥8 }` | me + `sessionsClosed` · 400 falta la actual o la nueva · 403 actual incorrecta. Cambiar la contraseña cierra las demás sesiones (la actual sigue); audit `user.password` (sin la contraseña) |
 | POST | `/api/invites` | invite (head: solo designer, solo a sus células) | `{ email, role, cellIds? }` | 201 `{ id, email, role, cellIds, expiresAt, link, emailSent:false }` · 409 correo con cuenta · 400 célula desconocida. Al aceptar, el usuario entra en `cell_members` |
 | GET | `/api/invites` | invite | — | `{ invites: [{ id, email, role, cellIds, invitedBy, expiresAt, createdAt }] }` (pendientes) |
 | DELETE | `/api/invites/:id` | invite | — | 204 · 404 |
