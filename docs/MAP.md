@@ -3,10 +3,10 @@
 Una línea por archivo. Actualizar al crear/mover archivos.
 
 ## Raíz
-- `SECURITY.md` — política de reporte de vulnerabilidades y versiones soportadas (P4/P6). `CLAUDE.md` — instrucciones del proyecto (≤60 líneas). `PENDIENTE.md` — fases pendientes y seguimiento (único registro del trabajo restante). `README.md` — presentación, instalación, roles, roadmap. `CHANGELOG.md`, `CONTRIBUTING.md`, `LICENSE` (MIT).
+- `README.en.md` — traducción fiel del README (enlace cruzado en ambas cabeceras). `CODE_OF_CONDUCT.md` — Contributor Covenant 2.1 en español. `SECURITY.md` — política de reporte de vulnerabilidades y versiones soportadas (P4/P6). `CLAUDE.md` — instrucciones del proyecto (≤60 líneas). `PENDIENTE.md` — fases pendientes y seguimiento (único registro del trabajo restante). `README.md` — presentación, instalación, roles, roadmap. `CHANGELOG.md`, `CONTRIBUTING.md`, `LICENSE` (MIT).
 - `Dockerfile` (multi-stage, usuario node, healthcheck), `.dockerignore`, `docker-compose.yml` (volumen `./data`; perfil `https` con Caddy), `docker/Caddyfile`.
 - `.github/workflows/ci.yml` (lint+test), `release.yml` (tag v* → GHCR multi-arch + Release), `.github/ISSUE_TEMPLATE/`.
-- `package.json` — `"type": "module"`; deps fastify, @fastify/static, ajv-formats, sharp (nativa); scripts dev/start/test/migrate/import/backup/lint.
+- `package.json` — `"type": "module"`; deps fastify 5, @fastify/static 10, ajv-formats, sharp 0.35 (nativa); scripts dev/start/test/migrate/import/backup/lint.
 - `.env.example` — variables (sin secretos; `TRUST_PROXY`; `UPLOADS_DIR`; `VERSIONS_KEEP`/`VERSIONS_COALESCE_MIN`; `BACKUP_CRON`/`BACKUP_KEEP`/`BACKUPS_DIR`). `.gitignore` — `data/`, `.env`, `export-actual.json`.
 - `export-actual.json` — datos reales del usuario (gitignored; importados en `data/destree.db`; fixture `tests/fixtures/legacy-v2.json`).
 
@@ -87,6 +87,7 @@ Una línea por archivo. Actualizar al crear/mover archivos.
 
 ## scripts/
 - `lint.js` — `node --check` de todos los .js. `migrate.js` — aplica migraciones + seed. `import.js` — `node scripts/import.js archivo.json [pageId]` (ingiere dataURLs).
+- `screenshots.js` — capturas `docs/img/{canvas,drawer,lobby}.png` para el README (Chrome headless + CDP, servidor con BD temporal y datos de ejemplo; `SCALE=2` para retina).
 - `backup.js` — respaldo manual sin API. `restore.js` — restaura un tar.gz con el servidor parado. `smoke.js` — checklist en Chrome headless vía CDP sobre Fastify con DB temporal (setup, lienzo, célula/editor/ficha/#/me, lobby/cambio de página, #/admin + pestaña Página, upload/ingesta, historial, respaldos, estado vacío + Escape, viewport 360×740 sin desborde, invitación→designer readonly + ficha, P3 Mi cuenta (cambio de contraseña) y 🔑 restablecer, logout/login; consola limpia).
 
 ## tests/
@@ -103,6 +104,7 @@ Una línea por archivo. Actualizar al crear/mover archivos.
 - `fixtures/legacy-v2.json` — `export-actual.json` anonimizado (11 nodos, 9 aristas, v2).
 
 ## docs/
+- `img/` — capturas del README (`canvas.png`, `drawer.png`, `lobby.png`), generadas por `scripts/screenshots.js`.
 - `MAP.md` — este archivo. `DECISIONS.md` — append-only. `API.md` — endpoints. `SECURITY.md` — modelo de amenazas, medidas y cabeceras (P6). `INSTALL.md` (instalación, variables, actualización), `ADMIN.md` (administración), `USER.md` (uso del lienzo), 
 
 ## promo/ (motion graphics)

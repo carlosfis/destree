@@ -1,5 +1,7 @@
 # DesTree
 
+🇬🇧 [English version](README.en.md)
+
 Fuente única de verdad para agencias y equipos de producto: un lienzo con el **árbol de software** (aplicaciones → features → variantes), sus **Design Systems y UI Kits**, responsables, equipos (células), documentación y versiones. Autoalojado, multi-página, con roles admin / head / designer.
 
 - **Lienzo**: contenedores anidados (ramificaciones), DS y UI Kits dentro de cada software, conexiones "usa DS" y "deriva de", etiquetas, auto-layout, minimapa, undo/redo.
@@ -9,6 +11,13 @@ Fuente única de verdad para agencias y equipos de producto: un lienzo con el **
 - **Sin dependencias pesadas**: Node 22 + Fastify 5 + SQLite (`node:sqlite`), cliente vanilla ESM sin bundler. Única dependencia nativa: `sharp`.
 
 > Figma (métricas, thumbnails, webhooks) queda fuera del producto: la app es completa sin ello; los enlaces a archivos de Figma se añaden a mano en Documentación.
+
+## Un vistazo
+| Lienzo | Sidebar de instancia | Lobby de páginas |
+|---|---|---|
+| ![Lienzo con el árbol de software, Design Systems y UI Kits](docs/img/canvas.png) | ![Sidebar de una Main instance: tipo, nombre, imagen, etiquetas y relaciones](docs/img/drawer.png) | ![Lobby con varias páginas](docs/img/lobby.png) |
+
+▶ **Vídeo de presentación** (84 s): pendiente de publicar; se genera con `node promo/render.js`.
 
 ## Instalación rápida (Docker)
 ```
@@ -46,10 +55,10 @@ Docker: `docker compose pull && docker compose up -d` (o `--build` si clonaste).
 | Borrar/restaurar páginas, respaldos, audit log | ✓ | — | — |
 
 ## Documentación
-`docs/INSTALL.md` (instalación y variables) · `docs/ADMIN.md` (administración) · `docs/USER.md` (uso del lienzo) · `docs/API.md` · `docs/MAP.md` (mapa del código) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CHANGELOG.md` · `PENDIENTE.md` (roadmap detallado por fases).
+`docs/INSTALL.md` (instalación y variables) · `docs/ADMIN.md` (administración) · `docs/USER.md` (uso del lienzo) · `docs/API.md` · `docs/SECURITY.md` (modelo de amenazas y cabeceras) · `docs/MAP.md` (mapa del código) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CODE_OF_CONDUCT.md` · `SECURITY.md` (reportar vulnerabilidades) · `CHANGELOG.md` · `PENDIENTE.md` (roadmap detallado por fases).
 
 ## Roadmap
-Orden previsto (detalle y estado en `PENDIENTE.md`): cambio de contraseña propio y restablecimiento desde Administración · correo SMTP para invitaciones y recuperación · cabeceras de seguridad y CSP · README en inglés, capturas y vídeo · v1.0.0. Fuera de alcance por ahora: integración con Figma, SSO/OAuth.
+Hecho: cambio de contraseña propio y restablecimiento desde Administración · cabeceras de seguridad y CSP estricta · README en inglés y capturas. Pendiente (detalle y estado en `PENDIENTE.md`): vídeo publicado · correo SMTP para invitaciones y recuperación de contraseña · v1.0.0. Fuera de alcance por ahora: integración con Figma, SSO/OAuth.
 
 ## Licencia
 MIT — ver `LICENSE`.

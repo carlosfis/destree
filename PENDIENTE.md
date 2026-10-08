@@ -38,16 +38,16 @@
 - [x] Docs: `docs/ADMIN.md` (quitar la mención a curl), `docs/API.md`, `docs/USER.md`.
 **Aceptación:** un designer cambia su contraseña y vuelve a entrar; un admin restablece la de otro usuario desde la UI; tests verdes. Cumplida: 26 tests (`tests/account.test.js` nuevo), lint OK, smoke 29/29 con dos pasos P3 (designer cambia contraseña desde el chip; admin restablece y la temporal entra).
 
-## P4 — Publicación a la comunidad (mixto)
+## P4 — Publicación a la comunidad (mixto) — parte del agente hecha 2026-10-07
 **Objetivo:** que alguien que llega al repo entienda qué es, lo vea y lo instale sin ayuda.
 - [x] Repo público (comprobado 2026-10-07).
 - [ ] «usuario» Descripción del repo (aún dice «métricas Figma»), topics y Discussions. El agente no tiene permiso para escribir en GitHub; ejecutar:
   `gh repo edit carlosfis/destree --description "Fuente única de verdad para agencias: árbol de software, Design Systems, UI Kits, responsables y documentación. Autoalojado (Node 22 + SQLite), roles admin/head/designer." --add-topic design-systems --add-topic design-ops --add-topic self-hosted --add-topic fastify --add-topic sqlite --add-topic agency --enable-discussions`
-- [ ] «usuario» Subir el vídeo promo (`node promo/render.js` → `promo/destree-motion.mp4`) a YouTube/Vimeo o como asset de la release y pasar el enlace.
-- [ ] Agente: 2–3 capturas (lienzo, drawer, lobby) en `docs/img/` tomadas con el smoke o Chrome headless, enlazadas en el README junto al vídeo.
-- [ ] Agente: `README.en.md` (traducción fiel del README) y enlace cruzado en la cabecera de ambos.
-- [x] Agente: `SECURITY.md` (hecho en P6, 2026-10-07). [ ] `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 en español).
-- [ ] Agente: `npm audit --omit=dev` sin high/critical (requiere red); anotar resultado en `CHANGELOG.md`.
+- [ ] «usuario» Subir el vídeo promo (`node promo/render.js` → `promo/destree-motion.mp4`) a YouTube/Vimeo o como asset de la release y pasar el enlace; el agente sustituye la línea «pendiente de publicar» en README y README.en.
+- [x] Agente: capturas `docs/img/{canvas,drawer,lobby}.png` (`node scripts/screenshots.js`) enlazadas en README y README.en; el vídeo queda como línea «pendiente de publicar» hasta que el usuario pase el enlace.
+- [x] Agente: `README.en.md` (traducción fiel del README) y enlace cruzado en la cabecera de ambos.
+- [x] Agente: `SECURITY.md` (hecho en P6) y `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 en español, contacto = correo del mantenedor).
+- [x] Agente: `npm audit --omit=dev` → había 2 high (`@fastify/static` ≤10.1.1, `sharp` <0.35.5); actualizados a 10.1.5 y 0.35.5, 0 vulnerabilidades; tests/smoke verdes; anotado en `CHANGELOG.md`.
 - [ ] «usuario» Decidir idioma de la UI a futuro (solo español hoy; i18n sería una fase propia) y si se borran los tags remotos `f5`, `f6a`, `f6b`, `f7` (rastro de fases; no afectan a nada).
 **Aceptación:** README con imagen y vídeo, versión en inglés, archivos de comunidad presentes, paquete e imagen descargables sin login.
 
@@ -90,6 +90,7 @@
 ---
 
 ## Resueltos
+- 2026-10-07 P4 (agente): capturas + `scripts/screenshots.js`, `README.en.md`, `CODE_OF_CONDUCT.md`, audit limpio tras actualizar `@fastify/static` y `sharp`.
 - 2026-10-07 P6 Hardening: cabeceras + CSP estricta (sin inline), logs sin secretos, rate-limit por cupos, purga de sesiones, cerrar las demás sesiones, cierre ordenado SIGTERM, `tests/e2e.test.js`, `docs/SECURITY.md` + `SECURITY.md`.
 - 2026-10-07 P3 Contraseñas: `PATCH /api/me` (name, contraseña con verificación de la actual, cierra las demás sesiones, rate-limit), diálogo «Mi cuenta» desde el chip, 🔑 «Restablecer contraseña» en Administración → Usuarios (temporal mostrada una vez), docs y smoke.
 - 2026-10-07 P2 (parte verificable): Docker Desktop instalado; clone limpio + `compose up --build` + health + setup + `down/up` conserva datos + `pull` GHCR, todo OK.

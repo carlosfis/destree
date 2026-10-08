@@ -18,9 +18,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@fastify/static": "^8.3.0",
+    "@fastify/static": "^10.1.5",
     "ajv-formats": "^3.0.1",
     "fastify": "^5.12.5",
-    "sharp": "^0.33.5"
+    "sharp": "^0.35.5"
   }
 }
