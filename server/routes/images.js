@@ -4,6 +4,9 @@ import { storeImage, deleteImage, getImage, imageVisibleFor, filesOf, MAX_BYTES 
 import { visibilityCtx } from '../lib/cells.js';
 import { audit } from '../lib/audit.js';
 import { HttpError } from '../lib/pages.js';
+import { rateLimit } from '../lib/auth.js';
+
+const limitedUpload = async (req) => rateLimit(req.ip, { max: 60, windowMs: 60e3, bucket: 'images' }); // P6
 
 const idParam = { type: 'object', required: ['id'], properties: { id: { type: 'string', minLength: 1, maxLength: 64 } } };
 
@@ -11,7 +14,7 @@ export default async function imageRoutes(app) {
   // Cuerpo binario: la UI envía el File tal cual (Content-Type del archivo). Sin dependencia multipart.
   app.addContentTypeParser(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/gif', 'application/octet-stream'], { parseAs: 'buffer', bodyLimit: MAX_BYTES + 1024 }, (req, body, done) => done(null, body));
 
-  app.post('/api/images', { onRequest: app.guard('pages.edit'), schema: { querystring: { type: 'object', properties: { kind: { enum: ['node', 'page'] }, filename: { type: 'string', maxLength: 200 } } } } }, async (req, reply) => {
+  app.post('/api/images', { onRequest: [app.guard('pages.edit'), limitedUpload], schema: { querystring: { type: 'object', properties: { kind: { enum: ['node', 'page'] }, filename: { type: 'string', maxLength: 200 } } } } }, async (req, reply) => {
     if (!Buffer.isBuffer(req.body)) throw new HttpError(415, 'Envía la imagen como cuerpo binario con su Content-Type (image/png, image/jpeg, image/webp o image/svg+xml)');
     const img = await storeImage(app.db, app.uploadsDir, { buffer: req.body, orgId: req.orgId, kind: req.query.kind || 'node', createdBy: req.user.id, filename: req.query.filename || '' });
     audit(app.db, { orgId: req.orgId, userId: req.user.id, action: 'image.upload', entity: 'image', entityId: img.id, meta: { bytes: img.bytes, width: img.width, height: img.height } });

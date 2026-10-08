@@ -7,6 +7,8 @@ export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const uid = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/** P6 (CSP sin 'unsafe-inline'): tras asignar innerHTML, pasa data-style="…" a estilos vía CSSOM (permitido por CSP). */
+export function applyDataStyles(root) { for (const el of root.querySelectorAll('[data-style]')) { el.style.cssText = el.dataset.style; el.removeAttribute('data-style'); } return root; }
 export const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 export const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 export const MOD = isMac ? '⌘' : 'Ctrl';

@@ -1,7 +1,7 @@
 /* =========================================================
    16. Ajustes de página (drawer): etiquetas, ramificaciones, responsables, datos, ajustes; F4b: pestaña Página (nombre, visibilidad, células)
    ========================================================= */
-import { $, $$, uid, esc, MOD, TAG_COLORS, TYPE_META } from '../core/utils.js';
+import { $, $$, uid, esc, MOD, TAG_COLORS, TYPE_META, applyDataStyles } from '../core/utils.js';
 import { viewport } from '../core/dom.js';
 import {
   S, defaultState, demoData, normalizeState, save, nodeById, roots, descendantsOf, typeName, typeNames,
@@ -47,7 +47,7 @@ export function renderTypesTab(body) {
   const rows = $('#typeRows', body);
   for (const [k, m] of Object.entries(TYPE_META)) {
     const row = document.createElement('div'); row.className = 'row';
-    row.innerHTML = `<span class="swatch" style="background:${m.color}"></span><div class="grow"><input class="inline" maxlength="40" value="${esc(typeName(k))}" placeholder="${esc(m.label)}" style="width:100%"><div class="hint">${rules[k]}</div></div>`;
+    row.innerHTML = `<span class="swatch" data-style="background:${m.color}"></span><div class="grow"><input class="inline" maxlength="40" value="${esc(typeName(k))}" placeholder="${esc(m.label)}" data-style="width:100%"><div class="hint">${rules[k]}</div></div>`; applyDataStyles(row);
     row.querySelector('input').addEventListener('change', e => { const v = e.target.value.trim().slice(0, 40) || m.label; e.target.value = v; pushHistory(); typeNames()[k] = v; applyTypeNames(); renderAll(); save(); renderAdmin(); toast(`Tipo renombrado a "${v}"`); });
     rows.appendChild(row);
   }
@@ -76,7 +76,7 @@ export function renderPageTab(body) {
       <div class="check-list" id="pageCells" ${p.visibility === 'cells' ? '' : 'hidden'}>${cells.length ? cells.map(c => `<label><input type="checkbox" value="${c.id}" ${(p.cellIds || []).includes(c.id) ? 'checked' : ''}><span class="t-dot tag-${esc(c.color)}"></span>${esc(c.name)}</label>`).join('') : '<div class="empty">No hay células (Administración → Células).</div>'}</div>
       <div class="hint">Una página solo-células la ven sus miembros y quienes tengan cards asignadas en ella. Admin y head la ven siempre.</div></div>
     <div class="inline-actions"><button class="btn primary" type="submit">Guardar</button>${S.session?.permissions.includes('pages.archive') ? '<button class="btn" type="button" id="pageArchive">Archivar página</button>' : ''}</div></form>
-    <p style="margin-top:12px">Versión ${S.version} · ${roots().length} raíces · ${S.state.nodes.length} cards.</p>`;
+    <p data-style="margin-top:12px">Versión ${S.version} · ${roots().length} raíces · ${S.state.nodes.length} cards.</p>`; applyDataStyles(body);
   $('#pageVis', body).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; $$('#pageVis button', body).forEach(x => x.classList.toggle('active', x === b)); $('#pageCells', body).hidden = b.dataset.v !== 'cells'; });
   $('#pageMetaForm', body).addEventListener('submit', async e => {
     e.preventDefault(); const f = e.currentTarget;
@@ -164,7 +164,7 @@ export function renderOwnersTab(body) {
   if (!owners.length) rows.innerHTML = '<div class="empty">Ninguna card tiene responsable.</div>';
   for (const [owner, count] of owners) {
     const row = document.createElement('div'); row.className = 'row';
-    row.innerHTML = `<span class="owner chip tag-gray" style="font-family:var(--mono)">${esc(owner)}</span><span class="grow"></span><span class="count">${count} card${count === 1 ? '' : 's'}</span><button class="btn">Renombrar</button>`;
+    row.innerHTML = `<span class="owner chip tag-gray" data-style="font-family:var(--mono)">${esc(owner)}</span><span class="grow"></span><span class="count">${count} card${count === 1 ? '' : 's'}</span><button class="btn">Renombrar</button>`; applyDataStyles(row);
     row.querySelector('.btn').addEventListener('click', async () => {
       const v = await promptBox({ title: 'Renombrar responsable', label: `Nuevo nombre para ${owner} (${count} cards)`, value: owner, okLabel: 'Renombrar' });
       if (v === null) return; const nv = normalizeOwner(v);
@@ -181,11 +181,11 @@ export function renderDataTab(body) {
   const demoCount = S.state.nodes.filter(n => n.demo).length;
   body.innerHTML = `<h3>Respaldo</h3><p>${S.offline ? 'localStorage es frágil (se borra al limpiar el navegador). Exporta un JSON periódicamente.' : 'El JSON exportado incrusta las imágenes (portable entre instalaciones).'} Importar reemplaza todo el estado actual.</p>
     <div class="inline-actions"><button class="btn primary" id="btnExport">⤓ Exportar JSON</button><button class="btn" id="btnCopy">Copiar JSON</button><button class="btn" id="btnImport">⤒ Importar JSON</button></div>
-    <p style="margin-top:10px">Tamaño actual: <b>${(bytes / 1024).toFixed(1)} KB</b> · ${roots().length} raíces · ${S.state.nodes.length} cards · ${S.state.edges.length} conexiones · ${S.state.nodes.filter(n => n.image || n.imageId).length} con imagen.</p>
+    <p data-style="margin-top:10px">Tamaño actual: <b>${(bytes / 1024).toFixed(1)} KB</b> · ${roots().length} raíces · ${S.state.nodes.length} cards · ${S.state.edges.length} conexiones · ${S.state.nodes.filter(n => n.image || n.imageId).length} con imagen.</p>
     <h3>Datos de ejemplo</h3><p>${demoCount ? `Hay ${demoCount} cards de ejemplo en el lienzo.` : 'No hay cards de ejemplo cargadas.'}</p>
     <div class="inline-actions"><button class="btn" id="btnLoadDemo">Cargar ejemplos</button><button class="btn danger" id="btnClearDemo" ${demoCount ? '' : 'disabled'}>Borrar ejemplos</button></div>
     <h3>Zona de peligro</h3><p>Elimina todas las cards, conexiones, etiquetas y tipos, y restaura los valores iniciales.</p>
-    <button class="btn danger" id="btnClearAll">Borrar todo</button>`;
+    <button class="btn danger" id="btnClearAll">Borrar todo</button>`; applyDataStyles(body);
   $('#btnExport', body).addEventListener('click', exportJSON);
   $('#btnCopy', body).addEventListener('click', async () => { try { await navigator.clipboard.writeText(exportString()); toast('JSON copiado al portapapeles'); } catch { toast('No se pudo copiar', 'error'); } });
   $('#btnImport', body).addEventListener('click', () => $('#importFile').click());

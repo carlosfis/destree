@@ -2,7 +2,7 @@
    14. Editor de instancia (crear / editar) en el sidebar #nodeDrawer, por pestañas:
    General (tipo, nombre, contenedor, descripción, imagen, etiquetas, relaciones) · Staff · Documentación · Notas
    ========================================================= */
-import { $, $$, uid, esc, TYPE_META, TAG_COLORS } from '../core/utils.js';
+import { $, $$, uid, esc, TYPE_META, TAG_COLORS, applyDataStyles } from '../core/utils.js';
 import {
   S, save, nodeById, tagById, isContainer, childrenOf, sourceEdgeOf, dsOf, defaultBranchType, parentOf,
   rootOf, isAncestor, worldPos, typeName,
@@ -55,7 +55,7 @@ export function openEditor(id, preset = {}) {
   const T = { software: esc(typeName('software')), ds: esc(typeName('ds')), uikit: esc(typeName('uikit')) };
 
   const panes = {
-    general: `<div class="field"><label>Tipo</label><div class="type-picker" id="fType">${Object.entries(TYPE_META).map(([k, m]) => `<button type="button" data-v="${k}" class="${k === draft.type ? 'active' : ''}" title="${esc(m.desc)}"><span class="t"><span class="dot" style="background:${m.color}"></span>${T[k]}</span><span class="d">${m.desc}</span></button>`).join('')}</div>
+    general: `<div class="field"><label>Tipo</label><div class="type-picker" id="fType">${Object.entries(TYPE_META).map(([k, m]) => `<button type="button" data-v="${k}" class="${k === draft.type ? 'active' : ''}" title="${esc(m.desc)}"><span class="t"><span class="dot" data-style="background:${m.color}"></span>${T[k]}</span><span class="d">${m.desc}</span></button>`).join('')}</div>
         ${hasKids ? `<div class="hint">Este contenedor tiene ${hasKids} elemento${hasKids > 1 ? 's' : ''} dentro; para cambiarlo de tipo primero muévelos o elimínalos.</div>` : ''}</div>
       <div class="field" id="fNameField"><label>Nombre *</label><input name="name" maxlength="80" value="${esc(draft.name)}" placeholder="Nombre de la instancia" autocomplete="off"><div class="error" hidden>El nombre es obligatorio.</div></div>
       <div class="field-row">
@@ -98,8 +98,8 @@ export function openEditor(id, preset = {}) {
       .sort((a, b) => (a.type === 'ds' ? 0 : a.type === 'uikit' ? 1 : 2) - (b.type === 'ds' ? 0 : b.type === 'uikit' ? 1 : 2) || a.name.localeCompare(b.name));
     srcSel.innerHTML = `<option value="">— Selecciona la fuente —</option>` + candidates.map(n => `<option value="${n.id}" ${n.id === draft.sourceId ? 'selected' : ''}>${esc(n.name)} · ${esc(typeName(n.type))}${n.parentId ? ` (en ${esc(rootOf(n).name)})` : ''}</option>`).join('');
     const dsList = S.state.nodes.filter(n => (n.type === 'ds' || n.type === 'uikit') && n.id !== draft.id).sort((a, b) => a.name.localeCompare(b.name));
-    $('#fDS').innerHTML = dsList.length ? dsList.map(n => `<label><input type="checkbox" value="${n.id}" ${draft.dsIds.has(n.id) ? 'checked' : ''}><span class="t-dot" style="background:${TYPE_META[n.type].color}"></span>${esc(n.name)}<span class="where">${esc(typeName(n.type))} · en ${esc(rootOf(n).name)}</span></label>`).join('')
-      : `<div class="empty">Aún no hay ${T.ds} ni ${T.uikit}.</div>`;
+    $('#fDS').innerHTML = dsList.length ? dsList.map(n => `<label><input type="checkbox" value="${n.id}" ${draft.dsIds.has(n.id) ? 'checked' : ''}><span class="t-dot" data-style="background:${TYPE_META[n.type].color}"></span>${esc(n.name)}<span class="where">${esc(typeName(n.type))} · en ${esc(rootOf(n).name)}</span></label>`).join('')
+      : `<div class="empty">Aún no hay ${T.ds} ni ${T.uikit}.</div>`; applyDataStyles($('#fDS'));
   };
   const refreshBranch = () => {
     $('#fBranchField').hidden = !(draft.type === 'software' && form.parent.value); $('#fVisField').hidden = !(draft.type === 'software' && !form.parent.value);

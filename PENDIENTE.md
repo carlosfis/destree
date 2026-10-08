@@ -46,7 +46,7 @@
 - [ ] «usuario» Subir el vídeo promo (`node promo/render.js` → `promo/destree-motion.mp4`) a YouTube/Vimeo o como asset de la release y pasar el enlace.
 - [ ] Agente: 2–3 capturas (lienzo, drawer, lobby) en `docs/img/` tomadas con el smoke o Chrome headless, enlazadas en el README junto al vídeo.
 - [ ] Agente: `README.en.md` (traducción fiel del README) y enlace cruzado en la cabecera de ambos.
-- [ ] Agente: `SECURITY.md` (cómo reportar vulnerabilidades, versiones soportadas) y `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 en español).
+- [x] Agente: `SECURITY.md` (hecho en P6, 2026-10-07). [ ] `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 en español).
 - [ ] Agente: `npm audit --omit=dev` sin high/critical (requiere red); anotar resultado en `CHANGELOG.md`.
 - [ ] «usuario» Decidir idioma de la UI a futuro (solo español hoy; i18n sería una fase propia) y si se borran los tags remotos `f5`, `f6a`, `f6b`, `f7` (rastro de fases; no afectan a nada).
 **Aceptación:** README con imagen y vídeo, versión en inglés, archivos de comunidad presentes, paquete e imagen descargables sin login.
@@ -61,16 +61,16 @@
 - [ ] Agente: `docs/ADMIN.md` con la checklist operativa (respaldo, actualización, restauración, invitar, desactivar, auditar).
 **Aceptación:** restauración probada una vez, alerta de caída recibida en una prueba, guías publicadas.
 
-## P6 — Hardening (agente)
+## P6 — Hardening (agente) ✅ 2026-10-07
 **Objetivo:** exponer la instancia a Internet con garantías razonables.
-- [ ] Cabeceras en respuestas HTML y estáticos: `Content-Security-Policy` (sin inline; `img-src 'self' data: blob:`), `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`/`frame-ancestors`, `Permissions-Policy`. `/api/*` sin CSP.
-- [ ] Cierre ordenado: SIGTERM/SIGINT → `app.close()` (cierra SQLite y suelta `.server.lock`).
-- [ ] Rate-limit también en `PATCH /api/me` (P3) y en `POST /api/images`.
-- [ ] Logs sin secretos (revisar que nunca se registre `password`, cookies ni tokens de invitación).
-- [ ] Sesiones: purga de sesiones caducadas al arrancar; «cerrar las demás sesiones» en el diálogo de contraseña.
-- [ ] `tests/e2e.test.js`: setup → login 3 roles → página → visibilidad → imagen → versión → respaldo, en una sola BD temporal.
-- [ ] `docs/SECURITY.md` con el modelo de amenazas resumido y las cabeceras aplicadas; `curl -I` documentado en `docs/INSTALL.md`.
-**Aceptación:** `curl -I` muestra las cabeceras; la app funciona con CSP activa (smoke verde); tests verdes.
+- [x] Cabeceras en respuestas HTML y estáticos: `Content-Security-Policy` (sin inline; `img-src 'self' data: blob:`), `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`/`frame-ancestors`, `Permissions-Policy`. `/api/*` sin CSP.
+- [x] Cierre ordenado: SIGTERM/SIGINT → `app.close()` (cierra SQLite y suelta `.server.lock`).
+- [x] Rate-limit también en `PATCH /api/me` (P3) y en `POST /api/images`.
+- [x] Logs sin secretos (revisar que nunca se registre `password`, cookies ni tokens de invitación).
+- [x] Sesiones: purga de sesiones caducadas al arrancar; «cerrar las demás sesiones» en el diálogo de contraseña.
+- [x] `tests/e2e.test.js`: setup → login 3 roles → página → visibilidad → imagen → versión → respaldo, en una sola BD temporal.
+- [x] `docs/SECURITY.md` con el modelo de amenazas resumido y las cabeceras aplicadas; `curl -I` documentado en `docs/INSTALL.md`.
+**Aceptación:** `curl -I` muestra las cabeceras; la app funciona con CSP activa (smoke verde); tests verdes. Cumplida: 30 tests (e2e incluye SIGTERM en proceso real y logs sin secretos), lint OK, smoke 29/29 sin violaciones de CSP en consola.
 
 ## P7 — Correo SMTP (agente)
 **Objetivo:** invitaciones y recuperación de contraseña sin copiar enlaces a mano.
@@ -90,6 +90,7 @@
 ---
 
 ## Resueltos
+- 2026-10-07 P6 Hardening: cabeceras + CSP estricta (sin inline), logs sin secretos, rate-limit por cupos, purga de sesiones, cerrar las demás sesiones, cierre ordenado SIGTERM, `tests/e2e.test.js`, `docs/SECURITY.md` + `SECURITY.md`.
 - 2026-10-07 P3 Contraseñas: `PATCH /api/me` (name, contraseña con verificación de la actual, cierra las demás sesiones, rate-limit), diálogo «Mi cuenta» desde el chip, 🔑 «Restablecer contraseña» en Administración → Usuarios (temporal mostrada una vez), docs y smoke.
 - 2026-10-07 P2 (parte verificable): Docker Desktop instalado; clone limpio + `compose up --build` + health + setup + `down/up` conserva datos + `pull` GHCR, todo OK.
 - 2026-10-07 P1 UI acotada: estado vacío del lienzo, «Cargando…», Escape en overlays, foco en pestañas, aria-labels, marca «DesTree», responsive ≥360 px, dos pasos nuevos en el smoke.

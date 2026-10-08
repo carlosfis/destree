@@ -2,7 +2,7 @@
    Sidebar de instancia (#nodeDrawer): sustituye al modal para editar (Main/Child instance) y para la ficha de lectura.
    Cabecera + pestañas (General · Staff · Documentación · Notas) + cuerpo con un panel por pestaña + pie opcional.
    ========================================================= */
-import { $, $$ } from '../core/utils.js';
+import { $, $$, applyDataStyles } from '../core/utils.js';
 
 export const nodeDrawer = $('#nodeDrawer');
 export const isDrawerOpen = () => nodeDrawer.classList.contains('open');
@@ -23,7 +23,7 @@ export function drawerHTML({ title, badge = '', tabs = TABS, panes, footer = '',
 export function openDrawer(html, { onClose = null } = {}) {
   closeDrawer();
   clearTimeout(nodeDrawer._clear);
-  nodeDrawer.innerHTML = html;
+  nodeDrawer.innerHTML = html; applyDataStyles(nodeDrawer); // P6: sin style= inline (CSP)
   nodeDrawer._onClose = onClose;
   $('.drawer-tabs', nodeDrawer)?.addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
   $$('[data-cancel]', nodeDrawer).forEach(b => b.addEventListener('click', closeDrawer));

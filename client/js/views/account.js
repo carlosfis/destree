@@ -32,6 +32,9 @@ export function openAccountDialog() {
           <div class="form-error"></div>
           <div class="inline-actions"><button class="btn primary" type="submit">Cambiar contraseña</button></div>
         </form>
+        <h3>Sesiones</h3>
+        <p class="hint">Si entraste desde otro navegador o dispositivo y ya no lo usas, puedes cerrar esas sesiones sin cambiar la contraseña.</p>
+        <div class="inline-actions"><button class="btn" type="button" id="accSessions">Cerrar las demás sesiones</button></div>
       </div>
       <footer><button type="button" class="btn" data-cancel>Cerrar</button></footer></div>`;
     const done = () => { confirmDialog.close(); resolve(); };
@@ -48,6 +51,11 @@ export function openAccountDialog() {
       const r = await api.patchMe({ currentPassword: d.currentPassword, newPassword: d.newPassword });
       f.reset();
       toast(r.sessionsClosed ? `Contraseña actualizada; ${r.sessionsClosed} sesión(es) cerrada(s)` : 'Contraseña actualizada');
+    });
+    $('#accSessions', confirmDialog).addEventListener('click', async e => { // P6
+      e.currentTarget.disabled = true;
+      try { const r = await api.closeOtherSessions(); toast(r.sessionsClosed ? `${r.sessionsClosed} sesión(es) cerrada(s)` : 'No había otras sesiones abiertas'); } catch (err) { toast(err.message, 'error', 5000); }
+      e.currentTarget.disabled = false;
     });
     confirmDialog.showModal();
     $('#acc_name', confirmDialog).focus();

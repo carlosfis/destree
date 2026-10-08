@@ -99,13 +99,16 @@ export function acceptInvite(db, { token, name, password, ua, ip }) {
   return { invite: inv, user, token: createSession(db, { userId: user.id, orgId: inv.org_id, ua, ip }) };
 }
 
-/* --- Rate-limit en memoria (por IP; /api/setup, /api/auth/login, /api/invites/accept) --- */
+/** P6: borra sesiones caducadas (al arrancar). Devuelve cuántas. */
+export function purgeExpiredSessions(db) { return db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(nowIso()).changes; }
+
+/* --- Rate-limit en memoria por IP y cupo (`bucket`): auth (setup/login/accept/PATCH me) 10 por 15 min; images 60 por min --- */
 const hits = new Map();
-export function rateLimit(ip, { max = 10, windowMs = 15 * 60e3 } = {}) {
-  const now = Date.now();
-  const e = hits.get(ip) || { n: 0, reset: now + windowMs };
+export function rateLimit(ip, { max = 10, windowMs = 15 * 60e3, bucket = 'auth' } = {}) {
+  const now = Date.now(), k = `${bucket}:${ip}`;
+  const e = hits.get(k) || { n: 0, reset: now + windowMs };
   if (e.reset <= now) { e.n = 0; e.reset = now + windowMs; }
-  e.n++; hits.set(ip, e);
+  e.n++; hits.set(k, e);
   if (hits.size > 5000) for (const [k, v] of hits) if (v.reset <= now) hits.delete(k);
   if (e.n > max) throw new HttpError(429, 'Demasiados intentos; espera unos minutos');
 }

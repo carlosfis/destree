@@ -1,4 +1,4 @@
-// F2: GET /api/setup · POST /api/setup · POST /api/auth/login · POST /api/auth/logout · GET /api/me · P3: PATCH /api/me (name, contraseña propia)
+// F2: GET /api/setup · POST /api/setup · POST /api/auth/login · POST /api/auth/logout · GET /api/me · P3: PATCH /api/me (name, contraseña propia) · P6: DELETE /api/me/sessions
 import { userCount, createUser, findUserByEmail, verifyPassword, createSession, deleteSession, deleteOtherSessions, setPassword, rateLimit, getUser } from '../lib/auth.js';
 import { permissionsFor } from '../lib/permissions.js';
 import { audit } from '../lib/audit.js';
@@ -74,6 +74,13 @@ export default async function authRoutes(app) {
       return n;
     });
     return { ...me(app, getUser(app.db, req.user.id, req.orgId)), sessionsClosed: closed };
+  });
+
+  // P6: cerrar las demás sesiones (otros navegadores/dispositivos) sin cambiar la contraseña.
+  app.delete('/api/me/sessions', { onRequest: app.guard('pages.read') }, async (req) => {
+    const closed = deleteOtherSessions(app.db, req.user.id, req.sessionToken);
+    audit(app.db, { orgId: req.orgId, userId: req.user.id, action: 'user.sessions', entity: 'user', entityId: req.user.id, meta: { sessionsClosed: closed } });
+    return { sessionsClosed: closed };
   });
 
   function me(app, user) {

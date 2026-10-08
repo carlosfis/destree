@@ -12,6 +12,9 @@ import { HttpError } from './lib/pages.js';
 import sessionPlugin from './plugins/session.js';
 import guardPlugin from './plugins/guard.js';
 import originPlugin from './plugins/origin-check.js';
+import securityHeadersPlugin from './plugins/security-headers.js'; // P6
+import { loggerOptions } from './lib/log.js'; // P6
+import { purgeExpiredSessions } from './lib/auth.js';
 import healthRoutes from './routes/health.js';
 import authRoutes from './routes/auth.js';
 import inviteRoutes from './routes/invites.js';
@@ -28,7 +31,7 @@ import { migrateLegacyImages, purgeOrphans } from './lib/images.js';
 
 export async function buildApp({ dbPath = config.dbPath, logger = { level: config.logLevel } } = {}) {
   const app = Fastify({
-    logger,
+    logger: logger && typeof logger === 'object' ? loggerOptions(logger.level || config.logLevel, logger) : logger, // P6: sin cookies ni tokens en los logs
     bodyLimit: 32 * 1024 * 1024,
     ajv: { customOptions: AJV_OPTIONS, plugins: [ajvFormats] },
     trustProxy: config.trustProxy,
@@ -40,6 +43,7 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   const migrated = await migrateLegacyImages(db, app.uploadsDir); // F5: dataURLs heredadas → archivos
   if (migrated && logger) app.log.info(`imágenes legadas migradas: ${migrated}`);
   for (const m of migrate(db)) app.log.info(`migración aplicada tras vaciar image_legacy: ${m}`); // F7: 008 queda pendiente hasta aquí
+  const purged = purgeExpiredSessions(db); if (purged) app.log.info(`sesiones caducadas purgadas: ${purged}`); // P6
   app.addHook('onClose', async () => db.close());
   for (const s of loadSchemas()) app.addSchema(s);
 
@@ -61,6 +65,7 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   await app.register(sessionPlugin);
   await app.register(guardPlugin);
   await app.register(originPlugin);
+  await app.register(securityHeadersPlugin); // P6
   await app.register(healthRoutes);
   await app.register(authRoutes);
   await app.register(inviteRoutes);
@@ -99,4 +104,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.met
     await app.listen({ port: config.port, host: config.host });
     app.log.info(`DesTree → http://localhost:${config.port}/`);
   } catch (err) { app.log.error(err); process.exit(1); }
+  // P6: cierre ordenado (Docker stop, systemd, Ctrl+C): deja de aceptar conexiones, cierra SQLite y suelta .server.lock.
+  const shutdown = (signal) => {
+    app.log.info(`${signal}: cerrando`);
+    setTimeout(() => { app.log.error('cierre forzado tras 10 s'); process.exit(1); }, 10e3).unref();
+    app.close().then(() => process.exit(0), (err) => { app.log.error(err); process.exit(1); });
+  };
+  for (const sig of ['SIGTERM', 'SIGINT']) process.once(sig, () => shutdown(sig));
 }

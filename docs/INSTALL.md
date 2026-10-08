@@ -44,4 +44,6 @@ Para producción usa un gestor de procesos (systemd, pm2) y un proxy TLS (Caddy/
 Servidor parado → `node scripts/restore.js <respaldo.tar.gz>` → arrancar. Detalle en `README.md`.
 
 ## Comprobación
-`curl -s localhost:3000/api/health` → `{ "ok": true, "version": "0.1.0", "db": "ok", ... }`.
+- `curl -s localhost:3000/api/health` → `{ "ok": true, "version": "…", "db": "ok", ... }`.
+- `curl -I localhost:3000/` → cabeceras de seguridad (`Content-Security-Policy`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`); `curl -I localhost:3000/api/health` no lleva CSP. Detalle en `docs/SECURITY.md`.
+- Parar: `docker compose down` (o Ctrl+C / `systemctl stop`) hace un cierre ordenado: SQLite se cierra y `.server.lock` desaparece de la carpeta de datos.

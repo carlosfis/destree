@@ -1,7 +1,7 @@
 /* =========================================================
    F6a. Historial de versiones de la página: lista, vista previa (solo lectura), diff resumido, crear manual, restaurar
    ========================================================= */
-import { $, esc } from '../core/utils.js';
+import { $, esc, applyDataStyles } from '../core/utils.js';
 import { S, typeName } from '../core/state.js';
 import * as api from '../core/api.js';
 import { toast } from '../ui/theme.js';
@@ -33,7 +33,7 @@ export async function openVersionsPanel() {
   $('.ver-list', editorDialog)?.addEventListener('click', async e => {
     const b = e.target.closest('button'); if (!b) return;
     const li = b.closest('li'), n = Number(li.dataset.n), detail = li.querySelector('.ver-detail');
-    if (b.hasAttribute('data-view')) { detail.hidden = false; detail.innerHTML = '<div class="empty">Cargando…</div>'; try { detail.innerHTML = previewHTML((await api.getVersion(S.pageId, n)).document); } catch (err) { detail.innerHTML = `<div class="empty">${esc(err.message)}</div>`; } }
+    if (b.hasAttribute('data-view')) { detail.hidden = false; detail.innerHTML = '<div class="empty">Cargando…</div>'; try { detail.innerHTML = previewHTML((await api.getVersion(S.pageId, n)).document); applyDataStyles(detail); } catch (err) { detail.innerHTML = `<div class="empty">${esc(err.message)}</div>`; } }
     if (b.hasAttribute('data-diff')) { detail.hidden = false; detail.innerHTML = '<div class="empty">Comparando…</div>'; try { detail.innerHTML = diffHTML((await api.diffVersions(S.pageId, n, 'current')).diff, n); } catch (err) { detail.innerHTML = `<div class="empty">${esc(err.message)}</div>`; } }
     if (b.hasAttribute('data-restore')) {
       const ok = await confirmBox({ title: `Restaurar v${n}`, message: 'El contenido actual se sustituirá por el de esa versión. Antes se conserva una versión de restauración, así que puedes volver atrás.', buttons: [{ label: 'Cancelar', value: '' }, { label: 'Restaurar', value: 'ok', kind: 'primary' }] });
@@ -46,7 +46,7 @@ export async function openVersionsPanel() {
 /** Vista previa solo lectura: raíces con sus hijos (sin canvas). */
 function previewHTML(doc) {
   const kids = id => doc.nodes.filter(n => n.parentId === id);
-  const item = (n, depth) => `<li style="margin-left:${depth * 14}px"><span class="type-badge">${esc(typeName(n.type))}</span> ${esc(n.name)}${n.description ? `<span class="url">${esc(n.description)}</span>` : ''}</li>${kids(n.id).map(k => item(k, depth + 1)).join('')}`;
+  const item = (n, depth) => `<li data-style="margin-left:${depth * 14}px"><span class="type-badge">${esc(typeName(n.type))}</span> ${esc(n.name)}${n.description ? `<span class="url">${esc(n.description)}</span>` : ''}</li>${kids(n.id).map(k => item(k, depth + 1)).join('')}`;
   const roots = doc.nodes.filter(n => !n.parentId);
   return `<div class="hint">${doc.nodes.length} cards · ${doc.edges.length} conexiones · ${doc.tags.length} etiquetas</div><ul class="ver-tree">${roots.map(r => item(r, 0)).join('') || '<li class="empty">Sin cards.</li>'}</ul>`;
 }
