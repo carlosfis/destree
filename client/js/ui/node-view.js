@@ -1,12 +1,14 @@
 /* =========================================================
-   F3. Ficha de instancia en modo lectura (designer: doble clic / Enter / #/n/<id>) en el sidebar, con las mismas pestañas del editor
+   F3. Ficha de instancia en modo lectura (viewer: doble clic / Enter / #/n/<id>) en el sidebar, con las mismas pestañas del editor. P10: «Editar» si la card es propia.
    ========================================================= */
 import { $, esc } from '../core/utils.js';
-import { S, nodeById, tagById, rootOf, userName, cellById, typeName } from '../core/state.js';
+import { S, nodeById, tagById, rootOf, userName, cellById, typeName, isMyNode } from '../core/state.js';
 import { renderMarkdown } from './markdown.js';
-import { pathOf } from './card-editor.js';
+import { pathOf, openEditor } from './card-editor.js';
 import { imageSrc } from './uploader.js';
 import { drawerHTML, openDrawer, instanceLabel } from './node-drawer.js';
+import { thumbnailData } from './thumbnail.js';
+import { thumbActionsHTML, bindThumbActions } from './thumbnail-section.js'; // P9
 
 const VIS_LABEL = { org: 'Toda la organización', cells: 'Solo células', inherit: 'Hereda de la raíz' };
 const SAFE_URL = /^https?:\/\//i;
@@ -29,7 +31,8 @@ export function openNodeView(id) {
         ${n.hasExternalRefs ? '<dt>Conexiones</dt><dd class="hint">Tiene conexiones con elementos que no puedes ver.</dd>' : ''}
       </dl>
       ${n.description ? `<p class="desc">${esc(n.description)}</p>` : ''}
-      ${tags.length ? `<div class="card-tags">${tags.map(t => `<span class="chip tag-${t.color}">${esc(t.name)}</span>`).join('')}</div>` : ''}`,
+      ${tags.length ? `<div class="card-tags">${tags.map(t => `<span class="chip tag-${t.color}">${esc(t.name)}</span>`).join('')}</div>` : ''}
+      <h3 class="section">Thumbnail</h3>${thumbActionsHTML('vThumb', false)}<div class="hint">PNG 1920×1080 con los datos de la instancia, para pegar en Figma («Set as thumbnail»).</div>`,
     staff: `<h3 class="section">Staff</h3>${staff ? `<ul class="staff-list">${staff}</ul>` : '<div class="empty">Sin staff.</div>'}
       <dl class="meta">
         <dt>Responsable</dt><dd>${n.ownerUserId ? esc(userName(n.ownerUserId)) : '—'}</dd>
@@ -40,6 +43,9 @@ export function openNodeView(id) {
     notes: n.notes ? `<div class="md">${renderMarkdown(n.notes)}</div>` : '<div class="empty">Sin notas.</div>',
   };
   const badge = `<span class="type-badge">${esc(typeName(n.type))}</span>`;
-  openDrawer(drawerHTML({ title: `${instanceLabel(n.parentId)} · ${esc(n.name)}`, badge, panes, footer: '<button type="button" class="btn" data-cancel>Cerrar</button>', tag: 'div', cls: 'node-view' }));
+  const own = S.readonly && isMyNode(id) && S.session?.permissions.includes('nodes.own'); // P10
+  openDrawer(drawerHTML({ title: `${instanceLabel(n.parentId)} · ${esc(n.name)}`, badge, panes, footer: `${own ? '<button type="button" class="btn primary" data-edit>Editar</button>' : ''}<button type="button" class="btn" data-cancel>Cerrar</button>`, tag: 'div', cls: 'node-view' }));
+  bindThumbActions($('#nodeDrawer'), 'vThumb', () => thumbnailData(n));
+  $('#nodeDrawer [data-edit]')?.addEventListener('click', () => openEditor(id));
   $('#nodeDrawer footer .btn').focus();
 }

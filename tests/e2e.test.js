@@ -26,40 +26,40 @@ test('e2e: setup → login 3 roles → página → visibilidad por célula → i
   const j = async (o, cookie) => { const r = await app.inject({ ...o, headers: { ...(o.headers || {}), cookie } }); return { status: r.statusCode, etag: r.headers.etag, body: r.statusCode === 204 ? null : r.json() }; };
 
   const admin = await setupAdmin(app, 'admin@e2e.io');
-  const head = (await inviteAndAccept(app, admin, 'head@e2e.io', 'head', 'Head')).cookie;
-  const des = await inviteAndAccept(app, admin, 'des@e2e.io', 'designer', 'Des');
-  for (const [c, role] of [[admin, 'admin'], [head, 'head'], [des.cookie, 'designer']]) assert.equal((await j({ method: 'GET', url: '/api/me' }, c)).body.role, role);
-  assert.equal((await j({ method: 'GET', url: '/api/me' }, await login(app, 'head@e2e.io'))).body.role, 'head', 'login explícito');
+  const ops = (await inviteAndAccept(app, admin, 'ops@e2e.io', 'ops', 'Ops')).cookie;
+  const des = await inviteAndAccept(app, admin, 'des@e2e.io', 'viewer', 'Des');
+  for (const [c, role] of [[admin, 'admin'], [ops, 'ops'], [des.cookie, 'viewer']]) assert.equal((await j({ method: 'GET', url: '/api/me' }, c)).body.role, role);
+  assert.equal((await j({ method: 'GET', url: '/api/me' }, await login(app, 'ops@e2e.io'))).body.role, 'ops', 'login explícito');
 
   // célula con el designer como miembro
   const cell = (await j({ method: 'POST', url: '/api/cells', payload: { name: 'Squad A', color: 'blue' } }, admin)).body;
   assert.equal((await j({ method: 'PUT', url: `/api/cells/${cell.id}/members`, payload: { userIds: [des.user.id] } }, admin)).status, 200);
 
-  // página (head) con dos raíces: una de la org y otra solo para otra célula (inexistente para el designer)
+  // página (ops) con dos raíces: una de la org y otra solo para otra célula (inexistente para el designer)
   const other = (await j({ method: 'POST', url: '/api/cells', payload: { name: 'Squad B', color: 'red' } }, admin)).body;
-  const created = await j({ method: 'POST', url: '/api/pages', payload: { name: 'E2E' } }, head);
+  const created = await j({ method: 'POST', url: '/api/pages', payload: { name: 'E2E' } }, ops);
   assert.equal(created.status, 201); const pid = created.body.page.id;
   const nodes = [N('rOrg'), N('rOrg_ds', 'rOrg', { type: 'ds' }), N('rB', null, { visibility: 'cells', cellIds: [other.id] }), N('rB_ds', 'rB', { type: 'ds' })];
-  const put1 = await j({ method: 'PUT', url: `/api/pages/${pid}`, headers: { 'if-match': created.etag }, payload: doc(pid, nodes) }, head);
+  const put1 = await j({ method: 'PUT', url: `/api/pages/${pid}`, headers: { 'if-match': created.etag }, payload: doc(pid, nodes) }, ops);
   assert.equal(put1.status, 200, JSON.stringify(put1.body));
   const forDes = (await j({ method: 'GET', url: `/api/pages/${pid}` }, des.cookie)).body;
   assert.deepEqual(forDes.nodes.map(n => n.id).sort(), ['rOrg', 'rOrg_ds'], 'el designer no ve la raíz de otra célula');
-  assert.equal((await j({ method: 'GET', url: `/api/pages/${pid}` }, head)).body.nodes.length, 4);
+  assert.equal((await j({ method: 'GET', url: `/api/pages/${pid}` }, ops)).body.nodes.length, 4);
   // ahora la raíz B pasa a la célula del designer → la ve
-  assert.equal((await j({ method: 'PATCH', url: `/api/pages/${pid}/nodes/rB/visibility`, payload: { visibility: 'cells', cellIds: [cell.id] } }, head)).status, 200);
+  assert.equal((await j({ method: 'PATCH', url: `/api/pages/${pid}/nodes/rB/visibility`, payload: { visibility: 'cells', cellIds: [cell.id] } }, ops)).status, 200);
   assert.equal((await j({ method: 'GET', url: `/api/pages/${pid}` }, des.cookie)).body.nodes.length, 4);
   assert.equal((await j({ method: 'PUT', url: `/api/pages/${pid}`, headers: { 'if-match': '"1"' }, payload: doc(pid, nodes) }, des.cookie)).status, 403, 'designer no edita');
 
   // imagen → webp + thumb; se asocia a un nodo en la siguiente versión
   const png = await sharp({ create: { width: 64, height: 48, channels: 3, background: '#09f' } }).png().toBuffer();
-  const up = await j({ method: 'POST', url: '/api/images?filename=hero.png', headers: { 'content-type': 'image/png' }, payload: png }, head);
+  const up = await j({ method: 'POST', url: '/api/images?filename=hero.png', headers: { 'content-type': 'image/png' }, payload: png }, ops);
   assert.equal(up.status, 201); assert.equal(up.body.mime, 'image/webp');
   assert.equal((await app.inject({ method: 'GET', url: up.body.url, headers: { cookie: des.cookie } })).statusCode, 403, 'imagen aún sin usar: solo su autor la ve');
   // versión manual antes del renombrado (las ediciones del mismo usuario en 5 min se fusionan en una sola auto)
-  const manual = await j({ method: 'POST', url: `/api/pages/${pid}/versions`, payload: { label: 'hito' } }, head);
+  const manual = await j({ method: 'POST', url: `/api/pages/${pid}/versions`, payload: { label: 'hito' } }, ops);
   assert.equal(manual.status, 201);
-  const v2 = (await j({ method: 'GET', url: `/api/pages/${pid}` }, head)).body.version;
-  const put2 = await j({ method: 'PUT', url: `/api/pages/${pid}`, headers: { 'if-match': `"${v2}"` }, payload: doc(pid, nodes.map(n => (n.id === 'rOrg' ? { ...n, imageId: up.body.id, name: 'Org renombrada' } : n))) }, head);
+  const v2 = (await j({ method: 'GET', url: `/api/pages/${pid}` }, ops)).body.version;
+  const put2 = await j({ method: 'PUT', url: `/api/pages/${pid}`, headers: { 'if-match': `"${v2}"` }, payload: doc(pid, nodes.map(n => (n.id === 'rOrg' ? { ...n, imageId: up.body.id, name: 'Org renombrada' } : n))) }, ops);
   assert.equal(put2.status, 200);
   const img = await app.inject({ method: 'GET', url: up.body.url, headers: { cookie: des.cookie } });
   assert.equal(img.statusCode, 200, 'ya usada en una card visible'); assert.equal(img.headers['content-type'], 'image/webp');
@@ -69,15 +69,15 @@ test('e2e: setup → login 3 roles → página → visibilidad por célula → i
   const versions = (await j({ method: 'GET', url: `/api/pages/${pid}/versions` }, des.cookie)).body.versions;
   assert.ok(versions.length >= 2); assert.ok(versions.some(v => v.label === 'hito'));
   const first = manual.body.number;
-  const diff = (await j({ method: 'GET', url: `/api/pages/${pid}/versions/${first}/diff/current` }, head)).body.diff;
+  const diff = (await j({ method: 'GET', url: `/api/pages/${pid}/versions/${first}/diff/current` }, ops)).body.diff;
   assert.ok(diff.nodes.changed.some(c => c.id === 'rOrg'), 'diff detecta el renombrado');
-  const restored = await j({ method: 'POST', url: `/api/pages/${pid}/versions/${first}/restore` }, head);
+  const restored = await j({ method: 'POST', url: `/api/pages/${pid}/versions/${first}/restore` }, ops);
   assert.equal(restored.status, 200);
-  assert.equal((await j({ method: 'GET', url: `/api/pages/${pid}` }, head)).body.nodes.find(n => n.id === 'rOrg').name, 'rOrg');
+  assert.equal((await j({ method: 'GET', url: `/api/pages/${pid}` }, ops)).body.nodes.find(n => n.id === 'rOrg').name, 'rOrg');
   assert.equal((await j({ method: 'POST', url: `/api/pages/${pid}/versions` }, des.cookie)).status, 403);
 
   // respaldo (admin): tar.gz consistente con la BD y las imágenes
-  assert.equal((await j({ method: 'POST', url: '/api/backups' }, head)).status, 403);
+  assert.equal((await j({ method: 'POST', url: '/api/backups' }, des.cookie)).status, 403);
   const bk = await j({ method: 'POST', url: '/api/backups' }, admin);
   assert.equal(bk.status, 201); assert.equal(bk.body.status, 'ok');
   assert.ok(fs.existsSync(path.join(app.backupsDir, bk.body.filename)));
@@ -128,7 +128,7 @@ test('P6: logs sin secretos — token de invitación enmascarado en la URL, sin 
   const app = await buildApp({ dbPath: ':memory:', logger: { level: 'info', stream } });
   t.after(() => app.close());
   const admin = await setupAdmin(app, 'admin@log.io');
-  const inv = (await app.inject({ method: 'POST', url: '/api/invites', headers: { cookie: admin }, payload: { email: 'n@log.io', role: 'designer' } })).json();
+  const inv = (await app.inject({ method: 'POST', url: '/api/invites', headers: { cookie: admin }, payload: { email: 'n@log.io', role: 'viewer' } })).json();
   const token = inv.link.split('/#/invite/')[1];
   assert.equal((await app.inject({ method: 'GET', url: `/api/invites/${token}` })).statusCode, 200);
   await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: 'admin@log.io', password: PW } });

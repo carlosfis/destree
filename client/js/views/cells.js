@@ -1,5 +1,5 @@
 /* =========================================================
-   F3. Pestaña Células del panel admin: CRUD (admin) y miembros (admin; head en sus células)
+   F3. Pestaña Células del panel admin: CRUD (`cells.manage`, nivel ≥3) y miembros (lead: solo en sus células)
    ========================================================= */
 import { $, esc, TAG_COLORS } from '../core/utils.js';
 import { S } from '../core/state.js';
@@ -8,8 +8,9 @@ import { toast } from '../ui/theme.js';
 import { confirmBox } from '../ui/dialogs.js';
 import { colorPicker } from '../ui/page-settings.js';
 import { renderAll } from '../canvas/selection.js';
+import { roleLabel, has } from '../core/roles.js'; // P10
 
-const isAdmin = () => S.session?.role === 'admin';
+const isAdmin = () => has('cells.manage');
 const canManage = c => isAdmin() || c.leadUserId === S.session.user.id || (c.memberIds || []).includes(S.session.user.id);
 const nameOf = id => (S.userDir.find(u => u.id === id) || {}).name || '—';
 
@@ -56,7 +57,7 @@ function cellRow(c, body) {
 
 function renderMembers(box, c, body) {
   const users = S.userDir;
-  box.innerHTML = `<div class="check-list">${users.map(u => `<label><input type="checkbox" value="${u.id}" ${(c.memberIds || []).includes(u.id) ? 'checked' : ''} ${u.id === c.leadUserId ? 'disabled' : ''}>${esc(u.name)}<span class="where">${esc(u.role)}</span></label>`).join('') || '<div class="empty">Sin usuarios.</div>'}</div>
+  box.innerHTML = `<div class="check-list">${users.map(u => `<label><input type="checkbox" value="${u.id}" ${(c.memberIds || []).includes(u.id) ? 'checked' : ''} ${u.id === c.leadUserId ? 'disabled' : ''}>${esc(u.name)}<span class="where">${esc(roleLabel(u.role))}</span></label>`).join('') || '<div class="empty">Sin usuarios.</div>'}</div>
     ${isAdmin() ? `<div class="row"><label class="count">Lead</label><select class="grow" data-lead><option value="">— Sin lead —</option>${users.map(u => `<option value="${u.id}" ${u.id === c.leadUserId ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</select></div>` : ''}
     <div class="inline-actions"><button class="btn primary" data-save>Guardar miembros</button></div>`;
   box.querySelector('[data-lead]')?.addEventListener('change', async e => { try { await api.updateCell(c.id, { leadUserId: e.target.value || null }); await refreshCells(); renderCellsTab(body); } catch (err) { toast(err.message, 'error'); } });

@@ -4,7 +4,7 @@ Resumen operativo para quien expone DesTree a Internet. Cómo reportar una vulne
 
 ## Qué protege y de quién
 - **Activos**: el árbol de software con sus responsables, documentación, imágenes y versiones; las cuentas (correo, hash de contraseña); el audit log; los respaldos.
-- **Actores**: usuarios autenticados con tres roles (admin / head / designer); anónimos que llegan a la URL pública; un atacante con un navegador en la misma red o con un enlace malicioso.
+- **Actores**: usuarios autenticados con cinco niveles de rol (admin 5 / ops 4 / head 3 / lead 2 / viewer 1; cada nivel incluye el inferior); anónimos que llegan a la URL pública; un atacante con un navegador en la misma red o con un enlace malicioso.
 - **Fuera de alcance**: compromiso del host o del volumen `./data` (quien lee el disco lee la BD), ataques al proxy TLS, fuerza bruta distribuida desde muchas IP (el rate-limit es por IP y en memoria).
 
 ## Medidas por capa
@@ -48,5 +48,5 @@ curl -I https://tu.dominio/api/health  # sin Content-Security-Policy
 ## Recomendaciones de despliegue
 - Siempre detrás de TLS (`docker compose --profile https` o tu proxy) con `TRUST_PROXY=1`.
 - Respaldos fuera del host (`BACKUP_CRON` + copia externa) y un simulacro de restauración.
-- Mantén pocos admins; usa head para la operación diaria y designer para lectura.
+- Mantén pocos Admin (solo ellos modifican o eliminan la organización y dan Admin); usa Ops para la operación diaria, Head/Lead para equipos y Viewer para lectura.
 - Actualiza con `docker compose pull && docker compose up -d` tras leer `CHANGELOG.md`.

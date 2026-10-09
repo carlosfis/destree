@@ -28,3 +28,27 @@
 .ver-tree .url { color: var(--fg-3); font-size: 11.5px; }
 .ver-diff { display: flex; flex-direction: column; gap: 4px; }
 #btnVersions { white-space: nowrap; }
+/* P10: Lobby → Organización (datos, niveles y roles, capacidades, plantilla, zona de peligro) y editor acotado (viewer en su card) */
+.org-section { padding: 10px 0 14px; border-bottom: 1px solid var(--border); }
+.org-section:last-child { border-bottom: 0; }
+.org-section h4 { margin: 14px 0 6px; font-size: 13px; }
+.org-section.danger { border: 1px solid var(--danger); border-radius: var(--radius-lg); padding: 10px 14px; margin-top: 12px; }
+#orgForm label { min-width: 60px; }
+.roles-table, .caps-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 6px 0; }
+.roles-table th, .caps-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--fg-3); padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.roles-table td, .caps-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.roles-table input { width: 100%; max-width: 220px; padding: 4px 6px; }
+.roles-table code { font-family: var(--mono); font-size: 11.5px; background: var(--hover); padding: 0 4px; border-radius: 3px; }
+.caps-table th:not(:first-child), .caps-table td:not(:first-child) { text-align: center; width: 76px; }
+.caps-table th .lvl { display: block; font-size: 10px; color: var(--fg-3); letter-spacing: 0; text-transform: none; }
+.caps-table tr.group th { text-align: left; background: var(--hover); color: var(--fg-2); text-transform: none; font-size: 12px; letter-spacing: 0; }
+.caps-table td.yes { color: var(--accent); font-weight: 600; }
+.caps-table td.no { color: var(--fg-3); }
+.staff-row { padding: 6px 0; border-bottom: 1px solid var(--border); }
+.staff-row:last-child { border-bottom: 0; }
+.staff-row.inactive > .row { opacity: .55; }
+.staff-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 12.5px; padding: 0 0 4px; }
+.staff-meta .btn.ghost { padding: 1px 8px; font-size: 12px; }
+.staff-row .me-list { margin: 4px 0 6px; }
+.own-mode .field:has(#fType), .own-mode .field-row:has(#fParentField), .own-mode #fRelHead, .own-mode #fSourceField, .own-mode #fDSField { display: none !important; }
+@media (max-width: 720px) { .caps-table { display: block; overflow-x: auto; } .roles-table td:nth-child(4), .roles-table th:nth-child(4) { display: none; } }

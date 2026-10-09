@@ -28,6 +28,14 @@
 #nodeDrawer .node-view .desc { margin: 0; color: var(--fg-2); font-size: 13.5px; line-height: 1.5; }
 #nodeDrawer .node-view .empty { color: var(--fg-3); font-size: 13px; }
 
+/* Thumbnail (P9): vista previa 16:9, icono y acciones */
+#nodeDrawer .thumb-preview { aspect-ratio: 16 / 9; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: #0f2a24; }
+#nodeDrawer .thumb-preview canvas { display: block; width: 100%; height: 100%; }
+#nodeDrawer .thumb-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+#nodeDrawer .thumb-icon-preview { height: 96px; }
+#nodeDrawer .thumb-icon-preview img { object-fit: contain; }
+#nodeDrawer .field-row .img-field { gap: 8px; }
+
 /* Staff: usuario (@nombre) + rol */
 .staff-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; margin-bottom: 6px; }
 .staff-row .staff-name { font-family: var(--mono); }

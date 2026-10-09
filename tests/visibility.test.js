@@ -23,18 +23,18 @@ test('filterDocumentForUser: admin/head todo; designer de A ve rA, rOrg y rC (as
   const d = doc();
   assert.equal(filterDocumentForUser(d, { role: 'admin', userId: 'x', cellIds: [] }), d);
   assert.equal(filterDocumentForUser(d, { role: 'head', userId: 'x', cellIds: [] }).nodes.length, 9);
-  const f = filterDocumentForUser(d, { role: 'designer', userId: 'uDes', cellIds: ['cA'] });
+  const f = filterDocumentForUser(d, { role: 'viewer', userId: 'uDes', cellIds: ['cA'] });
   assert.deepEqual(f.nodes.map(n => n.id), ['rA', 'rA_ds', 'rA_feat', 'rOrg', 'rOrg_kit', 'rC', 'rC_feat']);
   assert.deepEqual(f.edges.map(e => e.id), ['e1', 'e4', 'e5']);
   const by = Object.fromEntries(f.nodes.map(n => [n.id, n.hasExternalRefs]));
   assert.equal(by.rOrg, true, 'rOrg usa rB_ds (oculto)'); assert.equal(by.rA, false); assert.equal(by.rC, false);
   // sin células ni asignaciones: solo lo público
-  const g = filterDocumentForUser(d, { role: 'designer', userId: 'nadie', cellIds: [] });
+  const g = filterDocumentForUser(d, { role: 'viewer', userId: 'nadie', cellIds: [] });
   assert.deepEqual(g.nodes.map(n => n.id), ['rOrg', 'rOrg_kit']); assert.deepEqual(g.edges, []);
   assert.equal(g.nodes[1].hasExternalRefs, true);
   // responsable (ownerUserId) en un descendiente también abre la raíz
   const d2 = doc(); d2.nodes.find(n => n.id === 'rB_ds').ownerUserId = 'nadie';
-  assert.ok(filterDocumentForUser(d2, { role: 'designer', userId: 'nadie', cellIds: [] }).nodes.some(n => n.id === 'rB'));
+  assert.ok(filterDocumentForUser(d2, { role: 'viewer', userId: 'nadie', cellIds: [] }).nodes.some(n => n.id === 'rB'));
 });
 
 test('API: células CRUD/miembros, designer de célula A no recibe raíz solo-B; head asigna → ve la raíz; docs+notes; PUT designer 403', async (t) => {
@@ -48,10 +48,13 @@ test('API: células CRUD/miembros, designer de célula A no recibe raíz solo-B;
   const cB = (await j({ method: 'POST', url: '/api/cells', payload: { name: 'Célula B' } }, admin)).body;
   assert.ok(cA.id && cB.id); assert.equal(cB.color, 'brown');
   const head = await inviteAndAccept(app, admin, 'head@test.io', 'head', 'Head');
-  assert.equal((await j({ method: 'PATCH', url: `/api/cells/${cA.id}`, payload: { leadUserId: head.user.id } }, admin)).body.leadUserId, head.user.id);
-  // invitación con células: head solo a sus células (A sí, B no); el designer hereda cell_members
-  assert.equal((await j({ method: 'POST', url: '/api/invites', payload: { email: 'd2@test.io', role: 'designer', cellIds: [cB.id] } }, head.cookie)).status, 403);
-  const inv = (await j({ method: 'POST', url: '/api/invites', payload: { email: 'des@test.io', role: 'designer', cellIds: [cA.id] } }, head.cookie)).body;
+  const lead = await inviteAndAccept(app, admin, 'lead@test.io', 'lead', 'Lead');
+  assert.equal((await j({ method: 'PATCH', url: `/api/cells/${cA.id}`, payload: { leadUserId: lead.user.id } }, admin)).body.leadUserId, lead.user.id);
+  // invitación con células: el lead solo a sus células (A sí, B no) y solo viewers; head (cells.manage) a cualquiera; el viewer hereda cell_members
+  assert.equal((await j({ method: 'POST', url: '/api/invites', payload: { email: 'd2@test.io', role: 'viewer', cellIds: [cB.id] } }, lead.cookie)).status, 403);
+  assert.equal((await j({ method: 'POST', url: '/api/invites', payload: { email: 'd2@test.io', role: 'lead', cellIds: [cA.id] } }, lead.cookie)).status, 403);
+  assert.equal((await j({ method: 'POST', url: '/api/invites', payload: { email: 'd3@test.io', role: 'viewer', cellIds: [cB.id] } }, head.cookie)).status, 201);
+  const inv = (await j({ method: 'POST', url: '/api/invites', payload: { email: 'des@test.io', role: 'viewer', cellIds: [cA.id] } }, lead.cookie)).body;
   assert.equal(inv.status, undefined); assert.deepEqual(inv.cellIds, [cA.id]);
   const acc = await app.inject({ method: 'POST', url: '/api/invites/accept', payload: { token: inv.link.split('/#/invite/')[1], name: 'Des', password: PW } });
   assert.equal(acc.statusCode, 201);
@@ -61,11 +64,11 @@ test('API: células CRUD/miembros, designer de célula A no recibe raíz solo-B;
   // permisos de rutas de células
   assert.equal((await j({ method: 'GET', url: '/api/cells' }, des)).status, 403);
   assert.equal((await j({ method: 'GET', url: '/api/cells' }, head.cookie)).body.cells.length, 2);
-  assert.equal((await j({ method: 'POST', url: '/api/cells', payload: { name: 'N' } }, head.cookie)).status, 403);
-  assert.equal((await j({ method: 'PUT', url: `/api/cells/${cB.id}/members`, payload: { userIds: [desId] } }, head.cookie)).status, 403, 'head no gestiona B');
-  const mA = (await j({ method: 'PUT', url: `/api/cells/${cA.id}/members`, payload: { userIds: [desId, 'nope'] } }, head.cookie)).body;
-  assert.deepEqual(new Set(mA.memberIds), new Set([desId, head.user.id]));
-  assert.equal((await j({ method: 'GET', url: '/api/users/directory' }, head.cookie)).body.users.length, 3);
+  assert.equal((await j({ method: 'POST', url: '/api/cells', payload: { name: 'N' } }, lead.cookie)).status, 403, 'P10: lead no crea células');
+  assert.equal((await j({ method: 'PUT', url: `/api/cells/${cB.id}/members`, payload: { userIds: [desId] } }, lead.cookie)).status, 403, 'lead no gestiona B');
+  const mA = (await j({ method: 'PUT', url: `/api/cells/${cA.id}/members`, payload: { userIds: [desId, 'nope'] } }, lead.cookie)).body;
+  assert.deepEqual(new Set(mA.memberIds), new Set([desId, lead.user.id]));
+  assert.equal((await j({ method: 'GET', url: '/api/users/directory' }, head.cookie)).body.users.length, 4);
   assert.equal((await j({ method: 'GET', url: '/api/users/directory' }, des)).status, 403);
 
   // Documento con raíces A (solo célula A), B (solo célula B), org; arista cruzada org → B_ds; docs + notes

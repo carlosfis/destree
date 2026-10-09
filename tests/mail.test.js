@@ -63,7 +63,7 @@ test('invitación: con SMTP se envía (emailSent, emailSentAt) y el enlace usa P
   t.after(async () => { noSmtp(); await app.close(); await smtp.close(); });
   const admin = await setupAdmin(app);
   noSmtp();
-  const off = (await app.inject({ method: 'POST', url: '/api/invites', headers: { cookie: admin }, payload: { email: 'off@test.io', role: 'designer' } })).json();
+  const off = (await app.inject({ method: 'POST', url: '/api/invites', headers: { cookie: admin }, payload: { email: 'off@test.io', role: 'viewer' } })).json();
   assert.equal(off.emailSent, false); assert.equal(smtp.msgs.length, 0);
   assert.equal((await app.inject({ method: 'GET', url: '/api/setup' })).json().mail, false);
   useSmtp(smtp.port);
@@ -76,7 +76,7 @@ test('invitación: con SMTP se envía (emailSent, emailSentAt) y el enlace usa P
   const list = (await app.inject({ method: 'GET', url: '/api/invites', headers: { cookie: admin } })).json().invites;
   assert.ok(list.find(i => i.email === 'on@test.io').emailSentAt); assert.equal(list.find(i => i.email === 'off@test.io').emailSentAt, null);
   await smtp.close();
-  const fail = await app.inject({ method: 'POST', url: '/api/invites', headers: { cookie: admin }, payload: { email: 'fail@test.io', role: 'designer' } });
+  const fail = await app.inject({ method: 'POST', url: '/api/invites', headers: { cookie: admin }, payload: { email: 'fail@test.io', role: 'viewer' } });
   assert.equal(fail.statusCode, 201); assert.equal(fail.json().emailSent, false); assert.ok(fail.json().mailError);
 });
 
@@ -86,7 +86,7 @@ test('olvidé mi contraseña: forgot siempre 204; correo con enlace; reset cambi
   const app = await buildApp({ dbPath: ':memory:', logger: false });
   t.after(async () => { noSmtp(); await app.close(); await smtp.close(); });
   const admin = await setupAdmin(app);
-  const des = await inviteAndAccept(app, admin, 'des@test.io', 'designer', 'Des');
+  const des = await inviteAndAccept(app, admin, 'des@test.io', 'viewer', 'Des');
   const forgot = email => app.inject({ method: 'POST', url: '/api/auth/forgot', payload: { email } });
   noSmtp();
   assert.equal((await forgot('des@test.io')).statusCode, 204, 'sin SMTP también 204');

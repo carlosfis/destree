@@ -1,5 +1,9 @@
 # Changelog
 
+## Sin publicar
+- Roles por nivel y Organización (P10): cinco niveles (Admin, Ops, Head, Lead, Viewer; `designer` → `viewer`, migración `012_roles.sql`), nombres visibles configurables (salvo Admin), pestaña **Lobby → Organización** (datos, niveles y roles, tabla de capacidades, plantilla con células y asignaciones, invitar, 🔑, eliminar organización), Lead con visibilidad parcial que no pierde lo oculto al guardar, Viewer que edita sus propias cards con un editor acotado (`PATCH /api/pages/:p/nodes/:n`), `GET/PATCH/DELETE /api/org`, reglas de asignación por nivel en usuarios e invitaciones. Campos `email`/`password` con el mismo estilo que el resto.
+- Thumbnail para Figma (P9): sección «Thumbnail» en la pestaña General del editor (geografía con bandera, icono propio, vista previa en vivo) con «Copiar thumbnail» (PNG 1920×1080 al portapapeles) y «Descargar PNG»; los mismos botones en la ficha de lectura. Migración `011_thumbnail.sql` (`nodes.geo`, `nodes.thumb_icon_id`); el icono cuenta como uso de la imagen.
+
 ## 1.0.0 — 2026-10-07
 Primera versión estable para uso diario: contraseñas, correo, hardening y material de comunidad sobre la base de 0.1.0.
 - Correo SMTP (P7): cliente SMTP propio sin dependencias (`SMTP_URL`, `MAIL_FROM`, `PUBLIC_URL`); las invitaciones se envían por correo (estado enviada/pendiente) y el login ofrece «¿Olvidaste tu contraseña?» (`POST /api/auth/forgot` siempre 204, `POST /api/auth/reset` con token de un solo uso, 1 h); «Probar envío» en Administración → Usuarios; perfil `dev` de compose con Mailpit; migración `010_mail.sql`.

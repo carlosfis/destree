@@ -10,7 +10,7 @@ test('PATCH /api/me: contraseña propia (actual incorrecta → 403, corta → 40
   const app = await buildApp({ dbPath: ':memory:', logger: false });
   t.after(() => app.close());
   const admin = await setupAdmin(app);
-  const { cookie: des1, user } = await inviteAndAccept(app, admin, 'des@test.io', 'designer', 'Des');
+  const { cookie: des1, user } = await inviteAndAccept(app, admin, 'des@test.io', 'viewer', 'Des');
   const des2 = await login(app, 'des@test.io'); // segunda sesión (otro dispositivo)
   const patch = (cookie, payload) => app.inject({ method: 'PATCH', url: '/api/me', headers: { cookie }, payload });
 
@@ -32,14 +32,14 @@ test('PATCH /api/me: contraseña propia (actual incorrecta → 403, corta → 40
   resetRateLimit(); // el cupo (10/15 min por IP) es común a setup/login/accept/PATCH me
   assert.equal((await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: 'des@test.io', password: PW } })).statusCode, 401, 'la vieja ya no entra');
   const des3 = await login(app, 'des@test.io', 'nueva-clave-1');
-  assert.equal((await app.inject({ method: 'GET', url: '/api/me', headers: { cookie: des3 } })).json().role, 'designer');
+  assert.equal((await app.inject({ method: 'GET', url: '/api/me', headers: { cookie: des3 } })).json().role, 'viewer');
 
   // name (opcional), sin tocar la contraseña
   const named = await patch(des3, { name: '  Desirée  ' });
   assert.equal(named.statusCode, 200); assert.equal(named.json().user.name, 'Desirée'); assert.equal(named.json().sessionsClosed, 0);
   assert.equal((await app.inject({ method: 'GET', url: '/api/me', headers: { cookie: des1 } })).statusCode, 200, 'cambiar name no cierra sesiones');
   const esc = await patch(des3, { role: 'admin' }); // removeAdditional: la propiedad se descarta y nada cambia
-  assert.equal(esc.statusCode, 200); assert.equal(esc.json().role, 'designer');
+  assert.equal(esc.statusCode, 200); assert.equal(esc.json().role, 'viewer');
 
   const actions = app.db.prepare("SELECT action, meta_json FROM audit_log WHERE user_id = ? AND action IN ('user.password', 'user.update')").all(user.id);
   assert.ok(actions.some(a => a.action === 'user.password' && JSON.parse(a.meta_json).sessionsClosed === 2));

@@ -1,10 +1,11 @@
-// F3: visibilidad server-side (PLAN §3). admin/head ven todo; designer solo raíces org, de sus células o donde está asignado/responsable.
+// F3: visibilidad server-side (PLAN §3). Niveles ≥3 (`pages.all`) ven todo; lead/viewer solo raíces org, de sus células o donde están asignados/responsables.
 // Un solo recorrido: visibilidad por raíz → propagación a descendientes → filtrado de aristas (hasExternalRefs).
+import { can } from './permissions.js';
 
-/** ctx = { role, userId, cellIds:[] }. ¿Aplica filtro? */
-export const needsFilter = ctx => !!ctx && ctx.role === 'designer';
+/** ctx = { role, userId, cellIds:[] }. ¿Aplica filtro? (P10: todo rol sin `pages.all`) */
+export const needsFilter = ctx => !!ctx && !can(ctx, 'pages.all');
 
-/** Regla 2: página visible para designer si visibility=org ∨ page_cells ∩ cells(user) ∨ asignado a algún nodo de la página. */
+/** Regla 2: página visible para lead/viewer si visibility=org ∨ page_cells ∩ cells(user) ∨ asignado/responsable en algún nodo de la página. */
 export function pageVisibleFor(db, page, ctx) {
   if (!needsFilter(ctx)) return true;
   if (page.visibility !== 'cells') return true;

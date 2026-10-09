@@ -5,7 +5,6 @@ import { $, esc } from '../core/utils.js';
 import * as api from '../core/api.js';
 
 const view = () => $('#authView');
-export const ROLE_LABEL = { admin: 'Admin', head: 'Head', designer: 'Designer' };
 const field = (name, label, type = 'text', extra = '') => `<div class="field"><label for="f_${name}">${label}</label><input id="f_${name}" name="${name}" type="${type}" ${extra}></div>`;
 
 function show(title, subtitle, inner) {
@@ -93,7 +92,7 @@ export async function showInvite(token) {
     show('Invitación no válida', esc(msg), `<p><a href="#/login" class="btn">Ir al inicio de sesión</a></p>`);
     return null;
   }
-  const v = show(`Únete a ${esc(inv.orgName)}`, `Te han invitado como <b>${esc(ROLE_LABEL[inv.role] || inv.role)}</b>. Crea tu contraseña para entrar.`, `<form>
+  const v = show(`Únete a ${esc(inv.orgName)}`, `Te han invitado como <b>${esc(inv.roleLabel || inv.role)}</b>. Crea tu contraseña para entrar.`, `<form>
     ${field('email', 'Correo', 'email', `value="${esc(inv.email)}" disabled`)}
     ${field('name', 'Tu nombre', 'text', 'required maxlength="120" autocomplete="name"')}
     ${field('password', 'Contraseña (mín. 8)', 'password', 'required minlength="8" autocomplete="new-password"')}

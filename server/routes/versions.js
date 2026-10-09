@@ -3,14 +3,15 @@ import { listVersions, getVersion, diffVersions, createVersion, restoreVersion }
 import { pageMeta, getDocument, HttpError } from '../lib/pages.js';
 import { visibilityCtx } from '../lib/cells.js';
 import { audit } from '../lib/audit.js';
+import { can } from '../lib/permissions.js';
 
 const idP = { type: 'string', minLength: 1, maxLength: 64 };
 const nP = { type: 'string', pattern: '^(\\d{1,9}|current)$' };
 const params = (extra = {}) => ({ type: 'object', required: ['id', ...Object.keys(extra)], properties: { id: idP, ...extra } });
 
 export default async function versionRoutes(app) {
-  /** Página legible por el usuario (designer: regla 2; borrada: solo admin). */
-  const check = (req) => { const p = pageMeta(app.db, req.params.id); if (p.status === 'deleted' && req.role !== 'admin') throw new HttpError(404, 'Página no encontrada'); getDocument(app.db, req.params.id, visibilityCtx(req)); return p; };
+  /** Página legible por el usuario (lead/viewer: regla 2; borrada: solo con `pages.delete`). */
+  const check = (req) => { const p = pageMeta(app.db, req.params.id); if (p.status === 'deleted' && !can(req, 'pages.delete')) throw new HttpError(404, 'Página no encontrada'); getDocument(app.db, req.params.id, visibilityCtx(req)); return p; };
 
   app.get('/api/pages/:id/versions', { onRequest: app.guard('versions.read'), schema: { params: params() } }, async (req) => { check(req); return { versions: listVersions(app.db, req.params.id) }; });
 

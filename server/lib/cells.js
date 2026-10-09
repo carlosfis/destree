@@ -3,6 +3,7 @@ import { DEFAULT_ORG_ID, transaction } from '../db/sqlite.js';
 import { ulid } from './ids.js';
 import { HttpError } from './pages.js';
 import { TAG_COLORS } from './normalize.js';
+import { can } from './permissions.js';
 
 const pub = r => ({ id: r.id, name: r.name, color: r.color, description: r.description, leadUserId: r.lead_user_id, createdAt: r.created_at, memberIds: [] });
 const withMembers = (db, cells) => {
@@ -56,10 +57,10 @@ export function addCellMembers(db, cellIds, userId) {
   for (const c of cellIds || []) ins.run(userId, c);
 }
 export const userCellIds = (db, userId) => db.prepare('SELECT cell_id FROM cell_members WHERE user_id = ?').all(userId).map(r => r.cell_id);
-/** ¿El head puede gestionar esta célula? (lead o miembro). Admin siempre. */
+/** ¿Puede gestionar (miembros, invitar a) esta célula? `cells.manage` (nivel ≥3): todas; `cells.members` (lead): solo si es lead o miembro. */
 export function canManageCell(db, ctx, cellId) {
-  if (ctx.role === 'admin') return true;
-  if (ctx.role !== 'head') return false;
+  if (can(ctx, 'cells.manage')) return true;
+  if (!can(ctx, 'cells.members')) return false;
   const c = db.prepare('SELECT lead_user_id FROM cells WHERE id = ?').get(cellId);
   return !!c && (c.lead_user_id === ctx.userId || !!db.prepare('SELECT 1 FROM cell_members WHERE cell_id = ? AND user_id = ?').get(cellId, ctx.userId));
 }

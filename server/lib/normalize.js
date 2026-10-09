@@ -52,6 +52,7 @@ function normalizeNode(n) {
   return {
     id: String(n.id), type: TYPES.includes(n.type) ? n.type : 'software', name: str(n.name, 120, 'Sin nombre') || 'Sin nombre',
     description: str(n.description, 140), image: typeof n.image === 'string' && n.image.startsWith('data:image') ? n.image : null, imageId: n.imageId ? String(n.imageId) : null,
+    geo: /^[A-Za-z]{2}$/.test(n.geo || '') ? n.geo.toUpperCase() : '', thumbIconId: n.thumbIconId ? String(n.thumbIconId) : null, // thumbnail (P9)
     tags: Array.isArray(n.tags) ? n.tags.map(String).slice(0, 50) : [], owner: str(n.owner, 80), staff, ownerUserId: n.ownerUserId ? String(n.ownerUserId) : null,
     parentId: n.parentId ? String(n.parentId) : null, branchTypeId: n.branchTypeId ? String(n.branchTypeId) : null,
     x: num(n.x), y: num(n.y), w: Math.max(0, num(n.w)), h: Math.max(0, num(n.h)), demo: !!n.demo,

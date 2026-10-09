@@ -70,7 +70,7 @@ test('versiones: 3 ediciones → 3 autos; restaurar la 1ª reproduce el canvas; 
   assert.equal(co.number, before.number); assert.notEqual(co.hash, before.hash);
   assert.equal((await versions()).length, list.length);
   // designer: lee versiones (filtradas), no crea ni restaura
-  const des = await inviteAndAccept(app, admin, 'des@test.io', 'designer');
+  const des = await inviteAndAccept(app, admin, 'des@test.io', 'viewer');
   app.db.prepare("UPDATE nodes SET visibility = 'cells' WHERE id = 'a'").run();
   createVersion(app.db, 'p_default', { reason: 'manual', label: 'oculta', userId: me });
   const dl = (await j({ method: 'GET', url: '/api/pages/p_default/versions' }, des.cookie)).body.versions;

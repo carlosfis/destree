@@ -1,8 +1,9 @@
 // GET/POST /api/pages · GET/PUT/PATCH/DELETE /api/pages/:id · archive/unarchive/duplicate/restore-deleted · POST /api/import. Guard por acción + audit.
-import { listPages, getDocument, saveDocument, createPage, importDocument, updatePageMeta, setPageStatus, deletePage, duplicatePage, pageMeta, HttpError } from '../lib/pages.js';
+import { listPages, getDocument, saveDocument, createPage, importDocument, updatePageMeta, setPageStatus, deletePage, duplicatePage, pageMeta, reconcileForEditor, HttpError } from '../lib/pages.js';
 import { DEFAULT_PAGE_ID } from '../db/sqlite.js';
 import { audit } from '../lib/audit.js';
 import { visibilityCtx } from '../lib/cells.js';
+import { can } from '../lib/permissions.js';
 import { ingestDataUrls, embedImages } from '../lib/images.js';
 import { createVersion, restoreLatestIfDiverged } from '../lib/versions.js';
 
@@ -12,11 +13,11 @@ const metaProps = { name: { type: 'string', minLength: 1, maxLength: 120 }, desc
 
 export default async function pageRoutes(app) {
   const log = (req, action, entityId, meta) => audit(app.db, { orgId: req.orgId, userId: req.user.id, action, entity: 'page', entityId, meta });
-  const visibleOr404 = (req, id) => { const p = pageMeta(app.db, id); if (p.status === 'deleted' && req.role !== 'admin') throw new HttpError(404, 'Página no encontrada'); return p; };
+  const visibleOr404 = (req, id) => { const p = pageMeta(app.db, id); if (p.status === 'deleted' && !can(req, 'pages.delete')) throw new HttpError(404, 'Página no encontrada'); return p; };
 
   app.get('/api/pages', { onRequest: app.guard('pages.read'), schema: { querystring: { type: 'object', properties: { status: { enum: ['active', 'archived', 'deleted', 'all'] } } } } }, async (req) => {
     const status = req.query.status || 'active';
-    if (status === 'deleted' && req.role !== 'admin') throw new HttpError(403, 'Solo admin lista páginas borradas');
+    if (status === 'deleted' && !can(req, 'pages.delete')) throw new HttpError(403, 'Sin permisos para listar páginas borradas');
     return { pages: listPages(app.db, req.orgId, visibilityCtx(req), status) };
   });
 
@@ -45,15 +46,17 @@ export default async function pageRoutes(app) {
     const expected = parseIfMatch(req.headers['if-match']);
     if (expected == null) throw new HttpError(428, 'Falta la cabecera If-Match con la versión de la página');
     await ingestDataUrls(app.db, app.uploadsDir, req.body, { orgId: req.orgId, createdBy: req.user.id }); // F5: dataURL → archivo
-    const res = saveDocument(app.db, req.params.id, req.body, expected);
+    visibleOr404(req, req.params.id); getDocument(app.db, req.params.id, visibilityCtx(req)); // P10: lead solo edita páginas que ve (403 si no)
+    const res = saveDocument(app.db, req.params.id, reconcileForEditor(app.db, req.params.id, req.body, visibilityCtx(req)), expected); // P10: conserva lo que el editor no ve
     createVersion(app.db, req.params.id, { reason: 'auto', userId: req.user.id }); // F6a: snapshot si cambió el hash (coalesce 5 min)
     log(req, 'page.save', req.params.id, { version: res.version, nodes: res.nodes });
     reply.header('ETag', `"${res.version}"`);
     return res;
   });
 
-  // F4a: metadatos (nombre, descripción, visibilidad + células)
-  app.patch('/api/pages/:id', { onRequest: app.guard('pages.edit'), schema: { params: idParam, body: { type: 'object', additionalProperties: false, minProperties: 1, properties: metaProps } } }, async (req, reply) => {
+  // F4a: metadatos. P10: visibilidad + células con `pages.visibility` (nivel ≥3); nombre y descripción exigen `pages.meta` (nivel ≥4).
+  app.patch('/api/pages/:id', { onRequest: app.guard('pages.visibility'), schema: { params: idParam, body: { type: 'object', additionalProperties: false, minProperties: 1, properties: metaProps } } }, async (req, reply) => {
+    if ((req.body.name != null || req.body.description != null) && !can(req, 'pages.meta')) throw new HttpError(403, 'Sin permisos para renombrar la página');
     const p = updatePageMeta(app.db, req.params.id, req.body);
     log(req, 'page.update', p.id, req.body);
     reply.header('ETag', `"${p.version}"`);

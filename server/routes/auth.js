@@ -7,6 +7,7 @@ import { sessionCookie } from '../plugins/session.js';
 import { transaction, DEFAULT_ORG_ID } from '../db/sqlite.js';
 import { userCellIds } from '../lib/cells.js';
 import { mailConfigured } from '../lib/mailer.js'; // P7
+import { getOrg } from '../lib/org.js'; // P10
 
 const email = { type: 'string', format: 'email', maxLength: 200 };
 const password = { type: 'string', minLength: 8, maxLength: 200 };
@@ -14,7 +15,6 @@ const name = { type: 'string', minLength: 1, maxLength: 120 };
 export const limited = async (req) => rateLimit(req.ip);
 
 export default async function authRoutes(app) {
-  const orgRow = () => app.db.prepare('SELECT id, name, slug FROM orgs WHERE id = ?').get(DEFAULT_ORG_ID);
 
   app.get('/api/setup', async () => ({ needed: userCount(app.db) === 0, mail: mailConfigured() })); // P7: mail → el login ofrece «¿Olvidaste tu contraseña?»
 
@@ -85,7 +85,7 @@ export default async function authRoutes(app) {
   });
 
   function me(app, user) {
-    return { user: { id: user.id, email: user.email, name: user.name }, org: orgRow(), role: user.role, permissions: permissionsFor(user.role), cellIds: userCellIds(app.db, user.id), cells: userCells(user.id), mail: mailConfigured() };
+    return { user: { id: user.id, email: user.email, name: user.name }, org: getOrg(app.db, DEFAULT_ORG_ID), role: user.role, permissions: permissionsFor(user.role), cellIds: userCellIds(app.db, user.id), cells: userCells(user.id), mail: mailConfigured() }; // P10: org.roleLabels
   }
   function userCells(userId) {
     return app.db.prepare('SELECT c.id, c.name, c.color FROM cells c JOIN cell_members m ON m.cell_id = c.id WHERE m.user_id = ? ORDER BY c.name').all(userId);

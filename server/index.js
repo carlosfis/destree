@@ -27,6 +27,7 @@ import imageRoutes from './routes/images.js';
 import versionRoutes from './routes/versions.js';
 import backupRoutes from './routes/backups.js';
 import mailRoutes from './routes/mail.js'; // P7
+import orgRoutes from './routes/org.js'; // P10
 import { createBackup, scheduleBackups, acquireLock } from './lib/backup.js';
 import { migrateLegacyImages, purgeOrphans } from './lib/images.js';
 
@@ -79,6 +80,7 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   await app.register(versionRoutes);
   await app.register(backupRoutes);
   await app.register(mailRoutes); // P7
+  await app.register(orgRoutes); // P10
   app.addHook('onReady', async () => { try { purgeOrphans(db, app.uploadsDir); } catch (err) { app.log.warn(err, 'purga de imágenes huérfanas'); } });
   // F6b: lock para scripts/restore.js + respaldos programados (BACKUP_CRON)
   let releaseLock = () => {};

@@ -76,3 +76,9 @@ test('normalize: migración v1 (aristas branch → anidamiento) e integridad', (
   assert.deepEqual(d.edges.map(e => e.id), ['e2', 'e5'], 'duplicadas y colgantes fuera');
   assert.equal(normalizeDocument(null).nodes.length, 0);
 });
+
+test('normalize: geo (ISO alfa-2 en mayúsculas) y thumbIconId del thumbnail (P9)', () => {
+  const d = normalizeDocument({ nodes: [{ id: 'a', type: 'software', name: 'A', geo: 'mx', thumbIconId: 'img1' }, { id: 'b', type: 'software', name: 'B', geo: 'México', thumbIconId: '' }, { id: 'c', type: 'software', name: 'C' }] });
+  assert.deepEqual(d.nodes.map(n => [n.geo, n.thumbIconId]), [['MX', 'img1'], ['', null], ['', null]]);
+  assert.deepEqual(validate(DOC, d).errors, []);
+});

@@ -1,6 +1,6 @@
 # DesTree
 
-Fuente única de verdad para agencias: árbol de software → Design Systems / UI Kits, responsables y documentación. Autoalojado, multi-página, roles admin/head/designer. **Sin Figma**: decisión cerrada, el producto no depende de ninguna función de Figma (solo enlaces manuales en Documentación).
+Fuente única de verdad para agencias: árbol de software → Design Systems / UI Kits, responsables y documentación. Autoalojado, multi-página, roles por nivel admin 5 / ops 4 / head 3 / lead 2 / viewer 1 (jerarquía estricta; etiquetas visibles configurables salvo Admin). **Sin Figma**: decisión cerrada, el producto no depende de ninguna función de Figma (solo enlaces manuales en Documentación).
 
 ## Estado
 - v0.1.0 publicada (Docker multi-arch, CI + release, docs). El trabajo restante vive en `PENDIENTE.md`, por fases P1…P8 con casillas; es el único registro de seguimiento.

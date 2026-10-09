@@ -1,11 +1,11 @@
 /* =========================================================
-   F4b. Administración (#/admin): usuarios e invitaciones, células, páginas borradas (admin), audit log (admin)
+   F4b. Administración (#/admin): invitaciones (P10: la plantilla vive en Lobby → Organización), células, páginas borradas, respaldos, audit log
    ========================================================= */
 import { $, esc } from '../core/utils.js';
 import { S } from '../core/state.js';
 import * as api from '../core/api.js';
 import { toast } from '../ui/theme.js';
-import { ROLE_LABEL } from './auth-views.js';
+import { roleLabel } from '../core/roles.js'; // P10
 import { renderUsersTab } from './users.js';
 import { renderCellsTab } from './cells.js';
 
@@ -22,7 +22,7 @@ export async function openAdminView(tab) {
   tab = tabs.some(t => t[0] === tab) ? tab : (tabs.some(t => t[0] === S.orgTab) ? S.orgTab : tabs[0][0]); S.orgTab = tab;
   const v = view(); v.hidden = false;
   v.innerHTML = `<div class="lobby"><header class="lobby-head"><div class="brand">DesTree · <b>Administración</b> · ${esc(S.session.org?.name || '')}</div><span class="spacer"></span>
-      <span class="user-chip"><b>${esc(S.session.user.name || S.session.user.email)}</b><span class="role">${esc(ROLE_LABEL[S.session.role] || S.session.role)}</span></span>
+      <span class="user-chip"><b>${esc(S.session.user.name || S.session.user.email)}</b><span class="role">${esc(roleLabel(S.session.role))}</span></span>
       <button class="btn" id="adminBack">← Volver</button></header>
     <nav class="tabs" id="orgTabs">${tabs.map(([k, l]) => `<button data-tab="${k}" class="${k === tab ? 'active' : ''}">${l}</button>`).join('')}</nav>
     <div class="lobby-body panel-body admin-body" id="orgBody"><div class="empty">Cargando…</div></div></div>`;

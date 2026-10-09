@@ -18,14 +18,14 @@ test('pages: visibilidad por célula en lobby, archivar reversible, borrar solo 
   const j = async (o, cookie) => { const r = await app.inject({ ...o, headers: { ...(o.headers || {}), cookie } }); return { status: r.statusCode, body: r.statusCode === 204 ? null : r.json() }; };
   const head = (await inviteAndAccept(app, admin, 'head@test.io', 'head')).cookie;
   const cell = (await j({ method: 'POST', url: '/api/cells', payload: { name: 'A' } }, admin)).body;
-  const des = await inviteAndAccept(app, admin, 'des@test.io', 'designer');
+  const des = await inviteAndAccept(app, admin, 'des@test.io', 'viewer');
   await j({ method: 'PUT', url: `/api/cells/${cell.id}/members`, payload: { userIds: [des.user.id] } }, admin);
 
   // admin crea 2 páginas con visibilidad distinta
   const pOrg = (await j({ method: 'POST', url: '/api/pages', payload: { name: 'Pública', description: 'para todos' } }, admin)).body.page;
   const pCell = (await j({ method: 'POST', url: '/api/pages', payload: { name: 'Solo A', visibility: 'cells', cellIds: [cell.id, 'nope'] } }, admin)).body.page;
   assert.equal(pCell.visibility, 'cells'); assert.deepEqual(pCell.cellIds, [cell.id]);
-  const pOther = (await j({ method: 'POST', url: '/api/pages', payload: { name: 'Solo B', visibility: 'cells', cellIds: [] } }, head)).body.page;
+  const pOther = (await j({ method: 'POST', url: '/api/pages', payload: { name: 'Solo B', visibility: 'cells', cellIds: [] } }, admin)).body.page; // P10: head ya no crea páginas
   const names = async (cookie, status) => (await j({ method: 'GET', url: '/api/pages' + (status ? `?status=${status}` : '') }, cookie)).body.pages.map(p => p.name);
   assert.deepEqual(await names(admin), ['Árbol principal', 'Pública', 'Solo A', 'Solo B']);
   assert.deepEqual(await names(des.cookie), ['Árbol principal', 'Pública', 'Solo A'], 'designer: solo org + su célula');
@@ -33,8 +33,9 @@ test('pages: visibilidad por célula en lobby, archivar reversible, borrar solo 
   assert.equal(list[0].rootCount, 0); assert.ok('nodeCount' in list[0] && 'updatedAt' in list[0]);
   assert.equal((await j({ method: 'GET', url: `/api/pages/${pOther.id}` }, des.cookie)).status, 403);
 
-  // PATCH meta (head ok): renombrar, cambiar visibilidad → el designer deja de verla; version avanza
-  const patched = (await j({ method: 'PATCH', url: `/api/pages/${pCell.id}`, payload: { name: 'Solo A2', visibility: 'cells', cellIds: [] } }, head)).body;
+  // PATCH meta: renombrar exige pages.meta (head → 403; admin ok); cambiar visibilidad (head ok) → el viewer deja de verla; version avanza
+  assert.equal((await j({ method: 'PATCH', url: `/api/pages/${pCell.id}`, payload: { name: 'Solo A2' } }, head)).status, 403, 'P10: head no renombra');
+  const patched = (await j({ method: 'PATCH', url: `/api/pages/${pCell.id}`, payload: { name: 'Solo A2', visibility: 'cells', cellIds: [] } }, admin)).body;
   assert.equal(patched.name, 'Solo A2'); assert.deepEqual(patched.cellIds, []); assert.equal(patched.version, 2);
   assert.deepEqual(await names(des.cookie), ['Árbol principal', 'Pública']);
   assert.equal((await j({ method: 'PATCH', url: `/api/pages/${pCell.id}`, payload: { visibility: 'org' } }, des.cookie)).status, 403);
@@ -47,23 +48,25 @@ test('pages: visibilidad por célula en lobby, archivar reversible, borrar solo 
   const asg = (await j({ method: 'GET', url: '/api/me/assignments' }, des.cookie)).body.items;
   assert.deepEqual(asg.map(a => [a.pageName, a.nodeId, a.role, a.isRoot]), [['Pública', 'r1', 'assignee', true]]);
 
-  // archivar: head puede; desaparece del listado por defecto; aparece con ?status=archived|all; PUT → 409; reversible
+  // archivar: nivel ≥4 (head → 403); desaparece del listado por defecto; aparece con ?status=archived|all; PUT → 409; reversible
   assert.equal((await j({ method: 'POST', url: `/api/pages/${pOrg.id}/archive` }, des.cookie)).status, 403);
-  const arch = (await j({ method: 'POST', url: `/api/pages/${pOrg.id}/archive` }, head)).body;
+  assert.equal((await j({ method: 'POST', url: `/api/pages/${pOrg.id}/archive` }, head)).status, 403, 'P10: head no archiva');
+  const arch = (await j({ method: 'POST', url: `/api/pages/${pOrg.id}/archive` }, admin)).body;
   assert.equal(arch.status, 'archived'); assert.ok(arch.archivedAt);
   assert.deepEqual(await names(admin), ['Árbol principal', 'Solo A2', 'Solo B']);
   assert.deepEqual(await names(admin, 'archived'), ['Pública']);
   assert.equal((await names(admin, 'all')).length, 4);
-  assert.equal((await j({ method: 'POST', url: `/api/pages/${pOrg.id}/archive` }, head)).status, 409, 'ya archivada');
+  assert.equal((await j({ method: 'POST', url: `/api/pages/${pOrg.id}/archive` }, admin)).status, 409, 'ya archivada');
   const putArch = await j({ method: 'PUT', url: `/api/pages/${pOrg.id}`, headers: { 'if-match': '3' }, payload: doc({ id: pOrg.id, name: 'Pública' }) }, head);
   assert.equal(putArch.status, 409); assert.match(putArch.body.message, /archivada/);
   assert.equal((await j({ method: 'GET', url: `/api/pages/${pOrg.id}` }, des.cookie)).status, 200, 'archivada sigue legible');
   assert.equal((await j({ method: 'GET', url: '/api/me/assignments' }, des.cookie)).body.items[0].pageStatus, 'archived');
-  assert.equal((await j({ method: 'POST', url: `/api/pages/${pOrg.id}/unarchive` }, head)).body.status, 'active');
+  assert.equal((await j({ method: 'POST', url: `/api/pages/${pOrg.id}/unarchive` }, admin)).body.status, 'active');
   assert.deepEqual(await names(admin), ['Árbol principal', 'Pública', 'Solo A2', 'Solo B']);
 
-  // duplicar (head): copia contenido y relaciones
-  const dup = (await j({ method: 'POST', url: `/api/pages/${pOrg.id}/duplicate`, payload: { name: 'Pública copia' } }, head)).body;
+  // duplicar (nivel ≥4; head → 403): copia contenido y relaciones
+  const dup = (await j({ method: 'POST', url: `/api/pages/${pOrg.id}/duplicate`, payload: { name: 'Pública copia' } }, admin)).body;
+  assert.equal((await j({ method: 'POST', url: `/api/pages/${pOrg.id}/duplicate`, payload: null }, head)).status, 403, 'P10: head no duplica');
   assert.equal(dup.page.name, 'Pública copia'); assert.equal(dup.nodes.length, 2); assert.deepEqual(dup.nodes[0].assigneeIds, [des.user.id]); assert.equal(dup.page.version, 1);
   assert.equal((await j({ method: 'POST', url: `/api/pages/${pOrg.id}/duplicate`, payload: null }, des.cookie)).status, 403);
 

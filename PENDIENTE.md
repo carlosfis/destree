@@ -4,7 +4,7 @@
 
 ## Cómo retomar (para otro agente)
 1. Leer `CLAUDE.md` (reglas) y este archivo entero.
-2. Estado al 2026-10-07: todas las fases de agente (P1, P3, P4, P5 guías, P6, P7, P8) están cerradas y v1.0.0 etiquetada. Lo abierto es «usuario» (despliegue real, descripción/topics del repo, vídeo, operación diaria, anuncio). Cuando Carlos informe del despliegue real o pase el enlace del vídeo, el agente retoma la casilla correspondiente (P2 último punto, P4 vídeo).
+2. Estado al 2026-10-09: todas las fases de agente (P1, P3, P4, P5 guías, P6, P7, P8, P9, P10) están cerradas; v1.0.0 etiquetada y P9/P10 en `main` sin release todavía (CHANGELOG «Sin publicar»). Lo abierto es «usuario» (despliegue real, descripción/topics del repo, vídeo, operación diaria, anuncio). Regla vigente: la UI nueva se enseña y aprueba antes de subir a `main`. Lo abierto es «usuario» (despliegue real, descripción/topics del repo, vídeo, operación diaria, anuncio). Cuando Carlos informe del despliegue real o pase el enlace del vídeo, el agente retoma la casilla correspondiente (P2 último punto, P4 vídeo).
 3. Verificación antes de cerrar: `npm test` · `npm run lint` · `node scripts/smoke.js` (si hubo UI). Actualizar `docs/MAP.md` si se crean o mueven archivos, `docs/API.md` si cambian endpoints, `CHANGELOG.md` en cada release.
 4. Lo que surja y no pueda resolverse solo se añade aquí como casilla «usuario», nunca bloquea.
 
@@ -87,9 +87,28 @@
 - [ ] «usuario» Comprobar la release en GitHub y anunciar (enlace al vídeo y al README).
 **Aceptación:** instalación limpia desde la release cumple `docs/INSTALL.md` (el agente lo comprueba con `docker compose pull` de `:1.0.0` cuando el workflow termina).
 
+## P9 — Thumbnail para Figma (agente; aprobación «usuario») ✅ 2026-10-09
+**Objetivo:** generar desde los datos de la instancia un PNG 1920×1080 para pegar a mano como thumbnail en Figma (sin depender de Figma).
+- [x] Modelo: `nodes.geo` (ISO alfa-2) y `nodes.thumb_icon_id` (migración 011), schema + normalize; `imageUsage`/`purgeOrphans`/versiones/export cuentan el icono como uso.
+- [x] Cliente: `js/ui/thumbnail.js` (render en canvas: staff como chips con siglas de rol, bandera, tipo, título, subtítulo `[ruta] [nombre] [etiquetas] [año]`, icono) y `js/ui/thumbnail-section.js` (sección en General: geografía, icono, vista previa en vivo, Copiar / Descargar PNG); botones en la ficha de lectura.
+- [x] Tests (normalize geo/thumbIconId; icono en uso → no se purga, 409), paso de smoke, docs (USER, API, MAP, DECISIONS, CHANGELOG).
+- [x] «usuario» Diseño del thumbnail aprobado por Carlos el 2026-10-09 (commit junto con P10).
+**Aceptación:** con un nodo con staff, etiquetas, geografía e icono, «Copiar thumbnail» pega en Figma un PNG 1920×1080 equivalente a la vista previa; sin icono propio usa la imagen de la instancia; tests, lint y smoke en verde.
+
+## P10 — Roles por nivel y pestaña Organización (agente; aprobación «usuario») ✅ 2026-10-09
+**Objetivo:** cinco niveles de rol con etiquetas renombrables y un lugar único (Lobby → Organización) para los datos de la organización, la plantilla y las capacidades por rol.
+- [x] Modelo: `server/lib/permissions.js` con roles por nivel (admin 5 · ops 4 · head 3 · lead 2 · viewer 1), matriz acción → nivel mínimo, roles asignables, etiquetas; migración `012_roles.sql` (designer → viewer); etiquetas en `orgs.settings_json.roleLabels`; symlink `client/js/core/permissions.js`.
+- [x] Servidor: `GET/PATCH/DELETE /api/org` (`lib/org.js`, `routes/org.js`), `GET /api/users` con células y asignaciones, reglas de nivel en usuarios e invitaciones, `pages.meta`/`pages.visibility`/`nodes.assign`/`nodes.own`, PUT del Lead reconciliado (`reconcileForEditor`), `PATCH …/nodes/:id` de campos propios, `/api/me` con `org.roleLabels`, invitación con `roleLabel`, import de exports antiguos.
+- [x] Cliente: pestaña **Organización** en el lobby (`views/org.js`: datos, niveles y roles, capacidades, correo, plantilla, invitar, zona de peligro), `users.js` refactorizado, `core/roles.js`, `ROLE_LABEL` sustituido por etiquetas de la organización, editor acotado del viewer (`.own-mode`, «Editar» en la ficha), pestaña Página por permisos, `#/lobby/<tab>`, estilo de inputs email/password.
+- [x] Tests (`tests/roles.test.js` nuevo; permisos con tabla de 6 columnas; resto adaptado a viewer), smoke con dos pasos P10, docs (README ES/EN, USER, ADMIN, API, SECURITY, MAP, DECISIONS, CHANGELOG, CLAUDE.md).
+- [x] «usuario» Aprobado por Carlos el 2026-10-09 sobre las capturas (Organización admin/ops, editor acotado del viewer, ficha con «Editar», login).
+**Aceptación:** admin renombra «Viewer» → «Designer» y el cambio se ve en chips, selects y la tabla de capacidades; ops gestiona la plantilla sin tocar admins; head no crea páginas pero cambia visibilidad; lead guarda sin perder raíces que no ve; viewer edita solo sus cards; «Eliminar organización» vuelve al asistente. Cumplida: 39 tests, lint OK, smoke 33/33 con consola limpia.
+
 ---
 
 ## Resueltos
+- 2026-10-09 P10 Roles por nivel + Organización: `permissions.js` por niveles (symlink al cliente), migración 012 (designer → viewer), etiquetas por organización, Lobby → Organización (datos, roles, capacidades, plantilla, eliminar organización), reglas de asignación por nivel, Lead con PUT reconciliado, Viewer con editor acotado (`PATCH …/nodes/:id`), `tests/roles.test.js`, 39 tests, smoke 33/33.
+- 2026-10-09 P9 Thumbnail para Figma: PNG 1920×1080 dibujado en el cliente (Canvas 2D) con staff, bandera (`geo`), tipo, título, subtítulo e icono (`thumb_icon_id`, migración 011); Copiar / Descargar en editor y ficha.
 - 2026-10-07 P8 Release v1.0.0: tag `v1.0.0` → `release.yml` en verde (run 37729916325); release https://github.com/carlosfis/destree/releases/tag/v1.0.0 con `destree-1.0.0.zip`; imagen `ghcr.io/carlosfis/destree:1.0.0` y `:latest` (manifiesto público); instalación limpia con `docker compose pull && up -d` → `/api/health` version 1.0.0 y asistente 201. Queda «usuario»: comprobar y anunciar.
 - 2026-10-07 P7 Correo SMTP: `lib/mailer.js` (SMTP propio), invitaciones por correo con estado, «Probar envío», `forgot`/`reset` con token de un solo uso, pantallas `#/forgot` y `#/reset/<token>`, Mailpit en perfil `dev`, migración `010_mail.sql`, `tests/mail.test.js`.
 - 2026-10-07 P5 (agente): recorrido de 10 minutos en `docs/USER.md` (designer y head) y checklist operativa en `docs/ADMIN.md`.

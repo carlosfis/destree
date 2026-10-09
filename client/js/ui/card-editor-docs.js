@@ -3,6 +3,7 @@
    ========================================================= */
 import { $, esc } from '../core/utils.js';
 import { S } from '../core/state.js';
+import { has, roleLabel } from '../core/roles.js'; // P10
 
 export const normalizeOwner = s => { s = String(s || '').trim().replace(/\s+/g, ''); return s ? (s.startsWith('@') ? s : '@' + s) : ''; };
 const staffRow = m => `<div class="staff-row"><input class="staff-name" maxlength="80" placeholder="@usuario" value="${esc(m.name)}" autocomplete="off"><input class="staff-role" maxlength="80" placeholder="Rol (p. ej. UX Designer)" value="${esc(m.role || '')}" autocomplete="off"><button type="button" class="icon-btn staff-del" title="Quitar">🗑</button></div>`;
@@ -53,11 +54,11 @@ export function docsSection(draft) {
 /** Responsable (usuario) + asignados; solo con directorio (admin/head). */
 export function teamSection(draft) {
   const users = S.userDir || [];
-  if (!users.length) return { html: '', read: () => ({}) };
+  if (!users.length || !has('nodes.assign')) return { html: '', read: () => ({}) }; // P10: sin nodes.assign se conservan los valores
   const opt = u => `<option value="${u.id}" ${u.id === draft.ownerUserId ? 'selected' : ''}>${esc(u.name)}</option>`;
   const html = `<div class="field"><label>Responsable (usuario)</label><select name="ownerUserId"><option value="">— Sin responsable —</option>${users.map(opt).join('')}</select></div>
-    <div class="field"><label>Asignados</label><div class="check-list" id="fAssignees">${users.map(u => `<label><input type="checkbox" value="${u.id}" ${(draft.assigneeIds || []).includes(u.id) ? 'checked' : ''}>${esc(u.name)}<span class="where">${esc(u.role)}</span></label>`).join('')}</div>
-      <div class="hint">Un designer asignado ve la raíz completa aunque sea solo-células.</div></div>`;
+    <div class="field"><label>Asignados</label><div class="check-list" id="fAssignees">${users.map(u => `<label><input type="checkbox" value="${u.id}" ${(draft.assigneeIds || []).includes(u.id) ? 'checked' : ''}>${esc(u.name)}<span class="where">${esc(roleLabel(u.role))}</span></label>`).join('')}</div>
+      <div class="hint">Quien está asignado o es responsable ve la raíz completa aunque sea solo-células, y puede editar esa card.</div></div>`;
   const read = form => ({ ownerUserId: form.ownerUserId.value || null, assigneeIds: [...form.querySelectorAll('#fAssignees input:checked')].map(i => i.value) });
   return { html, read };
 }
@@ -65,6 +66,7 @@ export function teamSection(draft) {
 /** Visibilidad de raíz: org | cells (+ células). Se oculta si el nodo no es raíz software. */
 export function visibilitySection(draft) {
   const cells = S.cellList || [];
+  if (!has('pages.visibility')) return { html: '', bind: () => {}, read: (form, isRoot) => (isRoot ? { visibility: draft.visibility === 'cells' ? 'cells' : 'org', cellIds: draft.cellIds || [] } : { visibility: 'inherit', cellIds: [] }) }; // P10: nivel <3 no cambia la visibilidad (el servidor también la conserva)
   const html = `<div class="field" id="fVisField"><label>Visibilidad de la raíz</label>
       <div class="segmented" id="fVis"><button type="button" data-v="org" class="${draft.visibility !== 'cells' ? 'active' : ''}">Toda la organización</button><button type="button" data-v="cells" class="${draft.visibility === 'cells' ? 'active' : ''}">Solo células</button></div>
       <div class="check-list" id="fCells" ${draft.visibility === 'cells' ? '' : 'hidden'}>${cells.length ? cells.map(c => `<label><input type="checkbox" value="${c.id}" ${(draft.cellIds || []).includes(c.id) ? 'checked' : ''}><span class="t-dot tag-${esc(c.color)}"></span>${esc(c.name)}</label>`).join('') : '<div class="empty">No hay células: créalas en Administrar → Células.</div>'}</div>

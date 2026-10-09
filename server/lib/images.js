@@ -51,7 +51,7 @@ export async function storeImage(db, dir, { buffer, orgId = DEFAULT_ORG_ID, kind
 export function getImage(db, id) { const r = db.prepare('SELECT * FROM images WHERE id = ?').get(id); if (!r) throw new HttpError(404, 'Imagen no encontrada'); return r; }
 /** Usos: nodos y portadas de página. */
 export function imageUsage(db, id) {
-  return { nodes: db.prepare('SELECT page_id AS pageId, id AS nodeId FROM nodes WHERE image_id = ?').all(id), pages: db.prepare('SELECT id FROM pages WHERE cover_image_id = ?').all(id).map(r => r.id) };
+  return { nodes: db.prepare('SELECT page_id AS pageId, id AS nodeId FROM nodes WHERE image_id = ? OR thumb_icon_id = ?').all(id, id), pages: db.prepare('SELECT id FROM pages WHERE cover_image_id = ?').all(id).map(r => r.id) };
 }
 /** Regla 5: designer solo si ve algún nodo/página dueño; sin usos, solo quien la subió. admin/head siempre. */
 export function imageVisibleFor(db, image, ctx) {
@@ -77,7 +77,7 @@ export function deleteImage(db, dir, id) {
 /** Huérfanas: sin uso y con más de `olderThanMs` (24 h) de antigüedad. Devuelve ids borrados. */
 export function purgeOrphans(db, dir, olderThanMs = 86400e3) {
   const limit = new Date(Date.now() - olderThanMs).toISOString();
-  const rows = db.prepare(`SELECT id FROM images i WHERE created_at < ? AND NOT EXISTS (SELECT 1 FROM nodes n WHERE n.image_id = i.id) AND NOT EXISTS (SELECT 1 FROM pages p WHERE p.cover_image_id = i.id)
+  const rows = db.prepare(`SELECT id FROM images i WHERE created_at < ? AND NOT EXISTS (SELECT 1 FROM nodes n WHERE n.image_id = i.id OR n.thumb_icon_id = i.id) AND NOT EXISTS (SELECT 1 FROM pages p WHERE p.cover_image_id = i.id)
     AND NOT EXISTS (SELECT 1 FROM page_versions v WHERE instr(v.image_ids_json, i.id) > 0)`).all(limit); // F6a: respeta imágenes de versiones
   for (const r of rows) deleteImage(db, dir, r.id);
   return rows.map(r => r.id);

@@ -276,6 +276,21 @@ await step('F5: upload en editor → imageId + thumb /uploads; dataURL importada
   fs.rmSync(pngPath, { force: true });
   return { preview: preview.slice(0, 9), node, srv, ingested };
 });
+await step('P9: thumbnail en editor (geo + vista previa + PNG) y botones en la ficha', async () => {
+  const nodeId = await ev(`S.state.nodes.find(n => n.staff && n.staff.length)?.id || S.state.nodes[0].id`);
+  await ev(`import('/js/ui/card-editor.js').then(m => m.openEditor(${JSON.stringify(nodeId)}))`); await sleep(200);
+  await ev(`(() => { const f = document.querySelector('#editorForm'); f.elements.geo.value = 'MX'; f.elements.geo.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`); await sleep(700);
+  const canvas = await ev(`(() => { const c = document.querySelector('#fThumbCanvas'); const px = c.getContext('2d').getImageData(960, 540, 1, 1).data; return { w: c.width, h: c.height, painted: px[3] === 255, copy: !!document.querySelector('#fThumbCopy'), download: !!document.querySelector('#fThumbDownload') }; })()`);
+  if (canvas.w !== 1920 || canvas.h !== 1080 || !canvas.painted || !canvas.copy) throw new Error('vista previa: ' + JSON.stringify(canvas));
+  const png = await ev(`import('/js/ui/thumbnail.js').then(async m => { const n = S.state.nodes.find(n => n.id === ${JSON.stringify(nodeId)}); const c = await m.renderThumbnail(m.thumbnailData(n, { geo: 'MX' })); return c.toDataURL('image/png').slice(0, 22); })`);
+  await ev(`document.querySelector('#editorForm').requestSubmit(); true`); await sleep(900);
+  const saved = await ev(`fetch('/api/pages/' + S.pageId).then(r => r.json()).then(d => d.nodes.find(n => n.id === ${JSON.stringify(nodeId)}).geo)`);
+  await ev(`import('/js/ui/node-view.js').then(m => m.openNodeView(${JSON.stringify(nodeId)}))`); await sleep(150);
+  const view = await ev(`!!document.querySelector('#vThumbCopy') && !!document.querySelector('#vThumbDownload')`);
+  await ev(`import('/js/ui/node-drawer.js').then(m => m.closeDrawer())`); await sleep(300);
+  if (png !== 'data:image/png;base64,' || saved !== 'MX' || !view) throw new Error(JSON.stringify({ png, saved, view }));
+  return { canvas, saved, view };
+});
 // F6a: versión manual → 3 ediciones (autos coalescidas) → panel: lista, diff (+3), restaurar la manual → nodos de vuelta, versión 'restore'.
 await step('F6a: historial (manual → 3 ediciones → diff → restaurar)', async () => {
   const n0 = await ev(`S.state.nodes.length`);
@@ -309,7 +324,7 @@ await step('F6b: respaldos (crear desde #/admin, descargar, export org)', async 
   return { rows, dl, exp };
 });
 await step('recarga: persistencia SQLite vía API', async () => { await send('Page.reload'); await sleep(1200); return ev(`({ nodes: S.state.nodes.length, theme: document.documentElement.dataset.theme })`); });
-// F2: invitación (enlace copiable) → alta de designer → modo lectura; PUT → 403; logout → login.
+// F2: invitación (enlace copiable) → alta de viewer → modo lectura; PUT → 403; logout → login.
 // P1: estado vacío del lienzo (guía + botón) y Escape en el lobby → vuelve al lienzo.
 await step('P1: estado vacío del lienzo + Escape cierra el lobby', async () => {
   const page = await ev(`S.pageId`);
@@ -347,8 +362,8 @@ await step('P1: viewport 360×740 sin scroll horizontal (lienzo, lobby, admin)',
   if (bad.length) throw new Error('desborde horizontal: ' + bad.join(', ') + ' ' + JSON.stringify(all));
   return all;
 });
-await step('invitación → designer en modo lectura (403 en PUT)', async () => {
-  const link = await ev(`fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'des@smoke.io', role: 'designer' }) }).then(r => r.json()).then(j => j.link)`);
+await step('invitación → viewer en modo lectura (403 en PUT)', async () => {
+  const link = await ev(`fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'des@smoke.io', role: 'viewer' }) }).then(r => r.json()).then(j => j.link)`);
   if (!/#\/invite\//.test(link)) throw new Error('sin enlace: ' + link);
   await ev(`fetch('/api/auth/logout', { method: 'POST' }).then(r => r.status)`);
   await send('Page.navigate', { url: link }); await sleep(900);
@@ -358,9 +373,9 @@ await step('invitación → designer en modo lectura (403 en PUT)', async () => 
   await key('n', 'KeyN'); await sleep(100);
   return ev(`({ role: S.session.role, ro: S.readonly, viewer: document.body.classList.contains('viewer'), nodes: S.state.nodes.length, newHidden: document.querySelector('#btnNew').hidden, adminHidden: document.querySelector('#btnAdmin').hidden, ports: getComputedStyle(document.querySelector('.port')).display, popover: document.querySelector('#popover').hidden, status: document.querySelector('#saveStatus').textContent, put: ${'${put}'} })`.replace('${put}', JSON.stringify(put)));
 });
-await step('F3: designer → doble clic abre ficha; raíz solo-células oculta (no es miembro)', async () => {
+await step('F3: viewer → doble clic abre ficha; raíz solo-células oculta (no es miembro)', async () => {
   const roots = await ev(`S.state.nodes.filter(n => !n.parentId).map(n => n.visibility)`);
-  if (roots.includes('cells')) throw new Error('el designer recibió una raíz solo-células ajena');
+  if (roots.includes('cells')) throw new Error('el viewer recibió una raíz solo-células ajena');
   await ev(`document.querySelector('#zoomFit').click(); true`); await sleep(500);
   const c = await center('.node');
   const under = await ev(`document.elementFromPoint(${c.x}, ${c.y + 10})?.closest('.node')?.dataset.id || null`);
@@ -369,7 +384,7 @@ await step('F3: designer → doble clic abre ficha; raíz solo-células oculta (
   await ev(`document.querySelector('#nodeDrawer [data-cancel]')?.click(); true`);
   return r;
 });
-await step('P3: chip de usuario → Mi cuenta → cambiar contraseña (designer) → Escape cierra', async () => {
+await step('P3: chip de usuario → Mi cuenta → cambiar contraseña (viewer) → Escape cierra', async () => {
   await ev(`document.querySelector('#userChip').click(); true`); await sleep(150);
   const open = await ev(`document.querySelector('#confirmDialog').open && !!document.querySelector('#accPassword')`);
   if (!open) throw new Error('no se abrió Mi cuenta');
@@ -390,11 +405,11 @@ await step('logout → login (admin)', async () => {
   await fill([['email', 'ana@smoke.io'], ['password', 'smoke-1234']]); await sleep(1200);
   return ev(`({ role: S.session.role, ro: S.readonly, hash: location.hash, nodes: S.state.nodes.length })`);
 });
-await step('P3: admin → #/admin Usuarios → 🔑 restablecer contraseña de Dani → temporal visible una vez → entra con ella', async () => {
-  await ev(`location.hash = '#/admin/users'; true`); await sleep(900);
-  const btn = await ev(`[...document.querySelectorAll('#userRows .row')].find(r => r.textContent.includes('des@smoke.io'))?.querySelector('[data-reset]') ? true : false`);
-  if (!btn) throw new Error('sin botón 🔑 en la fila del designer');
-  await ev(`[...document.querySelectorAll('#userRows .row')].find(r => r.textContent.includes('des@smoke.io')).querySelector('[data-reset]').click(); true`); await sleep(150);
+await step('P3/P10: admin → Lobby → Organización → 🔑 restablecer contraseña de Dani → temporal visible una vez → entra con ella', async () => {
+  await ev(`location.hash = '#/lobby/org'; true`); await sleep(900);
+  const btn = await ev(`[...document.querySelectorAll('#staffRows .staff-row')].find(r => r.textContent.includes('des@smoke.io'))?.querySelector('[data-reset]') ? true : false`);
+  if (!btn) throw new Error('sin botón 🔑 en la fila del viewer');
+  await ev(`[...document.querySelectorAll('#staffRows .staff-row')].find(r => r.textContent.includes('des@smoke.io')).querySelector('[data-reset]').click(); true`); await sleep(150);
   await ev(`document.querySelector('#confirmDialog footer .btn.primary').click(); true`); await sleep(900);
   const pw = await ev(`document.querySelector('#confirmDialog .invite-link input')?.value || ''`);
   if (!/^[A-Za-z2-9]{14}$/.test(pw)) throw new Error('temporal inválida: ' + pw);
@@ -403,15 +418,50 @@ await step('P3: admin → #/admin Usuarios → 🔑 restablecer contraseña de D
   await ev(`location.hash = ''; true`); await sleep(300);
   return { login, closed: await ev(`!document.querySelector('#confirmDialog').open`), role: await ev(`S.session.role`) };
 });
-await step('P7: sin SMTP → /api/setup mail:false; Usuarios muestra estado de correo e invitación «pendiente»', async () => {
+await step('P7: sin SMTP → /api/setup mail:false; Organización muestra estado de correo e invitación «pendiente»', async () => {
   const setup = await ev(`fetch('/api/setup').then(r => r.json())`);
-  const inv = await ev(`fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'p7@smoke.io', role: 'designer' }) }).then(r => r.json())`);
-  await ev(`location.hash = '#/admin/users'; true`); await sleep(900);
-  const r = await ev(`({ mailStatus: document.querySelector('#orgBody .mail-status')?.textContent.slice(0, 8), chips: [...document.querySelectorAll('#inviteRows .chip')].map(c => c.textContent), test: !!document.querySelector('#mailTest') })`);
-  await ev(`document.querySelector('#adminBack').click(); true`); await sleep(300);
+  const inv = await ev(`fetch('/api/invites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'p7@smoke.io', role: 'viewer' }) }).then(r => r.json())`);
+  await ev(`location.hash = '#/lobby/org'; true`); await sleep(900);
+  const r = await ev(`({ mailStatus: document.querySelector('#lobbyBody .mail-status')?.textContent.slice(0, 8), chips: [...document.querySelectorAll('#inviteRows .chip')].map(c => c.textContent), test: !!document.querySelector('#mailTest') })`);
+  await ev(`document.querySelector('#lobbyBack').click(); true`); await sleep(300);
   await ev(`fetch('/api/invites/${'${inv.id}'}', { method: 'DELETE' }).then(r => r.status)`.replace('${inv.id}', inv.id));
   if (inv.emailSent !== false || !r.chips.includes('pendiente')) throw new Error('estado de invitación: ' + JSON.stringify({ inv, r }));
   return { mail: setup.mail, ...r };
+});
+await step('P10: Lobby → Organización (admin): datos, 5 niveles, capacidades, plantilla; renombrar Viewer → Designer se refleja; restablecer', async () => {
+  await ev(`location.hash = '#/lobby/org'; true`); await sleep(900);
+  const r = await ev(`({ tab: document.querySelector('#lobbyTabs .active')?.dataset.tab, org: !!document.querySelector('#orgForm'), levels: [...document.querySelectorAll('.roles-table tbody tr td:first-child')].map(t => t.textContent), caps: document.querySelectorAll('.caps-table tbody tr:not(.group)').length, groups: document.querySelectorAll('.caps-table tr.group').length, staff: document.querySelectorAll('#staffRows .staff-row').length, danger: !!document.querySelector('#orgDelete'), invite: !!document.querySelector('#inviteForm') })`);
+  if (r.levels.join() !== 'Lev5,Lev4,Lev3,Lev2,Lev1' || r.caps < 20 || r.staff < 2 || !r.danger || !r.org) throw new Error('organización: ' + JSON.stringify(r));
+  await ev(`(() => { const f = document.querySelector('#rolesForm'); f.viewer.value = 'Designer'; f.requestSubmit(); return true; })()`); await sleep(900);
+  const renamed = await ev(`({ label: S.session.org.roleLabels.viewer, header: [...document.querySelectorAll('.caps-table thead th')].map(t => t.textContent).some(t => t.includes('Designer')), option: [...document.querySelectorAll('#staffRows select option')].some(o => o.textContent.startsWith('Designer')) })`);
+  if (renamed.label !== 'Designer' || !renamed.header || !renamed.option) throw new Error('renombrar: ' + JSON.stringify(renamed));
+  await ev(`document.querySelector('#rolesReset').click(); true`); await sleep(900);
+  const reset = await ev(`S.session.org.roleLabels.viewer`);
+  await ev(`document.querySelector('#lobbyBack').click(); true`); await sleep(400);
+  return { ...r, renamed: renamed.label, reset };
+});
+await step('P10: viewer edita su card (asignada) con el editor acotado → PATCH; sin pestaña Organización', async () => {
+  const users = await ev(`fetch('/api/users').then(r => r.json()).then(j => j.users)`);
+  const dani = users.find(u => u.email === 'des@smoke.io'); if (!dani) throw new Error('sin Dani');
+  const root = await ev(`S.state.nodes.find(n => !n.parentId && n.visibility !== 'cells').id`);
+  const asg = await ev(`fetch('/api/pages/' + S.pageId + '/nodes/${'${root}'}/assignees', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assigneeIds: ['${'${dani}'}'] }) }).then(r => r.status)`.replace('${root}', root).replace('${dani}', dani.id));
+  const pw = await ev(`fetch('/api/users/${'${id}'}', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: 'smoke-0000' }) }).then(r => r.status)`.replace('${id}', dani.id));
+  if (asg !== 200 || pw !== 200) throw new Error('preparación: ' + JSON.stringify({ asg, pw }));
+  await ev(`document.querySelector('#btnLogout').click(); true`); await sleep(1200);
+  await fill([['email', 'des@smoke.io'], ['password', 'smoke-0000']]); await sleep(1400);
+  const tabs = await ev(`(() => { location.hash = '#/lobby'; return true; })()`); await sleep(600);
+  const noOrg = await ev(`![...document.querySelectorAll('#lobbyTabs button')].some(b => b.dataset.tab === 'org')`);
+  await ev(`document.querySelector('#lobbyBack').click(); true`); await sleep(500);
+  await ev(`document.querySelector('#zoomFit').click(); true`); await sleep(500);
+  const c = await center(`.node[data-id="${root}"] .head-main`).catch(() => center(`.node[data-id="${root}"]`)); // la cabecera: el centro del contenedor caería sobre un hijo
+  await mouse('mousePressed', c.x, c.y); await mouse('mouseReleased', c.x, c.y); await mouse('mousePressed', c.x, c.y, { clickCount: 2 }); await mouse('mouseReleased', c.x, c.y, { clickCount: 2 }); await sleep(200);
+  const opened = await ev(`({ form: !!document.querySelector('#editorForm'), own: !!document.querySelector('#editorForm.own-mode'), typeHidden: !!document.querySelector('#fType') && getComputedStyle(document.querySelector('#fType').closest('.field')).display === 'none', del: !!document.querySelector('#fDelete'), newTag: !!document.querySelector('#fNewTag'), view: !!document.querySelector('#nodeDrawer .node-view'), title: document.querySelector('#drawerTitle')?.textContent })`);
+  if (!opened.own || !opened.typeHidden || opened.del || opened.newTag) throw new Error('editor acotado: ' + JSON.stringify(opened));
+  await ev(`(() => { const f = document.querySelector('#editorForm'); f.elements.name.value = 'Mi card'; f.elements.description.value = 'editada por viewer'; f.requestSubmit(); return true; })()`); await sleep(900);
+  const after = await ev(`({ name: S.state.nodes.find(n => n.id === '${root}').name, drawer: document.querySelector('#nodeDrawer').classList.contains('open'), ro: S.readonly, status: document.querySelector('#saveStatus').textContent })`);
+  const server = await ev(`fetch('/api/pages/' + S.pageId).then(r => r.json()).then(d => d.nodes.find(n => n.id === '${root}').description)`);
+  if (after.name !== 'Mi card' || server !== 'editada por viewer' || after.drawer) throw new Error('PATCH propio: ' + JSON.stringify({ after, server }));
+  return { noOrg, ...opened, ...after, server, tabs };
 });
 drain();
 console.log(results.join('\n'));

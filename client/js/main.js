@@ -18,7 +18,8 @@ import { adminPanel, toggleAdmin, applySettingsUI, enablePageTab } from './ui/pa
 import { openAdminView, closeAdminView, adminTabsFor } from './views/admin-view.js';
 import { openVersionsPanel } from './views/versions-panel.js';
 import * as api from './core/api.js';
-import { showSetup, showLogin, showInvite, showForgot, showReset, hideAuth, ROLE_LABEL } from './views/auth-views.js';
+import { showSetup, showLogin, showInvite, showForgot, showReset, hideAuth } from './views/auth-views.js';
+import { roleLabel } from './core/roles.js'; // P10
 import { applyReadonly, canEdit } from './core/readonly.js';
 import { toast } from './ui/theme.js';
 import { computeLayout, autoLayout } from './canvas/layout.js';
@@ -39,7 +40,7 @@ $('#zoomFit').addEventListener('click', () => fitToScreen());
 $('#zoomLabel').addEventListener('click', () => setZoom(1));
 viewport.addEventListener('pointerdown', () => { if (innerWidth <= 720 && adminPanel.classList.contains('open')) toggleAdmin(false); });
 
-/* --- F2: router mínimo por hash (#/login, #/setup, #/invite/<token>) + sesión --- */
+/* --- F2: router mínimo por hash (#/login, #/setup, #/invite/<token>, #/lobby[/<tab>]) + sesión --- */
 const route = () => { const m = location.hash.match(/^#\/(login|setup|invite|forgot|reset|me|n|p|lobby|admin)(?:\/([^/]+))?(?:\/n\/([^/]+))?/); return m ? { name: m[1], arg: m[2], node: m[3] } : null; };
 /** Resuelve S.session (o null sin servidor). Muestra setup/login/invitación cuando hace falta. */
 async function authenticate() {
@@ -57,7 +58,7 @@ async function authenticate() {
     return null; // sin servidor: bootstrap() entra en modo local
   }
 }
-const chipHTML = () => `<b>${esc(S.session.user.name || S.session.user.email)}</b><span class="role">${esc(ROLE_LABEL[S.session.role] || S.session.role)}</span>`;
+const chipHTML = () => `<b>${esc(S.session.user.name || S.session.user.email)}</b><span class="role">${esc(roleLabel(S.session.role))}</span>`;
 function renderUserChip() {
   if (!S.session || $('#userChip')) return;
   const chip = document.createElement('button'); chip.className = 'user-chip'; chip.id = 'userChip'; chip.type = 'button'; chip.title = 'Mi cuenta (nombre, contraseña)'; // P3
@@ -101,7 +102,7 @@ async function appRoute() {
   const r = route(); if (!r || !S.state) return;
   if (r.name === 'admin') { closeLobby(); return openAdminView(r.arg); }
   closeAdminView();
-  if (r.name === 'lobby') return openLobby();
+  if (r.name === 'lobby') return openLobby(r.arg ? decodeURIComponent(r.arg) : undefined); // P10: #/lobby/<tab>
   if (r.name === 'p' && r.arg) {
     const pid = decodeURIComponent(r.arg);
     if (pid !== S.pageId) await loadPage(pid);
@@ -147,7 +148,7 @@ export async function init() {
 // F1: tras un 409 state.js recarga el documento del servidor y avisa aquí para repintar.
 document.addEventListener('destree:reload', () => { clearSelection(); applyTheme(); applySettingsUI(); renderAll(); applyCamera(); renderPageButton(); });
 document.addEventListener('destree:page-meta', renderPageButton); // F4b
-document.addEventListener('destree:account', () => { const c = $('#userChip'); if (c && S.session) c.innerHTML = chipHTML(); }); // P3: nombre cambiado
+document.addEventListener('destree:account', () => { const c = $('#userChip'); if (c && S.session) c.innerHTML = chipHTML(); }); // P3: nombre cambiado · P10: etiquetas de rol
 document.addEventListener('destree:load-page', e => loadPage(e.detail.pageId)); // F6a: recarga tras restaurar una versión
 init();
 

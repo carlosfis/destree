@@ -6,7 +6,7 @@ import { S } from '../core/state.js';
 import * as api from '../core/api.js';
 import { toast } from '../ui/theme.js';
 import { confirmDialog } from '../ui/dialogs.js';
-import { ROLE_LABEL } from './auth-views.js';
+import { roleLabel } from '../core/roles.js'; // P10
 
 const field = (name, label, type, extra = '') => `<div class="field"><label for="acc_${name}">${label}</label><input id="acc_${name}" name="${name}" type="${type}" ${extra}></div>`;
 
@@ -17,7 +17,7 @@ export function openAccountDialog() {
   return new Promise(resolve => {
     confirmDialog.innerHTML = `<div class="dialog-inner account-dialog"><header><h2>Mi cuenta</h2><button type="button" class="icon-btn" data-cancel aria-label="Cerrar">✕</button></header>
       <div class="dialog-body">
-        <p class="hint">${esc(u.email)} · ${esc(ROLE_LABEL[S.session.role] || S.session.role)}</p>
+        <p class="hint">${esc(u.email)} · ${esc(roleLabel(S.session.role))}</p>
         <form id="accName" class="account-form">
           ${field('name', 'Nombre', 'text', `value="${esc(u.name || '')}" required maxlength="120" autocomplete="name"`)}
           <div class="form-error"></div>

@@ -45,15 +45,15 @@ Docker: `docker compose pull && docker compose up -d` (or `--build` if you clone
 - Logical alternative: export/import the organization as JSON from `#/admin → Respaldos`.
 
 ## Roles
-| | admin | head | designer |
-|---|---|---|---|
-| Canvas, documentation, pages | edit | edit | read-only (what is visible) |
-| Users and roles | ✓ | — | — |
-| Invite | any role | designers into their cells | — |
-| Cells | create/edit | members of their own | — |
-| Root/page visibility, assignees | ✓ | ✓ | — |
-| Versions | view/create/restore | view/create/restore | view |
-| Delete/restore pages, backups, audit log | ✓ | — | — |
+Five fixed levels; each level includes everything below it. The visible name of each role (except Admin) can be changed in `⌂ → Organización`, which also shows the full capabilities table.
+| | Lev5 Admin | Lev4 Ops | Lev3 Head | Lev2 Lead | Lev1 Viewer |
+|---|---|---|---|---|---|
+| Modify / delete the organization, import an organization | ✓ | — | — | — | — |
+| Create, rename, archive, delete and import pages | ✓ | ✓ | — | — | — |
+| Staff (roles, deactivate, passwords), backups, audit log | ✓ | ✓ | — | — | — |
+| See every page; page/root visibility; create cells; restore versions | ✓ | ✓ | ✓ | — | — |
+| Edit the inside of visible pages, assign people, invite lower roles | ✓ | ✓ | ✓ | ✓ (own pages) | — |
+| See pages of their cells or assigned; edit their own cards (owner or assignee) | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ## Documentation
 Product docs are in Spanish (the UI language): `docs/INSTALL.md` (installation and variables) · `docs/ADMIN.md` (administration) · `docs/USER.md` (using the canvas) · `docs/API.md` · `docs/SECURITY.md` (threat model and headers) · `docs/MAP.md` (code map) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CODE_OF_CONDUCT.md` · `SECURITY.md` (reporting vulnerabilities) · `CHANGELOG.md` · `PENDIENTE.md` (detailed roadmap by phases).

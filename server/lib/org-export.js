@@ -9,6 +9,7 @@ import { listCells } from './cells.js';
 import { listUsers, hashPassword, newToken } from './auth.js';
 import { getDocument, saveDocument, HttpError } from './pages.js';
 import { filesOf } from './images.js';
+import { ROLES, LEGACY_ROLES, sanitizeRoleLabels } from './permissions.js';
 
 const strip = doc => { const { refs, ...d } = doc; return d; };
 export function exportOrg(db, uploadsDir, { orgId = DEFAULT_ORG_ID, images = 'manifest' } = {}) {
@@ -34,14 +35,15 @@ export function exportOrg(db, uploadsDir, { orgId = DEFAULT_ORG_ID, images = 'ma
 export function importOrg(db, uploadsDir, data, { orgId = DEFAULT_ORG_ID, importedBy = null } = {}) {
   const stats = { cells: 0, users: 0, pages: 0, versions: 0, images: 0, skippedImages: 0 };
   return transaction(db, () => {
-    db.prepare('UPDATE orgs SET name = ?, settings_json = ? WHERE id = ?').run(String(data.org.name).slice(0, 120), JSON.stringify(data.org.settings || {}), orgId);
+    const settings = { ...(data.org.settings || {}) }; if (settings.roleLabels) settings.roleLabels = sanitizeRoleLabels(settings.roleLabels); // P10
+    db.prepare('UPDATE orgs SET name = ?, settings_json = ? WHERE id = ?').run(String(data.org.name).slice(0, 120), JSON.stringify(settings), orgId);
     const userIds = new Set(db.prepare('SELECT user_id FROM memberships WHERE org_id = ?').all(orgId).map(r => r.user_id));
     for (const u of data.users) {
       const email = String(u.email).trim().toLowerCase();
       const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
       const id = existing ? existing.id : u.id;
       if (!existing) { db.prepare('INSERT OR IGNORE INTO users (id, email, name, password_hash, is_active) VALUES (?, ?, ?, ?, ?)').run(id, email, u.name || '', hashPassword(newToken()), u.isActive === false ? 0 : 1); stats.users++; }
-      db.prepare('INSERT OR IGNORE INTO memberships (user_id, org_id, role) VALUES (?, ?, ?)').run(id, orgId, u.role);
+      db.prepare('INSERT OR IGNORE INTO memberships (user_id, org_id, role) VALUES (?, ?, ?)').run(id, orgId, ROLES.includes(u.role) ? u.role : LEGACY_ROLES[u.role] || 'viewer'); // P10: exports antiguos (designer)
       userIds.add(id); u._id = id;
     }
     const mapUser = id => (data.users.find(u => u.id === id) || {})._id || (userIds.has(id) ? id : null);
@@ -74,7 +76,7 @@ export function importOrg(db, uploadsDir, data, { orgId = DEFAULT_ORG_ID, import
       for (const v of p.versions || []) {
         const json = JSON.stringify(v.document);
         db.prepare('INSERT INTO page_versions (id, page_id, number, label, reason, snapshot_gz, hash, size, image_ids_json, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-          .run(ulid(), id, v.number, v.label || '', v.reason, gzipSync(json), createHash('sha256').update(json).digest('hex'), json.length, JSON.stringify([...new Set((v.document.nodes || []).map(n => n.imageId).filter(Boolean))]), mapUser(v.createdBy), v.createdAt || nowIso());
+          .run(ulid(), id, v.number, v.label || '', v.reason, gzipSync(json), createHash('sha256').update(json).digest('hex'), json.length, JSON.stringify([...new Set((v.document.nodes || []).flatMap(n => [n.imageId, n.thumbIconId]).filter(Boolean))]), mapUser(v.createdBy), v.createdAt || nowIso());
         stats.versions++;
       }
       const status = ['archived', 'deleted'].includes(p.status) ? p.status : 'active';

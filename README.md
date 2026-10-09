@@ -45,15 +45,15 @@ Docker: `docker compose pull && docker compose up -d` (o `--build` si clonaste).
 - Alternativa lógica: exportar/importar la organización en JSON desde `#/admin → Respaldos`.
 
 ## Roles
-| | admin | head | designer |
-|---|---|---|---|
-| Lienzo, documentación, páginas | editar | editar | solo lectura (lo visible) |
-| Usuarios y roles | ✓ | — | — |
-| Invitar | cualquier rol | designers a sus células | — |
-| Células | crear/editar | miembros de las suyas | — |
-| Visibilidad de raíces/páginas, asignados | ✓ | ✓ | — |
-| Versiones | ver/crear/restaurar | ver/crear/restaurar | ver |
-| Borrar/restaurar páginas, respaldos, audit log | ✓ | — | — |
+Cinco niveles fijos; cada nivel incluye todo lo del inferior. El nombre visible de cada rol (salvo Admin) se cambia en `⌂ → Organización`, donde también está la tabla completa de capacidades.
+| | Lev5 Admin | Lev4 Ops | Lev3 Head | Lev2 Lead | Lev1 Viewer |
+|---|---|---|---|---|---|
+| Modificar / eliminar la organización, importar una organización | ✓ | — | — | — | — |
+| Crear, renombrar, archivar, borrar e importar páginas | ✓ | ✓ | — | — | — |
+| Plantilla (roles, desactivar, contraseñas), respaldos, audit log | ✓ | ✓ | — | — | — |
+| Ver todas las páginas; visibilidad de páginas y raíces; crear células; restaurar versiones | ✓ | ✓ | ✓ | — | — |
+| Editar el interior de las páginas visibles, asignar, invitar roles inferiores | ✓ | ✓ | ✓ | ✓ (sus páginas) | — |
+| Ver páginas de sus células o asignadas; editar las cards propias (responsable o asignado) | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ## Documentación
 `docs/INSTALL.md` (instalación y variables) · `docs/ADMIN.md` (administración) · `docs/USER.md` (uso del lienzo) · `docs/API.md` · `docs/SECURITY.md` (modelo de amenazas y cabeceras) · `docs/MAP.md` (mapa del código) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CODE_OF_CONDUCT.md` · `SECURITY.md` (reportar vulnerabilidades) · `CHANGELOG.md` · `PENDIENTE.md` (roadmap detallado por fases).

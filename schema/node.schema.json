@@ -13,6 +13,8 @@
     "description": { "type": "string", "maxLength": 140, "default": "" },
     "image": { "type": ["string", "null"], "pattern": "^data:image/", "maxLength": 2000000, "default": null, "description": "dataURL legado; F5 lo sustituye por imageId" },
     "imageId": { "type": ["string", "null"], "default": null },
+    "geo": { "type": "string", "pattern": "^([A-Z]{2})?$", "default": "", "description": "Geografía del thumbnail: ISO 3166-1 alfa-2 en mayúsculas; '' = ninguna" },
+    "thumbIconId": { "type": ["string", "null"], "default": null, "description": "Icono del thumbnail (images.id); null = usa imageId" },
     "tags": { "type": "array", "maxItems": 50, "items": { "type": "string", "minLength": 1, "maxLength": 64 }, "default": [] },
     "owner": { "type": "string", "maxLength": 80, "default": "", "description": "Responsable legado en texto (\"@ana\"); se mantiene igual a staff[0].name" },
     "staff": { "type": "array", "maxItems": 20, "default": [], "description": "Equipo: usuario (texto @nombre) y rol", "items": { "type": "object", "additionalProperties": false, "required": ["name"], "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 80 }, "role": { "type": "string", "maxLength": 80, "default": "" } } } },

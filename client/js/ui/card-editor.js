@@ -5,8 +5,9 @@
 import { $, $$, uid, esc, TYPE_META, TAG_COLORS, applyDataStyles } from '../core/utils.js';
 import {
   S, save, nodeById, tagById, isContainer, childrenOf, sourceEdgeOf, dsOf, defaultBranchType, parentOf,
-  rootOf, isAncestor, worldPos, typeName,
+  rootOf, isAncestor, worldPos, typeName, isMyNode,
 } from '../core/state.js';
+import * as api from '../core/api.js'; // P10: PATCH de campos propios
 import { pushHistory } from '../core/history.js';
 import { freeSpot } from '../canvas/render-nodes.js';
 import { selectOnly, renderAll } from '../canvas/selection.js';
@@ -16,6 +17,7 @@ import { toast } from './theme.js';
 import { docsSection, staffSection, teamSection, visibilitySection } from './card-editor-docs.js';
 import { uploadImage, bindDropZone, imageSrc, canUpload } from './uploader.js'; // F5
 import { drawerHTML, openDrawer, closeDrawer, showTab, tabOf, instanceLabel } from './node-drawer.js';
+import { thumbnailSection } from './thumbnail-section.js'; // P9
 export const editorDialog = $('#editorDialog'); // modal: lo siguen usando #/me y el panel de versiones
 
 export function processImage(file) {
@@ -40,14 +42,16 @@ export function processImage(file) {
 /** Ruta legible de un contenedor: Raíz › Hijo › Nieto */
 export function pathOf(n) { const parts = [n.name]; let p = parentOf(n), g = 0; while (p && g++ < 100) { parts.unshift(p.name); p = parentOf(p); } return parts.join(' › '); }
 
+const OWN_FIELDS = ['name', 'description', 'imageId', 'tags', 'staff', 'docs', 'notes', 'geo', 'thumbIconId']; // P10: lo que un viewer cambia en sus cards
 export function openEditor(id, preset = {}) {
-  if (S.readonly) return; // F2: designer no edita
+  const own = S.readonly; // P10: sin pages.edit solo se abren las cards propias, en modo acotado (sin tipo, contenedor, relaciones ni borrado)
+  if (own && !(id && isMyNode(id) && S.session?.permissions.includes('nodes.own'))) return;
   const node = id ? nodeById(id) : null;
   if (id && !node) return;
   const draft = node
     ? { ...node, tags: [...node.tags], docs: (node.docs || []).map(d => ({ ...d })), staff: (node.staff || []).map(m => ({ ...m })) }
-    : { id: null, type: preset.type || 'software', name: '', description: '', image: null, tags: [], owner: '', staff: [], parentId: preset.parentId || null, branchTypeId: null, x: preset.x ?? 0, y: preset.y ?? 0, notes: '', docs: [], ownerUserId: null, assigneeIds: [], visibility: 'org', cellIds: [], imageId: null };
-  const docsSec = docsSection(draft), staffSec = staffSection(draft), teamSec = teamSection(draft), visSec = visibilitySection(draft); // F3
+    : { id: null, type: preset.type || 'software', name: '', description: '', image: null, tags: [], owner: '', staff: [], parentId: preset.parentId || null, branchTypeId: null, x: preset.x ?? 0, y: preset.y ?? 0, notes: '', docs: [], ownerUserId: null, assigneeIds: [], visibility: 'org', cellIds: [], imageId: null, geo: '', thumbIconId: null };
+  const docsSec = docsSection(draft), staffSec = staffSection(draft), teamSec = teamSection(draft), visSec = visibilitySection(draft), thumbSec = thumbnailSection(draft); // F3 · P9
   draft.sourceId = node ? (sourceEdgeOf(node.id)?.to || '') : '';
   draft.dsIds = node ? new Set(dsOf(node.id).map(n => n.id)) : new Set();
   const hasKids = node ? childrenOf(node.id).length : 0;
@@ -70,14 +74,16 @@ export function openEditor(id, preset = {}) {
       <div class="field"><label>Etiquetas</label><div class="chips-select" id="fTags"></div></div>
       <h3 class="section" id="fRelHead">Relaciones</h3>
       <div class="field" id="fSourceField"><label>Fuente * (${T.ds} o ${T.software} del que deriva)</label><select name="source"></select><div class="error" hidden>${T.uikit} debe tener fuente.</div></div>
-      <div class="field" id="fDSField"><label>${T.ds} que usa</label><div class="check-list" id="fDS"></div><div class="hint">Si ${T.ds} vive en otro ${T.software} raíz, la línea se dibuja discontinua.</div></div>`,
+      <div class="field" id="fDSField"><label>${T.ds} que usa</label><div class="check-list" id="fDS"></div><div class="hint">Si ${T.ds} vive en otro ${T.software} raíz, la línea se dibuja discontinua.</div></div>
+      ${thumbSec.html}`,
     staff: `${staffSec.html}${teamSec.html}${visSec.html}`,
     docs: docsSec.html,
     notes: docsSec.notesHtml,
   };
-  const footer = `${node ? '<button type="button" class="btn danger left" id="fDelete">Eliminar</button>' : ''}<button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn primary">${node ? 'Guardar cambios' : 'Crear'}</button>`;
+  const footer = `${node && !own ? '<button type="button" class="btn danger left" id="fDelete">Eliminar</button>' : ''}<button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn primary">${node ? 'Guardar cambios' : 'Crear'}</button>`;
   let unbindDrop = null;
-  const form = openDrawer(drawerHTML({ title: title(draft.parentId), panes, footer, tag: 'form', id: 'editorForm' }), { onClose: () => unbindDrop && unbindDrop() });
+  const form = openDrawer(drawerHTML({ title: title(draft.parentId), panes, footer, tag: 'form', id: 'editorForm' }), { onClose: () => { unbindDrop && unbindDrop(); thumbSec.unbind(); } });
+  if (own) form.classList.add('own-mode'); // CSS oculta tipo, contenedor, relaciones y nueva etiqueta
   const sortByPath = (a, b) => pathOf(a).localeCompare(pathOf(b));
 
   const refreshType = () => {
@@ -102,15 +108,15 @@ export function openEditor(id, preset = {}) {
       : `<div class="empty">Aún no hay ${T.ds} ni ${T.uikit}.</div>`; applyDataStyles($('#fDS'));
   };
   const refreshBranch = () => {
-    $('#fBranchField').hidden = !(draft.type === 'software' && form.parent.value); $('#fVisField').hidden = !(draft.type === 'software' && !form.parent.value);
+    $('#fBranchField').hidden = !(draft.type === 'software' && form.parent.value); const vf = $('#fVisField'); if (vf) vf.hidden = !(draft.type === 'software' && !form.parent.value); // P10: sin pages.visibility no hay sección
     $('#drawerTitle').textContent = title(form.parent.value || null);
   };
   const refreshTags = () => {
     const box = $('#fTags');
     box.innerHTML = S.state.tags.map(t => `<span class="chip tag-${t.color} ${draft.tags.includes(t.id) ? 'on' : ''}" data-id="${t.id}">${esc(t.name)}</span>`).join('') +
-      `<span class="add-tag"><input placeholder="＋ nueva etiqueta" id="fNewTag"></span>`;
+      (own ? '' : `<span class="add-tag"><input placeholder="＋ nueva etiqueta" id="fNewTag"></span>`);
     box.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => { const i = draft.tags.indexOf(c.dataset.id); i >= 0 ? draft.tags.splice(i, 1) : draft.tags.push(c.dataset.id); refreshTags(); }));
-    $('#fNewTag').addEventListener('keydown', ev => {
+    $('#fNewTag')?.addEventListener('keydown', ev => {
       if (ev.key !== 'Enter') return; ev.preventDefault();
       const name = ev.target.value.trim(); if (!name) return;
       let t = S.state.tags.find(x => x.name.toLowerCase() === name.toLowerCase());
@@ -119,7 +125,7 @@ export function openEditor(id, preset = {}) {
       refreshTags(); $('#fNewTag').focus();
     });
   };
-  const refreshImg = () => { const src = imageSrc(draft); $('#fImgPreview').innerHTML = src ? `<img src="${src}" alt="">` : 'Sin imagen'; $('#fImgRemove').hidden = !src; };
+  const refreshImg = () => { const src = imageSrc(draft); $('#fImgPreview').innerHTML = src ? `<img src="${src}" alt="">` : 'Sin imagen'; $('#fImgRemove').hidden = !src; document.dispatchEvent(new CustomEvent('destree:image')); };
   const setImageFile = async f => { // F5: con servidor → upload (imageId); sin servidor → dataURL local
     $('#fImgPreview').textContent = 'Subiendo…';
     try { if (canUpload()) { const img = await uploadImage(f); draft.imageId = img.id; draft.image = null; } else { draft.image = await processImage(f); draft.imageId = null; } } catch (err) { toast(err.message, 'error', 5000); }
@@ -127,6 +133,7 @@ export function openEditor(id, preset = {}) {
   };
   unbindDrop = bindDropZone($('#fImgPreview'), setImageFile);
   refreshType(); refreshTags(); refreshImg(); docsSec.bind(form); staffSec.bind(form); visSec.bind(form);
+  thumbSec.bind(form, () => ({ name: form.name.value.trim() || 'Sin nombre', type: typeName(draft.type), path: form.parent.value && nodeById(form.parent.value) ? pathOf(nodeById(form.parent.value)).split(' › ') : [], tags: draft.tags.map(tagById).filter(Boolean).map(t => t.name), staff: staffSec.read(form).staff })); // P9: vista previa con el borrador
 
   $('#fType').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -137,7 +144,7 @@ export function openEditor(id, preset = {}) {
   form.description.addEventListener('input', () => { const c = $('#fCounter'); c.textContent = `${form.description.value.length}/140`; c.classList.toggle('over', form.description.value.length >= 140); });
   $('#fImgInput').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await setImageFile(f); });
   $('#fImgRemove').addEventListener('click', () => { draft.image = null; draft.imageId = null; refreshImg(); });
-  if (node) $('#fDelete').addEventListener('click', () => { closeDrawer(); deleteNodes([node.id]); });
+  $('#fDelete')?.addEventListener('click', () => { closeDrawer(); deleteNodes([node.id]); });
 
   form.addEventListener('submit', e => {
     e.preventDefault();
@@ -150,10 +157,11 @@ export function openEditor(id, preset = {}) {
     mark('#fParentField', draft.type !== 'software' && !parentId);
     mark('#fSourceField', draft.type === 'uikit' && !sourceId);
     if (invalid.length) { showTab(tabOf(invalid[0])); $('input, select', invalid[0])?.focus(); return; }
+    if (own) return saveOwn(node, { name, description: form.description.value.trim().slice(0, 140), imageId: draft.imageId || null, tags: draft.tags.filter(tagById), ...staffSec.read(form), ...docsSec.read(form), ...thumbSec.read(form) });
     if (parentId && (parentId === draft.id || (draft.id && isAncestor(draft.id, parentId)))) return toast('No se puede anidar dentro de sí mismo', 'error');
     pushHistory();
     const isRoot = draft.type === 'software' && !parentId;
-    const data = { type: draft.type, name, description: form.description.value.trim().slice(0, 140), image: draft.image, imageId: draft.imageId || null, tags: draft.tags.filter(tagById), ...staffSec.read(form), ...docsSec.read(form), ...teamSec.read(form), ...visSec.read(form, isRoot) };
+    const data = { type: draft.type, name, description: form.description.value.trim().slice(0, 140), image: draft.image, imageId: draft.imageId || null, tags: draft.tags.filter(tagById), ...staffSec.read(form), ...docsSec.read(form), ...teamSec.read(form), ...visSec.read(form, isRoot), ...thumbSec.read(form) };
     let target = node;
     if (node) {
       Object.assign(node, data);
@@ -189,4 +197,13 @@ export function openEditor(id, preset = {}) {
     toast(node ? 'Instancia actualizada' : 'Instancia creada');
   });
   form.name.focus();
+}
+/** P10: guardado acotado (viewer en su card): PATCH de campos propios; el servidor normaliza y devuelve la card. */
+async function saveOwn(node, data) {
+  const body = Object.fromEntries(Object.entries(data).filter(([k]) => OWN_FIELDS.includes(k)));
+  try {
+    const res = await api.patchNodeFields(S.pageId, node.id, body);
+    Object.assign(node, res.node); S.version = res.version;
+    closeDrawer(); renderAll(); toast('Instancia actualizada');
+  } catch (err) { toast('No se pudo guardar: ' + err.message, 'error', 6000); }
 }

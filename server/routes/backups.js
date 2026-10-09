@@ -1,4 +1,4 @@
-// F6b: /api/backups (POST/GET/DELETE, descarga) · GET /api/org/export?images= · POST /api/org/import. Solo admin (acción backups).
+// F6b: /api/backups (POST/GET/DELETE, descarga) · GET /api/org/export?images= (acción backups, nivel ≥4) · POST /api/org/import (P10: org.import, solo admin).
 import fs from 'node:fs';
 import path from 'node:path';
 import { createBackup, listBackups, getBackup, deleteBackup } from '../lib/backup.js';
@@ -35,7 +35,7 @@ export default async function backupRoutes(app) {
     reply.header('Content-Disposition', `attachment; filename="destree-org-${data.exportedAt.slice(0, 10)}.json"`);
     return data;
   });
-  app.post('/api/org/import', { onRequest: guard, schema: { body: { $ref: 'org-export.schema.json#' } }, bodyLimit: 512 * 1024 * 1024 }, async (req) => {
+  app.post('/api/org/import', { onRequest: app.guard('org.import'), schema: { body: { $ref: 'org-export.schema.json#' } }, bodyLimit: 512 * 1024 * 1024 }, async (req) => {
     const stats = importOrg(app.db, app.uploadsDir, req.body, { orgId: req.orgId, importedBy: req.user.id });
     audit(app.db, { orgId: req.orgId, userId: req.user.id, action: 'org.import', entity: 'org', entityId: req.orgId, meta: stats });
     return stats;

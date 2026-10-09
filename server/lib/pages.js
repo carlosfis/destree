@@ -3,6 +3,7 @@ import { DEFAULT_ORG_ID, transaction } from '../db/sqlite.js';
 import { ulid, nowIso } from './ids.js';
 import { normalizeDocument, defaultDocument } from './normalize.js';
 import { filterDocumentForUser, pageVisibleFor, needsFilter } from './visibility.js';
+import { can } from './permissions.js';
 
 export class HttpError extends Error { constructor(status, message, extra) { super(message); this.status = status; Object.assign(this, extra); } }
 const j = v => JSON.stringify(v);
@@ -37,7 +38,7 @@ export function getDocument(db, pageId, ctx = null) {
     if (!tagsByNode.has(r.node_id)) tagsByNode.set(r.node_id, []); tagsByNode.get(r.node_id).push(r.tag_id);
   }
   const nodes = db.prepare('SELECT * FROM nodes WHERE page_id = ? ORDER BY position').all(pageId).map(n => ({
-    id: n.id, type: n.type, name: n.name, description: n.description, image: null, imageId: n.image_id,
+    id: n.id, type: n.type, name: n.name, description: n.description, image: null, imageId: n.image_id, geo: n.geo || '', thumbIconId: n.thumb_icon_id || null,
     tags: tagsByNode.get(n.id) || [], owner: n.owner_label, staff: pj(n.staff_json, []), ownerUserId: n.owner_user_id, parentId: n.parent_id, branchTypeId: n.branch_type_id,
     x: n.x, y: n.y, w: n.w, h: n.h, demo: !!n.demo, notes: n.notes, docs: pj(n.docs_json, []), visibility: n.visibility, status: n.status,
     cellIds: cellsByNode.get(n.id) || [], assigneeIds: assigneesByNode.get(n.id) || [],
@@ -75,12 +76,12 @@ export function saveDocument(db, pageId, doc, expected) {
     d.tags.forEach((t, i) => insTag.run(t.id, pageId, t.name, t.color, i));
     const insBt = db.prepare('INSERT INTO branch_types (id, page_id, name, color, position) VALUES (?, ?, ?, ?, ?)');
     d.branchTypes.forEach((t, i) => insBt.run(t.id, pageId, t.name, t.color, i));
-    const insNode = db.prepare(`INSERT INTO nodes (id, page_id, type, name, description, notes, docs_json, staff_json, image_id, owner_user_id, owner_label, parent_id, branch_type_id, x, y, w, h, demo, visibility, status, position, updated_at)
-      VALUES (@id, @pageId, @type, @name, @description, @notes, @docs, @staff, @imageId, @ownerUserId, @owner, @parentId, @branchTypeId, @x, @y, @w, @h, @demo, @visibility, @status, @position, @now)`);
+    const insNode = db.prepare(`INSERT INTO nodes (id, page_id, type, name, description, notes, docs_json, staff_json, image_id, geo, thumb_icon_id, owner_user_id, owner_label, parent_id, branch_type_id, x, y, w, h, demo, visibility, status, position, updated_at)
+      VALUES (@id, @pageId, @type, @name, @description, @notes, @docs, @staff, @imageId, @geo, @thumbIconId, @ownerUserId, @owner, @parentId, @branchTypeId, @x, @y, @w, @h, @demo, @visibility, @status, @position, @now)`);
     const insNodeTag = db.prepare('INSERT INTO node_tags (page_id, node_id, tag_id, position) VALUES (?, ?, ?, ?)');
     const imageIds = new Set(db.prepare('SELECT id FROM images').all().map(r => r.id));
     d.nodes.forEach((n, i) => {
-      insNode.run({ id: n.id, pageId, type: n.type, name: n.name, description: n.description, notes: n.notes, docs: j(n.docs), staff: j(n.staff), imageId: n.imageId && imageIds.has(n.imageId) ? n.imageId : null /* F5: la dataURL se ingiere en la ruta; nunca se persiste */, ownerUserId: n.ownerUserId, owner: n.owner, parentId: n.parentId, branchTypeId: n.branchTypeId, x: n.x, y: n.y, w: n.w, h: n.h, demo: n.demo ? 1 : 0, visibility: n.visibility, status: n.status, position: i, now });
+      insNode.run({ id: n.id, pageId, type: n.type, name: n.name, description: n.description, notes: n.notes, docs: j(n.docs), staff: j(n.staff), imageId: n.imageId && imageIds.has(n.imageId) ? n.imageId : null /* F5: la dataURL se ingiere en la ruta; nunca se persiste */, geo: n.geo || '', thumbIconId: n.thumbIconId && imageIds.has(n.thumbIconId) ? n.thumbIconId : null, ownerUserId: n.ownerUserId, owner: n.owner, parentId: n.parentId, branchTypeId: n.branchTypeId, x: n.x, y: n.y, w: n.w, h: n.h, demo: n.demo ? 1 : 0, visibility: n.visibility, status: n.status, position: i, now });
       n.tags.forEach((t, k) => insNodeTag.run(pageId, n.id, t, k));
     });
     const insEdge = db.prepare('INSERT INTO edges (id, page_id, kind, from_node_id, to_node_id, demo, position) VALUES (?, ?, ?, ?, ?, ?, ?)');
@@ -129,6 +130,47 @@ export function patchNode(db, pageId, nodeId, patch) {
     const node = getDocument(db, pageId).nodes.find(n => n.id === nodeId);
     return { version, node, updatedAt: now };
   });
+}
+/** P10: parche de campos propios de una card (nombre, descripción, notas, docs, staff, imagen, etiquetas, geo, icono, estado) sin PUT completo; version += 1.
+    Normaliza con el documento completo (misma regla que el PUT). Pensado para `nodes.own` (viewer en sus cards). */
+export const OWN_FIELDS = ['name', 'description', 'notes', 'docs', 'staff', 'imageId', 'tags', 'geo', 'thumbIconId', 'status'];
+export function patchNodeFields(db, pageId, nodeId, patch) {
+  return transaction(db, () => {
+    const full = getDocument(db, pageId);
+    if (full.page.status !== 'active') throw new HttpError(409, 'La página no está activa');
+    if (!full.nodes.some(n => n.id === nodeId)) throw new HttpError(404, 'Nodo no encontrado');
+    const allowed = Object.fromEntries(Object.entries(patch).filter(([k]) => OWN_FIELDS.includes(k)));
+    const d = normalizeDocument({ ...full, nodes: full.nodes.map(n => (n.id === nodeId ? { ...n, ...allowed } : n)) }, { id: pageId });
+    const n = d.nodes.find(x => x.id === nodeId), now = nowIso();
+    const imageIds = new Set(db.prepare('SELECT id FROM images').all().map(r => r.id));
+    db.prepare('UPDATE nodes SET name = ?, description = ?, notes = ?, docs_json = ?, staff_json = ?, owner_label = ?, image_id = ?, geo = ?, thumb_icon_id = ?, status = ?, updated_at = ? WHERE page_id = ? AND id = ?')
+      .run(n.name, n.description, n.notes, j(n.docs), j(n.staff), n.owner, n.imageId && imageIds.has(n.imageId) ? n.imageId : null, n.geo || '', n.thumbIconId && imageIds.has(n.thumbIconId) ? n.thumbIconId : null, n.status, now, pageId, nodeId);
+    db.prepare('DELETE FROM node_tags WHERE page_id = ? AND node_id = ?').run(pageId, nodeId);
+    const insNodeTag = db.prepare('INSERT INTO node_tags (page_id, node_id, tag_id, position) VALUES (?, ?, ?, ?)');
+    n.tags.forEach((t, k) => insNodeTag.run(pageId, nodeId, t, k));
+    const version = db.prepare('SELECT version FROM pages WHERE id = ?').get(pageId).version + 1;
+    db.prepare('UPDATE pages SET version = ?, updated_at = ? WHERE id = ?').run(version, now, pageId);
+    return { version, node: getDocument(db, pageId).nodes.find(x => x.id === nodeId), updatedAt: now };
+  });
+}
+/** P10: antes de guardar el PUT de un editor con visibilidad parcial (lead) se reinyectan los nodos y aristas que no ve, para no perderlos;
+    sin `pages.visibility` las raíces conservan la visibilidad/células que ya tenían en BD. Devuelve un documento nuevo. */
+export function reconcileForEditor(db, pageId, doc, ctx) {
+  const filtered = needsFilter(ctx), lockVis = !can(ctx, 'pages.visibility');
+  if (!filtered && !lockVis) return doc;
+  const full = getDocument(db, pageId);
+  let nodes = Array.isArray(doc?.nodes) ? doc.nodes : [], edges = Array.isArray(doc?.edges) ? doc.edges : [];
+  if (filtered) {
+    const visible = new Set(filterDocumentForUser(full, ctx).nodes.map(n => n.id));
+    const hiddenNodes = full.nodes.filter(n => !visible.has(n.id)), hidden = new Set(hiddenNodes.map(n => n.id));
+    nodes = [...nodes.filter(n => n && !hidden.has(n.id)), ...hiddenNodes];
+    edges = [...edges.filter(e => e && !hidden.has(e.from) && !hidden.has(e.to)), ...full.edges.filter(e => hidden.has(e.from) || hidden.has(e.to))];
+  }
+  if (lockVis) {
+    const byId = new Map(full.nodes.map(n => [n.id, n]));
+    nodes = nodes.map(n => { const cur = n && byId.get(n.id); return cur ? { ...n, visibility: cur.visibility, cellIds: cur.cellIds } : n; });
+  }
+  return { ...doc, nodes, edges };
 }
 export function createPage(db, { name, description = '', visibility = 'org', cellIds = [], createdBy = null }, orgId = DEFAULT_ORG_ID, content = null) {
   const id = ulid();

@@ -65,7 +65,7 @@ test('API imágenes: upload 3 MB → webp ≤1600 + thumb; documento guarda imag
 
   // /uploads: sin sesión 401; designer sin acceso a la raíz solo-células → 403; con acceso (asignado) → 200 + cache; thumb; 304
   assert.equal((await app.inject({ method: 'GET', url: `/uploads/${id}` })).statusCode, 401);
-  const des = await inviteAndAccept(app, admin, 'des@test.io', 'designer');
+  const des = await inviteAndAccept(app, admin, 'des@test.io', 'viewer');
   assert.equal((await j({ method: 'GET', url: `/uploads/${id}` }, des.cookie)).status, 403, 'rA es solo-células sin células → invisible');
   assert.equal((await j({ method: 'GET', url: `/uploads/${b.imageId}/thumb` }, des.cookie)).status, 200, 'rB es org → visible');
   assert.equal((await j({ method: 'PUT', url: '/api/pages/p_default/nodes/rA/assignees', payload: { assigneeIds: [des.user.id] } }, admin)).status, 200);
@@ -73,8 +73,8 @@ test('API imágenes: upload 3 MB → webp ≤1600 + thumb; documento guarda imag
   assert.equal(ok.status, 200); assert.equal(ok.headers['content-type'], 'image/webp'); assert.match(ok.headers['cache-control'], /private/); assert.ok(ok.headers.etag);
   assert.equal((await j({ method: 'GET', url: `/uploads/${id}`, headers: { 'if-none-match': ok.headers.etag } }, des.cookie)).status, 304);
   assert.equal((await j({ method: 'GET', url: '/uploads/nope' }, admin)).status, 404);
-  // designer no sube ni borra
-  assert.equal((await j({ method: 'POST', url: '/api/images', headers: { 'content-type': 'image/png' }, payload: png }, des.cookie)).status, 403);
+  // P10: el viewer sube imágenes (nodes.own, para sus cards) pero no borra
+  assert.equal((await j({ method: 'POST', url: '/api/images', headers: { 'content-type': 'image/png' }, payload: png }, des.cookie)).status, 201);
   assert.equal((await j({ method: 'DELETE', url: `/api/images/${id}` }, des.cookie)).status, 403);
   // borrar en uso → 409; imagen subida y no usada: solo visible para quien la subió (designer no) y se purga como huérfana
   assert.equal((await j({ method: 'DELETE', url: `/api/images/${id}` }, admin)).status, 409);
@@ -82,9 +82,17 @@ test('API imágenes: upload 3 MB → webp ≤1600 + thumb; documento guarda imag
   assert.equal((await j({ method: 'GET', url: `/uploads/${loose.id}` }, des.cookie)).status, 403);
   assert.equal((await j({ method: 'GET', url: `/uploads/${loose.id}` }, admin)).status, 200);
   assert.deepEqual(purgeOrphans(app.db, app.uploadsDir, 86400e3), [], 'reciente: no se purga');
-  app.db.prepare("UPDATE images SET created_at = '2000-01-01T00:00:00.000Z' WHERE id = ?").run(loose.id);
+  // P9: una imagen usada solo como icono del thumbnail (thumbIconId) cuenta como en uso: no se purga ni se borra (409)
+  const icon = (await j({ method: 'POST', url: '/api/images', headers: { 'content-type': 'image/png' }, payload: await noisePng(60, 60) }, admin)).body;
+  const cur = (await j({ method: 'GET', url: '/api/pages/p_default' }, admin)).body;
+  cur.nodes[1].thumbIconId = icon.id; cur.nodes[1].geo = 'MX'; // la API exige ISO alfa-2 en mayúsculas (schema); el import normaliza minúsculas
+  { const r = await j({ method: 'PUT', url: '/api/pages/p_default', headers: { 'if-match': String(cur.page.version) }, payload: cur }, admin); assert.equal(r.status, 200, 'PUT con icono: ' + JSON.stringify(r.body)); }
+  const withIcon = (await j({ method: 'GET', url: '/api/pages/p_default' }, admin)).body.nodes[1];
+  assert.equal(withIcon.thumbIconId, icon.id); assert.equal(withIcon.geo, 'MX');
+  app.db.prepare("UPDATE images SET created_at = '2000-01-01T00:00:00.000Z' WHERE id IN (?, ?)").run(loose.id, icon.id);
   assert.deepEqual(purgeOrphans(app.db, app.uploadsDir), [loose.id]);
   assert.ok(!fs.existsSync(path.join(app.uploadsDir, 'org_default', `${loose.id}.webp`)));
+  assert.equal((await j({ method: 'DELETE', url: `/api/images/${icon.id}` }, admin)).status, 409, 'icono del thumbnail en uso');
   assert.equal((await j({ method: 'DELETE', url: `/api/images/${svg.body.id}` }, admin)).status, 204);
   assert.equal((await j({ method: 'GET', url: `/uploads/${svg.body.id}` }, admin)).status, 404);
 

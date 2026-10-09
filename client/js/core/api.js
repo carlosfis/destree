@@ -60,6 +60,11 @@ export const logout = () => req('POST', '/auth/logout');
 export const getMe = () => req('GET', '/me');
 export const patchMe = body => req('PATCH', '/me', body); // P3: { name? , currentPassword?, newPassword? }
 export const closeOtherSessions = () => req('DELETE', '/me/sessions'); // P6
+/* --- P10: organización y campos propios de una card --- */
+export const getOrg = () => req('GET', '/org');
+export const patchOrg = body => req('PATCH', '/org', body); // { name?, roleLabels? }
+export const deleteOrg = body => req('DELETE', '/org', body); // { password, confirmName }
+export const patchNodeFields = (pid, nid, body) => req('PATCH', `/pages/${encodeURIComponent(pid)}/nodes/${encodeURIComponent(nid)}`, body);
 /* --- P7: correo --- */
 export const forgotPassword = email => req('POST', '/auth/forgot', { email });
 export const resetPassword = (token, password) => req('POST', '/auth/reset', { token, password });

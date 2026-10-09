@@ -45,7 +45,7 @@ test('index.html: estilos css/01..16 en orden, un único <script type="module" s
 });
 
 test('ESM: sin use strict, sin let/var top-level, sin globales window.* salvo S en main.js', () => {
-  assert.equal(JS.length, 37, JS.join(','));
+  assert.equal(JS.length, 42, JS.join(','));
   for (const f of JS) {
     const src = read(f);
     assert.ok(!src.includes("'use strict'"), `${f}: 'use strict' sobra en ESM`);

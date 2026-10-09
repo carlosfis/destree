@@ -17,7 +17,7 @@ export function snapshotOf(db, pageId) {
   const { version, updatedAt, createdBy, ...page } = full.page; // campos volátiles fuera del hash
   const doc = { ...full, page };
   const json = JSON.stringify(doc);
-  return { doc, json, hash: createHash('sha256').update(json).digest('hex'), imageIds: [...new Set(doc.nodes.map(n => n.imageId).filter(Boolean))] };
+  return { doc, json, hash: createHash('sha256').update(json).digest('hex'), imageIds: [...new Set(doc.nodes.flatMap(n => [n.imageId, n.thumbIconId]).filter(Boolean))] };
 }
 /** Crea (o coalesce) una versión. `auto`: omite si el hash no cambió; sustituye la última si es auto del mismo usuario en < coalesceMs. Devuelve la versión o null. */
 export function createVersion(db, pageId, { reason = 'auto', label = '', userId = null, coalesceMs = config.versionsCoalesceMs } = {}) {
@@ -57,7 +57,7 @@ export function getVersion(db, pageId, number, ctx = null) {
   const document = filterDocumentForUser(JSON.parse(gunzipSync(r.snapshot_gz).toString('utf8')), ctx);
   return { version: pub(r), document };
 }
-const NODE_FIELDS = ['type', 'name', 'description', 'imageId', 'tags', 'owner', 'staff', 'ownerUserId', 'parentId', 'branchTypeId', 'notes', 'docs', 'visibility', 'status', 'cellIds', 'assigneeIds'];
+const NODE_FIELDS = ['type', 'name', 'description', 'imageId', 'geo', 'thumbIconId', 'tags', 'owner', 'staff', 'ownerUserId', 'parentId', 'branchTypeId', 'notes', 'docs', 'visibility', 'status', 'cellIds', 'assigneeIds'];
 /** Diferencias entre dos documentos: nodos +/−/~ (campos, sin posición), movidos, aristas +/−, tags/tipos. */
 export function diffDocuments(a, b) {
   const A = new Map(a.nodes.map(n => [n.id, n])), B = new Map(b.nodes.map(n => [n.id, n]));

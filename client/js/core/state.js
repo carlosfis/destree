@@ -216,6 +216,8 @@ export const userName = id => (S.userDir.find(u => u.id === id) || (S.docRefs?.u
 export const cellById = id => S.cellList.find(c => c.id === id) || (S.docRefs?.cells || []).find(c => c.id === id) || null;
 /** Nodos donde el usuario actual está asignado o es responsable. */
 export const myNodes = () => { const me = S.session?.user.id; return me ? S.state.nodes.filter(n => (n.assigneeIds || []).includes(me) || n.ownerUserId === me) : []; };
+/** P10: ¿la card es «mía» (responsable o asignado)? Un viewer puede editar sus campos (`nodes.own`). */
+export const isMyNode = id => { const n = nodeById(id), me = S.session?.user.id; return !!n && !!me && (n.ownerUserId === me || (n.assigneeIds || []).includes(me)); };
 /** ¿La dependencia de DS cruza entre raíces distintas? */
 export const isExternalDs = e => { const a = nodeById(e.from), b = nodeById(e.to); return !!a && !!b && rootOf(a).id !== rootOf(b).id; };
 

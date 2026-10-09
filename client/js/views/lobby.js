@@ -1,30 +1,30 @@
 /* =========================================================
-   F4a. Lobby (#/lobby): grid de páginas, buscador, crear/renombrar/archivar/borrar/restaurar, Mis asignaciones (designer)
+   F4a. Lobby (#/lobby[/<tab>]): grid de páginas, buscador, crear/renombrar/archivar/borrar/restaurar, Mis asignaciones; P10: pestaña Organización (nivel ≥4)
    ========================================================= */
 import { $, esc } from '../core/utils.js';
 import { S } from '../core/state.js';
 import * as api from '../core/api.js';
 import { toast } from '../ui/theme.js';
 import { confirmBox, promptBox } from '../ui/dialogs.js';
-import { ROLE_LABEL } from './auth-views.js';
+import { roleLabel, has } from '../core/roles.js'; // P10
 import { assignmentItems, assignmentHTML } from './me.js';
-
-const has = p => !!S.session && S.session.permissions.includes(p);
+import { renderOrgTab } from './org.js'; // P10
 const fmt = s => (s ? new Date(s).toLocaleString() : '—');
 const view = () => { let v = $('#lobbyView'); if (!v) { v = document.createElement('div'); v.id = 'lobbyView'; v.hidden = true; document.body.appendChild(v); } return v; };
 export const isLobbyOpen = () => !!$('#lobbyView') && !$('#lobbyView').hidden;
 export function closeLobby() { const v = $('#lobbyView'); if (v) { v.hidden = true; v.innerHTML = ''; } }
 
-/** Abre el lobby. `tab`: 'active' | 'archived' | 'deleted' | 'me'. */
+/** Abre el lobby. `tab`: 'active' | 'archived' | 'deleted' | 'me' | 'org' (P10: Organización, nivel ≥4). */
 export async function openLobby(tab = S.lobbyTab || 'active') {
+  const tabs = [['active', 'Páginas'], ['archived', 'Archivadas'], ...(has('pages.delete') ? [['deleted', 'Borradas']] : []), ['me', 'Mis asignaciones'], ...(has('users.read') ? [['org', 'Organización']] : [])];
+  if (!tabs.some(t => t[0] === tab)) tab = 'active';
   S.lobbyTab = tab;
   const v = view(); v.hidden = false;
-  const tabs = [['active', 'Páginas'], ['archived', 'Archivadas'], ...(has('pages.delete') ? [['deleted', 'Borradas']] : []), ['me', 'Mis asignaciones']];
   v.innerHTML = `<div class="lobby"><header class="lobby-head"><div class="brand">DesTree · <b>${esc(S.session?.org?.name || 'Lobby')}</b></div>
-      <span class="spacer"></span>${S.session ? `<span class="user-chip"><b>${esc(S.session.user.name || S.session.user.email)}</b><span class="role">${esc(ROLE_LABEL[S.session.role] || S.session.role)}</span></span>` : ''}
+      <span class="spacer"></span>${S.session ? `<span class="user-chip"><b>${esc(S.session.user.name || S.session.user.email)}</b><span class="role">${esc(roleLabel(S.session.role))}</span></span>` : ''}
       ${S.pageId ? '<button class="btn" id="lobbyBack">← Volver al lienzo</button>' : ''}</header>
     <nav class="tabs" id="lobbyTabs">${tabs.map(([k, l]) => `<button data-tab="${k}" class="${k === tab ? 'active' : ''}">${l}</button>`).join('')}</nav>
-    <div class="lobby-bar"><input type="search" id="lobbySearch" placeholder="Buscar página…" ${tab === 'me' ? 'hidden' : ''}>${has('pages.create') && tab === 'active' ? '<button class="btn primary" id="lobbyNew">＋ Nueva página</button>' : ''}</div>
+    <div class="lobby-bar" ${tab === 'me' || tab === 'org' ? 'hidden' : ''}><input type="search" id="lobbySearch" placeholder="Buscar página…">${has('pages.create') && tab === 'active' ? '<button class="btn primary" id="lobbyNew">＋ Nueva página</button>' : ''}</div>
     <div class="lobby-body" id="lobbyBody"><div class="empty">Cargando…</div></div></div>`;
   $('#lobbyTabs', v).addEventListener('click', e => { const b = e.target.closest('button'); if (b) openLobby(b.dataset.tab); });
   $('#lobbyBack', v)?.addEventListener('click', () => { location.hash = `#/p/${encodeURIComponent(S.pageId)}`; });
@@ -35,6 +35,7 @@ export async function openLobby(tab = S.lobbyTab || 'active') {
   $('#lobbySearch', v)?.addEventListener('input', e => { const q = e.target.value.trim().toLowerCase(); v.querySelectorAll('.page-card').forEach(c => { c.hidden = !!q && !c.dataset.q.includes(q); }); });
   const body = $('#lobbyBody', v);
   $('#lobbyTabs .active', v)?.focus();
+  if (tab === 'org') return renderOrgTab(body); // P10
   if (tab === 'me') { body.innerHTML = assignmentHTML(await assignmentItems()); body.addEventListener('click', e => { const a = e.target.closest('a'); if (a) { e.preventDefault(); location.hash = a.getAttribute('href'); } }); return; }
   let pages = [];
   try { pages = await api.listPages(tab); if (tab === 'active') S.pageList = pages; } catch (err) { body.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }

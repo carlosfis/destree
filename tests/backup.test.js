@@ -30,7 +30,7 @@ test('backup → tar.gz válido; API lista/descarga/borra; retención; restore e
   // contenido: célula, head, designer en célula, imagen, 2 páginas (una archivada), versiones
   const cell = (await j({ method: 'POST', url: '/api/cells', payload: { name: 'Cel' } }, admin)).body;
   const head = await inviteAndAccept(app, admin, 'head@test.io', 'head', 'Head');
-  const des = await inviteAndAccept(app, admin, 'des@test.io', 'designer', 'Des');
+  const des = await inviteAndAccept(app, admin, 'des@test.io', 'viewer', 'Des');
   await j({ method: 'PUT', url: `/api/cells/${cell.id}/members`, payload: { userIds: [des.user.id] } }, admin);
   const png = await sharp({ create: { width: 64, height: 64, channels: 3, background: '#c00' } }).png().toBuffer();
   const img = (await j({ method: 'POST', url: '/api/images', headers: { 'content-type': 'image/png' }, payload: png }, admin)).body;
@@ -105,7 +105,7 @@ test('backup → tar.gz válido; API lista/descarga/borra; retención; restore e
   assert.ok(versD.some(v => v.label === 'hito')); assert.equal(versD[0].createdByName, 'Admin', 'autor mapeado por correo');
   assert.equal((await appD.inject({ method: 'GET', url: `/uploads/${img.id}`, headers: { cookie: adminD } })).statusCode, 200);
   const usersD = (await appD.inject({ method: 'GET', url: '/api/users', headers: { cookie: adminD } })).json().users;
-  const desD = usersD.find(u => u.email === 'des@test.io'); assert.equal(desD.role, 'designer');
+  const desD = usersD.find(u => u.email === 'des@test.io'); assert.equal(desD.role, 'viewer');
   assert.equal((await appD.inject({ method: 'POST', url: '/api/auth/login', payload: { email: 'des@test.io', password: PW } })).statusCode, 401, 'importado sin contraseña');
   assert.equal((await appD.inject({ method: 'PATCH', url: `/api/users/${desD.id}`, headers: { cookie: adminD }, payload: { password: 'nueva-clave-1' } })).statusCode, 200);
   const desCookie = await login(appD, 'des@test.io', 'nueva-clave-1');
