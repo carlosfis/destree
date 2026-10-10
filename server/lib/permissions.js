@@ -34,6 +34,7 @@ const DEFS = {
   'pages.edit':      [2, 'Contenido', 'Editar el interior de las páginas visibles: cards, conexiones, etiquetas, tipos'],
   'nodes.assign':    [2, 'Contenido', 'Asignar responsable y asignados a una card'],
   'nodes.own':       [1, 'Contenido', 'Editar las cards donde uno es responsable o asignado'],
+  'projects.edit':   [1, 'Contenido', 'Página de proyecto (overview, cronograma, kanban) de las cards donde uno es responsable o asignado; con edición de páginas, de todas las visibles'],
   'versions.read':   [1, 'Contenido', 'Ver el historial de versiones'],
   'versions.write':  [3, 'Contenido', 'Crear versiones manuales y restaurar'],
 };

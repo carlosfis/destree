@@ -9,13 +9,14 @@ import { listCells } from './cells.js';
 import { listUsers, hashPassword, newToken } from './auth.js';
 import { getDocument, saveDocument, HttpError } from './pages.js';
 import { filesOf } from './images.js';
+import { exportProjects, importProjects } from './projects.js'; // P11
 import { ROLES, LEGACY_ROLES, sanitizeRoleLabels } from './permissions.js';
 
 const strip = doc => { const { refs, ...d } = doc; return d; };
 export function exportOrg(db, uploadsDir, { orgId = DEFAULT_ORG_ID, images = 'manifest' } = {}) {
   const org = db.prepare('SELECT id, name, slug, settings_json FROM orgs WHERE id = ?').get(orgId);
   const pages = db.prepare('SELECT id, status FROM pages WHERE org_id = ? ORDER BY created_at').all(orgId).map(p => ({
-    status: p.status, document: strip(getDocument(db, p.id)),
+    status: p.status, document: strip(getDocument(db, p.id)), projects: exportProjects(db, p.id),
     versions: db.prepare('SELECT number, label, reason, created_by, created_at, snapshot_gz FROM page_versions WHERE page_id = ? ORDER BY number').all(p.id)
       .map(v => ({ number: v.number, label: v.label, reason: v.reason, createdBy: v.created_by, createdAt: v.created_at, document: JSON.parse(gunzipSync(v.snapshot_gz).toString('utf8')) })),
   }));
@@ -33,7 +34,7 @@ export function exportOrg(db, uploadsDir, { orgId = DEFAULT_ORG_ID, images = 'ma
 }
 /** Importa en la org por defecto. Usuarios nuevos reciben contraseña aleatoria (admin la fija con PATCH /api/users/:id). Páginas con id existente se sustituyen. */
 export function importOrg(db, uploadsDir, data, { orgId = DEFAULT_ORG_ID, importedBy = null } = {}) {
-  const stats = { cells: 0, users: 0, pages: 0, versions: 0, images: 0, skippedImages: 0 };
+  const stats = { cells: 0, users: 0, pages: 0, versions: 0, images: 0, skippedImages: 0, projects: 0 };
   return transaction(db, () => {
     const settings = { ...(data.org.settings || {}) }; if (settings.roleLabels) settings.roleLabels = sanitizeRoleLabels(settings.roleLabels); // P10
     db.prepare('UPDATE orgs SET name = ?, settings_json = ? WHERE id = ?').run(String(data.org.name).slice(0, 120), JSON.stringify(settings), orgId);
@@ -72,6 +73,7 @@ export function importOrg(db, uploadsDir, data, { orgId = DEFAULT_ORG_ID, import
       const { page, ...content } = p.document;
       for (const n of content.nodes) { if (n.ownerUserId) n.ownerUserId = mapUser(n.ownerUserId); n.assigneeIds = (n.assigneeIds || []).map(mapUser).filter(Boolean); }
       saveDocument(db, id, content, null);
+      if (p.projects) { db.prepare('DELETE FROM projects WHERE page_id = ?').run(id); stats.projects += importProjects(db, id, p.projects); } // P11
       db.prepare('DELETE FROM page_versions WHERE page_id = ?').run(id);
       for (const v of p.versions || []) {
         const json = JSON.stringify(v.document);

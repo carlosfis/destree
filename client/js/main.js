@@ -27,6 +27,7 @@ import { applyTheme, openShortcuts } from './ui/theme.js';
 import { openMyAssignments, goToNode } from './views/me.js';
 import { refreshCells } from './views/cells.js';
 import { openAccountDialog } from './views/account.js'; // P3
+import { openProject, closeProject } from './views/project.js'; // P11
 import './canvas/keyboard.js'; // solo efectos (listeners)
 $('#btnNew').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(); showNewMenu(r.left, r.bottom + 4); });
 $('#btnLayout').addEventListener('click', autoLayout);
@@ -41,7 +42,7 @@ $('#zoomLabel').addEventListener('click', () => setZoom(1));
 viewport.addEventListener('pointerdown', () => { if (innerWidth <= 720 && adminPanel.classList.contains('open')) toggleAdmin(false); });
 
 /* --- F2: router mínimo por hash (#/login, #/setup, #/invite/<token>, #/lobby[/<tab>]) + sesión --- */
-const route = () => { const m = location.hash.match(/^#\/(login|setup|invite|forgot|reset|me|n|p|lobby|admin)(?:\/([^/]+))?(?:\/n\/([^/]+))?/); return m ? { name: m[1], arg: m[2], node: m[3] } : null; };
+const route = () => { const m = location.hash.match(/^#\/(login|setup|invite|forgot|reset|me|n|p|lobby|admin)(?:\/([^/]+))?(?:\/n\/([^/]+))?(?:\/(project)(?:\/([a-z]+))?)?/); return m ? { name: m[1], arg: m[2], node: m[3], project: !!m[4], tab: m[5] } : null; }; // P11: …/n/<id>/project[/<tab>]
 /** Resuelve S.session (o null sin servidor). Muestra setup/login/invitación cuando hace falta. */
 async function authenticate() {
   const r = route();
@@ -86,7 +87,7 @@ async function loadPage(pid) {
   setSaveStatus('Cargando…');
   try { await bootstrap(pid); } catch (err) { if (err.noPage || err.status === 403 || err.status === 404) { toast(err.message, 'error', 5000); if (!S.pageId) return openLobby(); if (location.hash !== '#/lobby') location.hash = '#/lobby'; return; } throw err; }
   history.past.length = 0; history.future.length = 0; updateUndoButtons();
-  closePopover(); if (editorDialog.open) editorDialog.close(); closeDrawer(); toggleAdmin(false);
+  closePopover(); if (editorDialog.open) editorDialog.close(); closeDrawer(); toggleAdmin(false); closeProject(); // P11
   document.dispatchEvent(new CustomEvent('destree:reload'));
   closeLobby(); renderPageButton();
   setSaveStatus(S.offline ? 'Sin conexión' : S.readonly ? 'Solo lectura' : 'Guardado');
@@ -108,10 +109,12 @@ async function appRoute() {
     if (pid !== S.pageId) await loadPage(pid);
     if (pid !== S.pageId) return; // no se pudo cargar
     closeLobby();
+    if (r.node && r.project) { if (!(await openProject(decodeURIComponent(r.node), r.tab))) toast('Esa card no existe o no es visible para ti.', 'error', 5000); return; } // P11
+    closeProject();
     if (r.node && !goToNode(decodeURIComponent(r.node))) toast('Esa card no existe o no es visible para ti.', 'error', 5000);
     return;
   }
-  closeLobby();
+  closeLobby(); closeProject();
   if (r.name === 'me') openMyAssignments();
   else if (r.name === 'n' && r.arg && !goToNode(decodeURIComponent(r.arg))) toast('Esa card no existe o no es visible para ti.', 'error', 5000);
 }

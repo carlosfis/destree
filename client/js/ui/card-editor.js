@@ -5,7 +5,7 @@
 import { $, $$, uid, esc, TYPE_META, TAG_COLORS, applyDataStyles } from '../core/utils.js';
 import {
   S, save, nodeById, tagById, isContainer, childrenOf, sourceEdgeOf, dsOf, defaultBranchType, parentOf,
-  rootOf, isAncestor, worldPos, typeName, isMyNode,
+  rootOf, isAncestor, worldPos, typeName, isMyNode, projectHash,
 } from '../core/state.js';
 import * as api from '../core/api.js'; // P10: PATCH de campos propios
 import { pushHistory } from '../core/history.js';
@@ -80,7 +80,7 @@ export function openEditor(id, preset = {}) {
     docs: docsSec.html,
     notes: docsSec.notesHtml,
   };
-  const footer = `${node && !own ? '<button type="button" class="btn danger left" id="fDelete">Eliminar</button>' : ''}<button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn primary">${node ? 'Guardar cambios' : 'Crear'}</button>`;
+  const footer = `${node && !own ? '<button type="button" class="btn danger left" id="fDelete">Eliminar</button>' : ''}${node ? `<button type="button" class="btn ${own ? 'left' : ''}" id="fProject" title="Overview, cronograma y actividades">▤ Proyecto</button>` : ''}<button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn primary">${node ? 'Guardar cambios' : 'Crear'}</button>`;
   let unbindDrop = null;
   const form = openDrawer(drawerHTML({ title: title(draft.parentId), panes, footer, tag: 'form', id: 'editorForm' }), { onClose: () => { unbindDrop && unbindDrop(); thumbSec.unbind(); } });
   if (own) form.classList.add('own-mode'); // CSS oculta tipo, contenedor, relaciones y nueva etiqueta
@@ -145,6 +145,7 @@ export function openEditor(id, preset = {}) {
   $('#fImgInput').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await setImageFile(f); });
   $('#fImgRemove').addEventListener('click', () => { draft.image = null; draft.imageId = null; refreshImg(); });
   $('#fDelete')?.addEventListener('click', () => { closeDrawer(); deleteNodes([node.id]); });
+  $('#fProject')?.addEventListener('click', () => { closeDrawer(); location.hash = projectHash(node.id); }); // P11
 
   form.addEventListener('submit', e => {
     e.preventDefault();

@@ -2,7 +2,7 @@
    F3. Ficha de instancia en modo lectura (viewer: doble clic / Enter / #/n/<id>) en el sidebar, con las mismas pestañas del editor. P10: «Editar» si la card es propia.
    ========================================================= */
 import { $, esc } from '../core/utils.js';
-import { S, nodeById, tagById, rootOf, userName, cellById, typeName, isMyNode } from '../core/state.js';
+import { S, nodeById, tagById, rootOf, userName, cellById, typeName, isMyNode, projectHash } from '../core/state.js';
 import { renderMarkdown } from './markdown.js';
 import { pathOf, openEditor } from './card-editor.js';
 import { imageSrc } from './uploader.js';
@@ -44,8 +44,9 @@ export function openNodeView(id) {
   };
   const badge = `<span class="type-badge">${esc(typeName(n.type))}</span>`;
   const own = S.readonly && isMyNode(id) && S.session?.permissions.includes('nodes.own'); // P10
-  openDrawer(drawerHTML({ title: `${instanceLabel(n.parentId)} · ${esc(n.name)}`, badge, panes, footer: `${own ? '<button type="button" class="btn primary" data-edit>Editar</button>' : ''}<button type="button" class="btn" data-cancel>Cerrar</button>`, tag: 'div', cls: 'node-view' }));
+  openDrawer(drawerHTML({ title: `${instanceLabel(n.parentId)} · ${esc(n.name)}`, badge, panes, footer: `<button type="button" class="btn left" data-project title="Overview, cronograma y actividades">▤ Proyecto</button>${own ? '<button type="button" class="btn primary" data-edit>Editar</button>' : ''}<button type="button" class="btn" data-cancel>Cerrar</button>`, tag: 'div', cls: 'node-view' }));
   bindThumbActions($('#nodeDrawer'), 'vThumb', () => thumbnailData(n));
   $('#nodeDrawer [data-edit]')?.addEventListener('click', () => openEditor(id));
+  $('#nodeDrawer [data-project]').addEventListener('click', () => { location.hash = projectHash(id); }); // P11
   $('#nodeDrawer footer .btn').focus();
 }

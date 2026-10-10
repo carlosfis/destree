@@ -2,7 +2,7 @@
    11. Popover y menús
    ========================================================= */
 import { $, clamp, esc, MOD } from '../core/utils.js';
-import { S, nodeById, isContainer, isExternalDs, typeName, kindLabel } from '../core/state.js';
+import { S, nodeById, isContainer, isExternalDs, typeName, kindLabel, projectHash } from '../core/state.js';
 import { toWorld, fitToScreen } from '../canvas/camera.js';
 import { sel } from '../canvas/render-nodes.js';
 import { edgeTitle } from '../canvas/render-edges.js';
@@ -64,6 +64,7 @@ export function showNodeMenu(id, x, y) {
   const items = [
     { label: 'Editar', ico: '✎', kbd: 'Enter', action: () => openEditor(id) },
     { label: 'Ver ficha', ico: 'ⓘ', action: () => openNodeView(id) },
+    { label: 'Página de proyecto', ico: '▤', action: () => { location.hash = projectHash(id); } }, // P11
   ];
   if (isContainer(n) && !multi) items.push('-', ...addItems(id).slice(1), '-');
   if (n.parentId && !multi) items.push({ label: 'Sacar a la raíz', ico: '⤴', action: () => moveToRoot(id) });

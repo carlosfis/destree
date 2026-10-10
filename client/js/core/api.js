@@ -84,3 +84,16 @@ export const updateCell = (id, body) => req('PATCH', `/cells/${encodeURIComponen
 export const deleteCell = id => req('DELETE', `/cells/${encodeURIComponent(id)}`);
 export const setCellMembers = (id, userIds) => req('PUT', `/cells/${encodeURIComponent(id)}/members`, { userIds });
 export const directory = () => req('GET', '/users/directory').then(r => r.users);
+/* --- P11: página de proyecto de una card (overview, cronograma, kanban) --- */
+const PJ = (pid, nid) => `/pages/${encodeURIComponent(pid)}/nodes/${encodeURIComponent(nid)}/project`;
+export const getProject = (pid, nid) => req('GET', PJ(pid, nid));
+export const patchProject = (pid, nid, body) => req('PATCH', PJ(pid, nid), body); // { tagline?, sprintWeeks?, sprintOffset? }
+export const createSection = (pid, nid, body) => req('POST', `${PJ(pid, nid)}/sections`, body);
+export const updateSection = (pid, nid, id, body) => req('PATCH', `${PJ(pid, nid)}/sections/${encodeURIComponent(id)}`, body);
+export const deleteSection = (pid, nid, id) => req('DELETE', `${PJ(pid, nid)}/sections/${encodeURIComponent(id)}`);
+export const createPhase = (pid, nid, body) => req('POST', `${PJ(pid, nid)}/phases`, body);
+export const updatePhase = (pid, nid, id, body) => req('PATCH', `${PJ(pid, nid)}/phases/${encodeURIComponent(id)}`, body);
+export const deletePhase = (pid, nid, id) => req('DELETE', `${PJ(pid, nid)}/phases/${encodeURIComponent(id)}`);
+export const createActivity = (pid, nid, body) => req('POST', `${PJ(pid, nid)}/activities`, body);
+export const updateActivity = (pid, nid, id, body) => req('PATCH', `${PJ(pid, nid)}/activities/${encodeURIComponent(id)}`, body);
+export const deleteActivity = (pid, nid, id) => req('DELETE', `${PJ(pid, nid)}/activities/${encodeURIComponent(id)}`);

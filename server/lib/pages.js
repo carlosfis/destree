@@ -4,6 +4,7 @@ import { ulid, nowIso } from './ids.js';
 import { normalizeDocument, defaultDocument } from './normalize.js';
 import { filterDocumentForUser, pageVisibleFor, needsFilter } from './visibility.js';
 import { can } from './permissions.js';
+import { copyProjects } from './projects.js'; // P11 (import circular resuelto: projects.js solo usa HttpError en tiempo de ejecución)
 
 export class HttpError extends Error { constructor(status, message, extra) { super(message); this.status = status; Object.assign(this, extra); } }
 const j = v => JSON.stringify(v);
@@ -223,7 +224,11 @@ export function deletePage(db, pageId, userId) {
 export function duplicatePage(db, pageId, { name, createdBy = null } = {}) {
   const src = getDocument(db, pageId);
   if (src.page.status === 'deleted') throw new HttpError(409, 'La página está borrada');
-  return createPage(db, { name: name || `${src.page.name} (copia)`, description: src.page.description, visibility: src.page.visibility, cellIds: src.page.cellIds, createdBy }, DEFAULT_ORG_ID, src);
+  return transaction(db, () => {
+    const doc = createPage(db, { name: name || `${src.page.name} (copia)`, description: src.page.description, visibility: src.page.visibility, cellIds: src.page.cellIds, createdBy }, DEFAULT_ORG_ID, src);
+    copyProjects(db, pageId, doc.page.id); // P11: páginas de proyecto de las cards
+    return doc;
+  });
 }
 /** Importa un respaldo v1/v2/v3 (normaliza y persiste). Sin If-Match: sustituye lo que haya. */
 export function importDocument(db, pageId, raw) {

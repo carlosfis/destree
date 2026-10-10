@@ -118,7 +118,7 @@ test('migración 012: designer → viewer en memberships e invites; import de ex
   db.prepare("INSERT INTO users (id, email, password_hash) VALUES ('u1', 'd@x.io', 'h'), ('u2', 'h@x.io', 'h')").run();
   db.prepare("INSERT INTO memberships (user_id, org_id, role) VALUES ('u1', 'o', 'designer'), ('u2', 'o', 'head')").run();
   db.prepare("INSERT INTO invites (id, org_id, email, role, token_hash, expires_at, email_sent_at) VALUES ('i1', 'o', 'n@x.io', 'designer', 't', '2999-01-01', '2026-01-01')").run();
-  assert.deepEqual(migrate(db), ['012_roles.sql']);
+  assert.deepEqual(migrate(db), ['012_roles.sql', '013_projects.sql']);
   assert.deepEqual(db.prepare('SELECT user_id, role FROM memberships ORDER BY user_id').all().map(r => r.role), ['viewer', 'head']);
   assert.deepEqual({ ...db.prepare('SELECT role, email_sent_at FROM invites').get() }, { role: 'viewer', email_sent_at: '2026-01-01' });
   assert.throws(() => db.prepare("INSERT INTO memberships (user_id, org_id, role) VALUES ('u2', 'o', 'designer')").run(), /CHECK/);

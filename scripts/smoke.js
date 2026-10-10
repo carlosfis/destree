@@ -463,6 +463,37 @@ await step('P10: viewer edita su card (asignada) con el editor acotado → PATCH
   if (after.name !== 'Mi card' || server !== 'editada por viewer' || after.drawer) throw new Error('PATCH propio: ' + JSON.stringify({ after, server }));
   return { noOrg, ...opened, ...after, server, tabs };
 });
+await step('P11: página de proyecto (viewer asignado): ▤ Proyecto → overview (plantilla) → editar sección → fase + actividad → cronograma → kanban (mover) → Escape', async () => {
+  const root = await ev(`S.state.nodes.find(n => n.name === 'Mi card').id`); // la card asignada a Dani en el paso anterior
+  const c = await center(`.node[data-id="${root}"] .head-main`).catch(() => center(`.node[data-id="${root}"]`));
+  await mouse('mousePressed', c.x, c.y, { clickCount: 2 }); await mouse('mouseReleased', c.x, c.y, { clickCount: 2 }); await sleep(200);
+  if (!(await ev(`!!document.querySelector('#fProject')`))) throw new Error('sin botón Proyecto en el editor acotado');
+  await ev(`document.querySelector('#fProject').click(); true`); await sleep(1000);
+  const ov = await ev(`({ hash: location.hash, open: !document.querySelector('#projectPage').hidden, tab: document.querySelector('#projectTabs .active')?.dataset.tab, sections: document.querySelectorAll('.pj-section').length, canEdit: S.projectView.canEdit, banner: document.querySelector('.pj-banner h1')?.textContent, add: !!document.querySelector('#pjAddSection') })`);
+  if (!ov.open || ov.tab !== 'overview' || ov.sections !== 9 || !ov.canEdit || !ov.add || !/\/project\/overview$/.test(ov.hash)) throw new Error('overview: ' + JSON.stringify(ov));
+  await ev(`document.querySelectorAll('.pj-tools [data-edit]')[1].click(); true`); await sleep(200);
+  await ev(`(() => { const f = document.querySelector('#projectDialog form'); f.elements.text.value = 'Resumen smoke'; f.querySelector('[data-add="metrics"]').click(); const r = f.querySelector('[data-list="metrics"] .pj-row'); r.querySelector('[data-col="value"]').value = '3'; r.querySelector('[data-col="label"]').value = 'pasos'; f.requestSubmit(); return true; })()`); await sleep(900);
+  const sec = await ev(`({ text: document.querySelector('.pj-text')?.textContent, metric: document.querySelector('.pj-metric b')?.textContent, dlg: document.querySelector('#projectDialog').open })`);
+  if (sec.text !== 'Resumen smoke' || sec.metric !== '3' || sec.dlg) throw new Error('sección: ' + JSON.stringify(sec));
+  await ev(`document.querySelector('#projectTabs [data-tab=cronograma]').click(); true`); await sleep(500);
+  await ev(`document.querySelector('#schedAddPhase').click(); true`); await sleep(200);
+  await ev(`(() => { const f = document.querySelector('#projectDialog form'); f.elements.name.value = 'Alineación'; f.requestSubmit(); return true; })()`); await sleep(900);
+  await ev(`document.querySelector('#schedAddAct').click(); true`); await sleep(200);
+  await ev(`(() => { const f = document.querySelector('#projectDialog form'); f.elements.title.value = 'Discovery'; f.elements.description.value = 'Shadowing'; f.elements.tag.value = 'ux'; f.elements.assignee.value = 'Adri'; f.elements.startDate.value = new Date().toISOString().slice(0, 10); f.requestSubmit(); return true; })()`); await sleep(900);
+  const sch = await ev(`({ phases: document.querySelectorAll('.sched-row').length, acts: document.querySelectorAll('.act').length, tag: document.querySelector('.act-dot')?.textContent, weeks: document.querySelectorAll('.sched-week').length, today: !!document.querySelector('.sched-today'), sticky: getComputedStyle(document.querySelector('.sched-phase')).position, scroll: document.querySelector('.sched').scrollWidth >= document.querySelector('.sched').clientWidth })`);
+  if (sch.phases !== 1 || sch.acts !== 1 || sch.tag !== 'UX' || sch.weeks < 6 || !sch.today || sch.sticky !== 'sticky') throw new Error('cronograma: ' + JSON.stringify(sch));
+  await ev(`document.querySelector('#projectTabs [data-tab=kanban]').click(); true`); await sleep(500);
+  const kb = await ev(`({ todo: document.querySelectorAll('.kb-todo .kb-card').length, cols: document.querySelectorAll('.kb-col').length, who: document.querySelector('.kb-who')?.textContent, draggable: document.querySelector('.kb-card')?.getAttribute('draggable') })`);
+  if (kb.todo !== 1 || kb.cols !== 4 || kb.who !== '@Adri' || kb.draggable !== 'true') throw new Error('kanban: ' + JSON.stringify(kb));
+  await ev(`document.querySelector('.pj-content').moveActivity(document.querySelector('.kb-card').dataset.id, 'doing')`); await sleep(900);
+  const moved = await ev(`({ doing: document.querySelectorAll('.kb-doing .kb-card').length, todo: document.querySelectorAll('.kb-todo .kb-card').length })`);
+  const server = await ev(`fetch('/api/pages/' + S.pageId + '/nodes/${root}/project').then(r => r.json()).then(d => ({ status: d.activities[0].status, phase: d.phases.length }))`);
+  if (moved.doing !== 1 || moved.todo !== 0 || server.status !== 'doing' || server.phase !== 1) throw new Error('mover: ' + JSON.stringify({ moved, server }));
+  await key('Escape', 'Escape'); await sleep(500);
+  const back = await ev(`({ hidden: document.querySelector('#projectPage').hidden, hash: location.hash, pv: S.projectView })`);
+  if (!back.hidden || back.pv) throw new Error('escape: ' + JSON.stringify(back));
+  return { tab: ov.tab, sections: ov.sections, banner: ov.banner, sec, sch, kb, moved, server, hash: back.hash };
+});
 drain();
 console.log(results.join('\n'));
 console.log(problems.length ? `\nPROBLEMAS (${problems.length}):\n` + problems.join('\n') : '\nconsola limpia: 0 excepciones / 0 console.error');

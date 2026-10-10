@@ -52,6 +52,7 @@ export const S = {
   pageList: [],          // F4a: páginas visibles (GET /api/pages) para lobby y topbar
   lobbyTab: 'active',    // F4a: pestaña activa del lobby
   orgTab: null,          // F4b: pestaña activa de #/admin
+  projectView: null,     // P11: página de proyecto abierta { nodeId, tab, data, canEdit } (views/project.js)
 
 };
 // normalize.js (compartido con el servidor) es la única fuente de saneado y defaults.
@@ -218,6 +219,8 @@ export const cellById = id => S.cellList.find(c => c.id === id) || (S.docRefs?.c
 export const myNodes = () => { const me = S.session?.user.id; return me ? S.state.nodes.filter(n => (n.assigneeIds || []).includes(me) || n.ownerUserId === me) : []; };
 /** P10: ¿la card es «mía» (responsable o asignado)? Un viewer puede editar sus campos (`nodes.own`). */
 export const isMyNode = id => { const n = nodeById(id), me = S.session?.user.id; return !!n && !!me && (n.ownerUserId === me || (n.assigneeIds || []).includes(me)); };
+/** P11: hash de la página de proyecto de una card de la página actual. */
+export const projectHash = (nid, tab = 'overview') => `#/p/${encodeURIComponent(S.pageId)}/n/${encodeURIComponent(nid)}/project/${tab}`;
 /** ¿La dependencia de DS cruza entre raíces distintas? */
 export const isExternalDs = e => { const a = nodeById(e.from), b = nodeById(e.to); return !!a && !!b && rootOf(a).id !== rootOf(b).id; };
 

@@ -31,7 +31,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (S.popoverOpen) { closePopover(); return; }
     if ($('dialog[open]')) return;
-    const overlay = ['#lobbyView', '#adminView'].map(s => $(s)).find(v => v && !v.hidden); // lobby / #/admin → volver al lienzo
+    const overlay = ['#lobbyView', '#adminView', '#projectPage'].map(s => $(s)).find(v => v && !v.hidden); // lobby / #/admin / proyecto (P11) → volver al lienzo
     if (overlay) { if (typing && t.value) return; if (S.pageId) location.hash = `#/p/${encodeURIComponent(S.pageId)}`; return; }
     if (isDrawerOpen()) { closeDrawer(); return; }
     if (S.ptr) { cancelGesture(); return; }

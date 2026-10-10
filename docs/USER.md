@@ -52,5 +52,12 @@ Pulsa tu nombre arriba a la derecha: cambia tu **nombre** o tu **contraseña** (
 ## Mis asignaciones (`★ Mías` o `#/me`)
 Lista de cards donde eres responsable o asignado en todas las páginas; cada una centra el lienzo en la card.
 
+## Página de proyecto (Overview · Cronograma · Actividades)
+Cada card (Main instance, Child instance, Design System o UI Kit) tiene su propia página: menú contextual → **Página de proyecto**, o el botón **▤ Proyecto** en la ficha y en el editor. La ruta es `#/p/<página>/n/<card>/project/<pestaña>`; **Escape** o «← Volver al lienzo» regresan a la card.
+Pueden editarla quienes editan la página (Lead o superior) y, sea cual sea su nivel, el responsable y los asignados de la card. El resto la ve en modo lectura.
+- **Overview**: banner con el nombre, la ruta y las etiquetas de la card, frase del proyecto y secciones numeradas. La primera vez se crea la plantilla de la ficha (Ficha de proyecto con los enlaces de la card, Resumen con su descripción, Antecedentes, Usuarios identificados, Problemática, Objetivos de negocio, Entregables, Scrum team y Staff de diseño con el staff de la card). Cada sección se edita (✎), se reordena (↑ ↓) o se elimina (🗑); «＋ Añadir sección» ofrece los ocho tipos: enlaces, texto + métricas, línea de tiempo, tarjetas, cita destacada, objetivos con valor, lista de entregables y personas.
+- **Cronograma**: fases como filas (primera columna fija) y semanas ISO como columnas, generadas desde las fechas de las actividades (scroll horizontal si el proyecto se alarga). Cada actividad muestra el círculo con sus siglas en el color de la fase, el título, la línea hasta la fecha de fin y la descripción; la línea vertical marca hoy. Bajo cada semana aparece el sprint (⚙ Sprints ajusta semanas por sprint y numeración). Solo entran las actividades con fase y fecha de inicio.
+- **Actividades** (kanban): columnas To Do · Doing · Done · Cancelled con todas las actividades, también las que no están en el cronograma. Arrastra una card a otra columna o cambia el estado desde su modal. Las canceladas no se borran (quedan en su columna); eliminar es una acción explícita del modal.
+
 ## Atajos
 `?` muestra la lista. Rueda: desplazar · Ctrl/⌘+rueda: zoom · Espacio+arrastrar o `H`: mano · `V`: selección · Shift+1 ajustar · Shift+2 ajustar a selección · Supr eliminar · Ctrl/⌘+D duplicar · `E`/Enter editar · Esc cierra menús, el sidebar, el lobby o la administración y vuelve al lienzo.

@@ -12,7 +12,7 @@ test('permissions.js: jerarquía estricta por nivel; roles asignables; etiquetas
   for (const a of ACTIONS) assert.ok(can({ role: 'admin' }, a), a);
   assert.deepEqual(ROLES.map(levelOf), [5, 4, 3, 2, 1]);
   for (let i = 1; i < ROLES.length; i++) for (const a of permissionsFor(ROLES[i])) assert.ok(can({ role: ROLES[i - 1] }, a), `${ROLES[i - 1]} ⊇ ${ROLES[i]}: ${a}`);
-  assert.deepEqual(permissionsFor('viewer'), ['pages.read', 'pages.export', 'nodes.own', 'versions.read']);
+  assert.deepEqual(permissionsFor('viewer'), ['pages.read', 'pages.export', 'nodes.own', 'projects.edit', 'versions.read']);
   assert.ok(can({ role: 'lead' }, 'pages.edit') && !can({ role: 'lead' }, 'pages.all') && !can({ role: 'lead' }, 'pages.visibility'));
   assert.ok(can({ role: 'head' }, 'pages.visibility') && !can({ role: 'head' }, 'pages.create') && !can({ role: 'head' }, 'users.manage'));
   assert.ok(can({ role: 'ops' }, 'users.manage') && can({ role: 'ops' }, 'backups') && !can({ role: 'ops' }, 'org.settings') && !can({ role: 'ops' }, 'org.delete'));

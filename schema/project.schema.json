@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "project.schema.json",
+  "title": "Project",
+  "description": "P11: página de proyecto de una card (GET /api/pages/:p/nodes/:n/project y export de organización). settings: tagline del Overview y numeración de sprints del cronograma. Las secciones del Overview tienen `data` con la forma de `SPEC[kind]` (server/lib/project-template.js). Una actividad aparece en el cronograma si tiene fase y fecha de inicio; en el kanban siempre (status).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sections", "phases", "activities"],
+  "properties": {
+    "nodeId": { "type": "string", "maxLength": 64, "description": "solo en el export de organización" },
+    "canEdit": { "type": "boolean", "description": "solo en GET: pages.edit o responsable/asignado de la card" },
+    "updatedAt": { "type": "string" },
+    "settings": { "type": "object", "additionalProperties": false, "properties": {
+      "tagline": { "type": "string", "maxLength": 300, "default": "" },
+      "sprintWeeks": { "type": "integer", "minimum": 1, "maximum": 8, "default": 2 },
+      "sprintOffset": { "type": "integer", "minimum": -999, "maximum": 999, "default": 0 }
+    } },
+    "sections": { "type": "array", "maxItems": 40, "items": { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": {
+      "id": { "type": "string", "maxLength": 64 }, "position": { "type": "integer", "minimum": 0 },
+      "kind": { "enum": ["links", "text", "timeline", "cards", "quote", "goals", "checklist", "people"] },
+      "title": { "type": "string", "maxLength": 80 },
+      "data": { "type": "object" }
+    } } },
+    "phases": { "type": "array", "maxItems": 30, "items": { "type": "object", "additionalProperties": false, "required": ["name"], "properties": {
+      "id": { "type": "string", "maxLength": 64 }, "position": { "type": "integer", "minimum": 0 },
+      "name": { "type": "string", "minLength": 1, "maxLength": 80 }, "color": { "type": "string", "pattern": "^(#[0-9a-f]{6})?$" }
+    } } },
+    "activities": { "type": "array", "maxItems": 500, "items": { "type": "object", "additionalProperties": false, "required": ["title"], "properties": {
+      "id": { "type": "string", "maxLength": 64 }, "position": { "type": "integer", "minimum": 0 },
+      "phaseId": { "type": ["string", "null"], "maxLength": 64 },
+      "title": { "type": "string", "minLength": 1, "maxLength": 120 }, "description": { "type": "string", "maxLength": 600, "default": "" },
+      "tag": { "type": "string", "maxLength": 4, "default": "" }, "assignee": { "type": "string", "maxLength": 80, "default": "" },
+      "startDate": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }, "endDate": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+      "status": { "enum": ["todo", "doing", "done", "cancelled"], "default": "todo" },
+      "createdAt": { "type": "string" }, "updatedAt": { "type": "string" }
+    } } }
+  }
+}

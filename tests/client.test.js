@@ -8,7 +8,7 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const CLIENT = path.join(ROOT, 'client');
 const read = (f) => fs.readFileSync(path.join(CLIENT, f), 'utf8');
 
-const CSS = ["01-theme", "02-base", "03-topbar", "04-canvas", "05-nodes", "06-floating", "07-popover", "08-admin", "09-dialogs", "10-responsive", "11-auth", "12-cells", "13-lobby", "14-admin", "15-overrides", "16-drawer"].map((n) => `css/${n}.css`);
+const CSS = ["01-theme", "02-base", "03-topbar", "04-canvas", "05-nodes", "06-floating", "07-popover", "08-admin", "09-dialogs", "10-responsive", "11-auth", "12-cells", "13-lobby", "14-admin", "15-overrides", "16-drawer", "17-project", "18-project-boards"].map((n) => `css/${n}.css`);
 const walk = (dir, out = []) => {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
@@ -17,7 +17,7 @@ const walk = (dir, out = []) => {
   return out;
 };
 const JS = walk(path.join(CLIENT, 'js')).map((p) => path.relative(CLIENT, p)).sort();
-const S_KEYS = ['firstRun', 'state', 'cam', 'vpRect', 'camRaf', 'mmScale', 'ptr', 'spaceDown', 'altDown', 'rafPending', 'nudgeTimer', 'popoverOpen', 'adminTab', 'pageId', 'version', 'offline', 'saving', 'dirty', 'session', 'readonly', 'cellList', 'userDir', 'docRefs', 'pageList', 'lobbyTab', 'orgTab'];
+const S_KEYS = ['firstRun', 'state', 'cam', 'vpRect', 'camRaf', 'mmScale', 'ptr', 'spaceDown', 'altDown', 'rafPending', 'nudgeTimer', 'popoverOpen', 'adminTab', 'pageId', 'version', 'offline', 'saving', 'dirty', 'session', 'readonly', 'cellList', 'userDir', 'docRefs', 'pageList', 'lobbyTab', 'orgTab', 'projectView'];
 const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 const exportsOf = (src) => {
   const names = new Set();
@@ -45,7 +45,7 @@ test('index.html: estilos css/01..16 en orden, un único <script type="module" s
 });
 
 test('ESM: sin use strict, sin let/var top-level, sin globales window.* salvo S en main.js', () => {
-  assert.equal(JS.length, 42, JS.join(','));
+  assert.equal(JS.length, 49, JS.join(','));
   for (const f of JS) {
     const src = read(f);
     assert.ok(!src.includes("'use strict'"), `${f}: 'use strict' sobra en ESM`);
@@ -82,11 +82,13 @@ test('Imports: cada ruta existe y cada nombre importado lo exporta el módulo de
   }
 });
 
-test('normalize.js del cliente es symlink a server/lib/normalize.js (una sola fuente)', () => {
-  const link = path.join(CLIENT, 'js/core/normalize.js');
-  assert.ok(fs.lstatSync(link).isSymbolicLink(), 'symlink');
-  assert.equal(fs.realpathSync(link), path.join(ROOT, 'server/lib/normalize.js'));
-  assert.ok(!/^import\s/m.test(read('js/core/normalize.js')), 'normalize.js no debe importar nada (compartido)');
+test('normalize.js, permissions.js y project-template.js del cliente son symlinks a server/lib (una sola fuente)', () => {
+  for (const f of ['normalize', 'permissions', 'project-template']) {
+    const link = path.join(CLIENT, `js/core/${f}.js`);
+    assert.ok(fs.lstatSync(link).isSymbolicLink(), `${f}: symlink`);
+    assert.equal(fs.realpathSync(link), path.join(ROOT, `server/lib/${f}.js`));
+    assert.ok(!/^import\s/m.test(read(`js/core/${f}.js`)), `${f}.js no debe importar nada (compartido)`);
+  }
 });
 
 test('main.js alcanza todos los módulos (imports estáticos)', () => {
