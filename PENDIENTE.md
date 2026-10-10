@@ -4,7 +4,7 @@
 
 ## Cómo retomar (para otro agente)
 1. Leer `CLAUDE.md` (reglas) y este archivo entero.
-2. Estado al 2026-10-09: todas las fases de agente (P1, P3, P4, P5 guías, P6, P7, P8, P9, P10) están cerradas; v1.0.0 etiquetada y P9/P10 en `main` sin release todavía (CHANGELOG «Sin publicar»). Lo abierto es «usuario» (despliegue real, descripción/topics del repo, vídeo, operación diaria, anuncio). Regla vigente: la UI nueva se enseña y aprueba antes de subir a `main`. Lo abierto es «usuario» (despliegue real, descripción/topics del repo, vídeo, operación diaria, anuncio). Cuando Carlos informe del despliegue real o pase el enlace del vídeo, el agente retoma la casilla correspondiente (P2 último punto, P4 vídeo).
+2. Estado al 2026-10-09 (noche): fases de agente P1, P3–P12 cerradas (P11 y P12 se hicieron en la copia `DesTree-lab` y ya están en `main`); v1.0.0 etiquetada; P9–P12 en `main` sin release (CHANGELOG «Sin publicar»). Siguiente: **P13** (limpieza para publicación) y **P14** (release v1.1.0). Abierto «usuario»: marca de los datos demo (P13), despliegue real (P2), descripción/topics del repo y vídeo (P4), operación diaria (P5), anuncio (P8). Regla vigente: la UI nueva se enseña y aprueba antes de subir a `main`.
 3. Verificación antes de cerrar: `npm test` · `npm run lint` · `node scripts/smoke.js` (si hubo UI). Actualizar `docs/MAP.md` si se crean o mueven archivos, `docs/API.md` si cambian endpoints, `CHANGELOG.md` en cada release.
 4. Lo que surja y no pueda resolverse solo se añade aquí como casilla «usuario», nunca bloquea.
 
@@ -42,7 +42,7 @@
 **Objetivo:** que alguien que llega al repo entienda qué es, lo vea y lo instale sin ayuda.
 - [x] Repo público (comprobado 2026-10-07).
 - [ ] «usuario» Descripción del repo (aún dice «métricas Figma»), topics y Discussions. El agente no tiene permiso para escribir en GitHub; ejecutar:
-  `gh repo edit carlosfis/destree --description "Fuente única de verdad para agencias: árbol de software, Design Systems, UI Kits, responsables y documentación. Autoalojado (Node 22 + SQLite), roles admin/head/designer." --add-topic design-systems --add-topic design-ops --add-topic self-hosted --add-topic fastify --add-topic sqlite --add-topic agency --enable-discussions`
+  `gh repo edit carlosfis/destree --description "Fuente única de verdad para agencias: árbol de software, Design Systems, UI Kits, responsables y documentación. Autoalojado (Node 22 + SQLite), cinco niveles de rol (Admin · Ops · Head · Lead · Viewer)." --add-topic design-systems --add-topic design-ops --add-topic self-hosted --add-topic fastify --add-topic sqlite --add-topic agency --enable-discussions`
 - [ ] «usuario» Subir el vídeo promo (`node promo/render.js` → `promo/destree-motion.mp4`) a YouTube/Vimeo o como asset de la release y pasar el enlace; el agente sustituye la línea «pendiente de publicar» en README y README.en.
 - [x] Agente: capturas `docs/img/{canvas,drawer,lobby}.png` (`node scripts/screenshots.js`) enlazadas en README y README.en; el vídeo queda como línea «pendiente de publicar» hasta que el usuario pase el enlace.
 - [x] Agente: `README.en.md` (traducción fiel del README) y enlace cruzado en la cabecera de ambos.
@@ -106,7 +106,40 @@
 
 ---
 
+## P11 — Página de proyecto por card (agente, hecho en DesTree-lab; aprobación «usuario») ✅ 2026-10-09
+**Objetivo:** que cada card tenga su espacio de proyecto (Overview · Cronograma · Actividades Kanban) sin tocar el documento de página.
+- [x] Migración 013, `schema/project.schema.json`, `lib/projects.js` + `lib/project-template.js`, rutas `…/project/*`, permiso `projects.edit`.
+- [x] Vistas `client/js/views/project*.js`; menú contextual y botón ▤ Proyecto en ficha/editor.
+- [x] Duplicar página y export/import de organización incluyen proyectos; `tests/projects.test.js`; paso de smoke P11.
+- [x] Datos demo `scripts/seed-demo.js` + `scripts/seed/*` (dos páginas, cuatro células, cuentas por nivel); `tests/seed.test.js`.
+**Aceptación:** cumplida en el lab y verificada en `main` el 2026-10-09: 43 tests, lint OK, smoke con consola limpia.
+
+## P12 — Color de marca en Main instances (agente, hecho en DesTree-lab; aprobación «usuario») ✅ 2026-10-09
+- [x] Migración 014 (`node.gradient`), diez presets en `normalize.js`, clases `.grad-<id>` (sin estilos inline, CSP intacta); selector obligatorio en raíces; banda en card, ficha y encabezados de proyecto.
+- [x] `imageId` conservado en modelo y BD, oculto en el cliente; el thumbnail usa solo `thumbIconId`.
+**Aceptación:** cumplida (ver P11).
+
+## P13 — Limpieza para publicación (agente; decisiones «usuario»)
+**Objetivo:** que el repo público refleje v1.1.0 (P9–P12) sin textos obsoletos y con capturas actuales.
+- [ ] «usuario» Decidir la marca de los datos demo: hoy «Grupo Elektra / Elektra.mx» (marca real) y «@Carlos Fischer» en Staff. Recomendación: nombres ficticios antes de publicar; el agente renombra `scripts/seed/*`, tests y CHANGELOG.
+- [ ] README y README.en: roles (líneas 5 y 8 aún dicen admin / head / designer), funciones nuevas (Organización, Thumbnail, Página de proyecto, color de marca), «Probar con datos demo», Roadmap a v1.1.0.
+- [ ] `docs/INSTALL.md` o `docs/ADMIN.md`: sección «Datos demo» (`node scripts/seed-demo.js [--reset]`, cuentas, contraseña).
+- [ ] Capturas nuevas con datos demo (`scripts/screenshots.js` → canvas, drawer, lobby + Organización y página de proyecto), tras la decisión de marca.
+- [ ] Revisión de `docs/USER.md`, `ADMIN.md`, `API.md`, `MAP.md` contra la UI real tras P10–P12 (términos, rutas, endpoints).
+- [ ] `@fastify/static` 10.1.5 → 10.1.6; `npm audit --omit=dev` en 0.
+- [ ] `scripts/smoke.js` (505 líneas) partido en `scripts/smoke/` por fases (regla 4), misma salida.
+**Aceptación:** `grep -ri designer README* docs` sin resultados fuera de CHANGELOG/DECISIONS; capturas de 2026-10; tests, lint y smoke verdes.
+
+## P14 — Release v1.1.0 (agente; publicación «usuario») — tras P13
+- [ ] `package.json` 1.1.0; CHANGELOG «Sin publicar» → «1.1.0 — fecha»; Roadmap del README.
+- [ ] Verificación Docker de `main`: build, migraciones 011–014 sobre una BD 1.0.0, login y página de proyecto tras reinicio.
+- [ ] `git tag v1.1.0` + push → `release.yml`; comprobar imagen `:1.1.0`/`:latest` y zip; instalación limpia con `docker compose pull`.
+- [ ] «usuario» Comprobar la release y anunciar.
+**Aceptación:** `docker compose pull` de `:1.1.0` → `/api/health` version 1.1.0; los datos demo cargan en la instalación limpia.
+
 ## Resueltos
+- 2026-10-09 P12 Color de marca (hecho en la copia `DesTree-lab`, traído a `main`): migración 014, diez degradados, banda en cards/ficha/proyecto; `imageId` oculto.
+- 2026-10-09 P11 Página de proyecto (`DesTree-lab` → `main`): migración 013, API `…/project/*`, vistas Overview/Cronograma/Kanban, `projects.edit`, datos demo (`scripts/seed-demo.js`), `tests/projects.test.js` + `tests/seed.test.js`; 43 tests, smoke limpio en `main`.
 - 2026-10-09 P10 Roles por nivel + Organización: `permissions.js` por niveles (symlink al cliente), migración 012 (designer → viewer), etiquetas por organización, Lobby → Organización (datos, roles, capacidades, plantilla, eliminar organización), reglas de asignación por nivel, Lead con PUT reconciliado, Viewer con editor acotado (`PATCH …/nodes/:id`), `tests/roles.test.js`, 39 tests, smoke 33/33.
 - 2026-10-09 P9 Thumbnail para Figma: PNG 1920×1080 dibujado en el cliente (Canvas 2D) con staff, bandera (`geo`), tipo, título, subtítulo e icono (`thumb_icon_id`, migración 011); Copiar / Descargar en editor y ficha.
 - 2026-10-07 P8 Release v1.0.0: tag `v1.0.0` → `release.yml` en verde (run 37729916325); release https://github.com/carlosfis/destree/releases/tag/v1.0.0 con `destree-1.0.0.zip`; imagen `ghcr.io/carlosfis/destree:1.0.0` y `:latest` (manifiesto público); instalación limpia con `docker compose pull && up -d` → `/api/health` version 1.0.0 y asistente 201. Queda «usuario»: comprobar y anunciar.
