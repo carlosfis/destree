@@ -3,7 +3,7 @@
 Fuente única de verdad para agencias: árbol de software → Design Systems / UI Kits, responsables y documentación. Autoalojado, multi-página, roles por nivel admin 5 / ops 4 / head 3 / lead 2 / viewer 1 (jerarquía estricta; etiquetas visibles configurables salvo Admin). **Sin Figma**: decisión cerrada, el producto no depende de ninguna función de Figma (solo enlaces manuales en Documentación).
 
 ## Estado
-- v0.1.0 publicada (Docker multi-arch, CI + release, docs). El trabajo restante vive en `PENDIENTE.md`, por fases P1…P8 con casillas; es el único registro de seguimiento.
+- v1.1.0 publicada (Docker multi-arch, CI + release, docs); la UI en inglés (P15) está en `main` sin release (CHANGELOG «Sin publicar»). No hay archivo de pendientes: el trabajo lo pide Carlos directamente; el historial de fases está en `docs/DECISIONS.md`, `CHANGELOG.md` y el log de git.
 - Verificación: `npm test` + `npm run lint` + `node scripts/smoke.js` (Chrome headless, consola limpia).
 
 ## Comandos
@@ -18,7 +18,6 @@ node scripts/smoke.js  # checklist de UI en Chrome headless (requiere Chrome)
 ```
 
 ## Mapa (detalle en docs/MAP.md)
-- `PENDIENTE.md` — fases pendientes, aceptación y quién las hace (agente o usuario). Leer siempre al empezar.
 - `schema/` — JSON Schema draft-07. Fuente de verdad del modelo; valida API, import/export y tests.
 - `server/` — Fastify 5 (JS ESM), SQLite vía `node:sqlite` (`db/sqlite.js`; `sharp` es la única dep nativa), `lib/normalize.js` (compartido: symlink en `client/js/core/`), `lib/pages.js`, `lib/{auth,permissions,audit}.js`, `plugins/{session,guard,origin-check}.js`, `lib/visibility.js` + `lib/cells.js`, `lib/images.js`, `lib/versions.js`, `lib/backup.js` + `lib/org-export.js`.
 - `client/` — vanilla JS ESM + CSS sin bundler. `js/core/state.js` exporta `S` (estado mutable compartido), `bootstrap()`/`persist()` vía `core/api.js`; `js/core/dom.js` nodos DOM; `js/canvas` lienzo; `js/ui` (drawer de instancia, `page-settings.js`); `js/views` (`lobby`, `admin-view`, `users`, `cells`, `me`, `auth-views`, `versions-panel`); `js/main.js` entrada única.
@@ -26,7 +25,7 @@ node scripts/smoke.js  # checklist de UI en Chrome headless (requiere Chrome)
 - `docs/DECISIONS.md` — append-only. `docs/MAP.md` — mapa de archivos. `docs/{INSTALL,ADMIN,USER,API}.md` — documentación de producto.
 
 ## Reglas
-1. Seguimiento solo en `PENDIENTE.md`: tomar la primera fase abierta que no dependa de una acción del usuario; al cerrarla marcar casillas, pasar verificación, commit y push. Lo que requiera al usuario se marca «usuario» y no bloquea.
+1. Seguimiento: no hay archivo de pendientes. Carlos pide el trabajo por fases o puntos; al cerrar uno: verificación, commit y push. Lo que requiera al usuario se le pide al final del mensaje y no bloquea el resto.
 2. Modo terso: sin explicaciones, resúmenes ni narrativa. Solo acciones y resultados.
 3. Lecturas parciales (`grep -n`, `sed -n`, offset/limit). Nunca `cat` de archivos >200 líneas. Nunca reimprimir código leído.
 4. Ningún archivo nuevo >300 líneas. Preferir Edit a reescrituras.
