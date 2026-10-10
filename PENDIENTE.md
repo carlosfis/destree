@@ -4,7 +4,7 @@
 
 ## Cómo retomar (para otro agente)
 1. Leer `CLAUDE.md` (reglas) y este archivo entero.
-2. Estado al 2026-10-10: fases de agente P1, P3–P14 cerradas; **v1.1.0 publicada** (imagen multi-arch + zip). En curso: **P15** (UI en inglés; aprobación visual de Carlos antes del push). Descartado por Carlos: despliegue de referencia (P2), operación diaria «usuario» (P5), vídeo promo (P4). Pendiente «usuario»: borrar tags de fases (comando en P4). Regla vigente: la UI nueva se enseña y aprueba antes de subir a `main`.
+2. Estado al 2026-10-10: todas las fases de agente cerradas (P1, P3–P15); **v1.1.0 publicada**; UI en inglés (P15) en `main` sin release (CHANGELOG «Sin publicar»). Sin pendientes «usuario». Siguiente fase cuando Carlos la pida (p. ej. release 1.2.0 con la UI en inglés). Regla vigente: la UI nueva se enseña y aprueba antes de subir a `main`.
 3. Verificación antes de cerrar: `npm test` · `npm run lint` · `node scripts/smoke.js` (si hubo UI). Actualizar `docs/MAP.md` si se crean o mueven archivos, `docs/API.md` si cambian endpoints, `CHANGELOG.md` en cada release.
 4. Lo que surja y no pueda resolverse solo se añade aquí como casilla «usuario», nunca bloquea.
 
@@ -47,7 +47,7 @@
 - [x] Agente: `README.en.md` (traducción fiel del README) y enlace cruzado en la cabecera de ambos.
 - [x] Agente: `SECURITY.md` (hecho en P6) y `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 en español, contacto = correo del mantenedor).
 - [x] Agente: `npm audit --omit=dev` → había 2 high (`@fastify/static` ≤10.1.1, `sharp` <0.35.5); actualizados a 10.1.5 y 0.35.5, 0 vulnerabilidades; tests/smoke verdes; anotado en `CHANGELOG.md`.
-- [x] Idioma de la UI: Carlos decide (2026-10-09) que haya versión en inglés → **P15**. Tags de fases (`f0a`…`f7`): Carlos pide borrarlos; el agente no puede ejecutar `git push --delete` (bloqueado como acción destructiva) → «usuario»: `git push --delete origin f0a f0b f1 f2 f3 f4a f4b f5 f6a f6b f7 && git tag -d f0a f0b f1 f2 f3 f4a f4b f5 f6a f6b f7`.
+- [x] Idioma de la UI: Carlos decide (2026-10-09) que haya versión en inglés → **P15**. Tags de fases (`f0a`…`f7`) borrados por Carlos el 2026-10-10 (el agente no puede ejecutar `git push --delete`).
 **Aceptación:** README con capturas, versión en inglés, archivos de comunidad presentes, paquete e imagen descargables sin login.
 
 ## P5 — Operación diaria para Design Ops ✅ guías del agente hechas 2026-10-07; puntos «usuario» omitidos por Carlos 2026-10-09
@@ -136,7 +136,7 @@
 - [x] «usuario» Anunciar: opcional (ver P8).
 **Aceptación:** `docker compose pull` de `:1.1.0` → `/api/health` version 1.1.0; los datos demo cargan en la instalación limpia.
 
-## P15 — UI en inglés (agente; aprobación visual «usuario») — decidido 2026-10-09
+## P15 — UI en inglés (agente; aprobación visual «usuario») ✅ 2026-10-10
 **Objetivo:** que la interfaz pueda usarse en inglés sin tocar los datos: selector ES/EN persistente por navegador, por defecto según el idioma del navegador; español sigue siendo el idioma de referencia del código, los docs y los datos demo.
 - [x] `client/js/core/i18n.js`: `t(texto, vars)` con el texto español como clave y diccionarios `client/js/i18n/en-{ui,views,editor,project}.js` (≈780 entradas); idioma en `<html lang>` + `localStorage destree:lang`; sin `let` top-level (2026-10-10).
 - [x] Marcado estático traducido al arrancar (`translateStatic`); botón `#langSwitch` (EN/ES) en la topbar y enlace «English/Español» en las pantallas de acceso; cambiar recarga la página.
@@ -144,10 +144,11 @@
 - [x] Servidor: `req.lang` por `X-Lang` (`plugins/session.js`), error handler traduce (`server/lib/i18n.js`, 100 mensajes + patrones), correos bilingües, plantilla del proyecto por idioma; `tests/i18n.test.js`.
 - [x] Chrome con `--lang=es` en smoke y capturas; `scripts/smoke/05-i18n.js` (login en inglés, topbar, lobby, Organización, editor, proyecto, errores del servidor, vuelta a ES); `tests/client.test.js` con 54 módulos y diccionarios fuera del chequeo de claves de `S`.
 - [x] Docs: README (idioma) y README.en (capturas en inglés `docs/img/en/`), `docs/USER.md` «Idioma», CHANGELOG «Sin publicar», `docs/MAP.md`, regla 10 de `CLAUDE.md`, `docs/DECISIONS.md`.
-- [ ] «usuario» Aprobar capturas en inglés antes del push a `main`.
+- [x] «usuario» Capturas en inglés aprobadas por Carlos (2026-10-10) → push a `main`.
 **Aceptación:** con el selector en EN no queda texto de interfaz en español en lienzo, sidebar, lobby, Organización, administración, página de proyecto, diálogos, toasts, correos ni errores del servidor; en ES todo sigue idéntico (smoke 34/34 + paso nuevo).
 
 ## Resueltos
+- 2026-10-10 P15 UI en inglés: `t()` + diccionarios, selector ES/EN, `X-Lang` en servidor (errores, correos, plantilla), smoke 05-i18n (35 pasos), `tests/i18n.test.js`, capturas `docs/img/en/`; aprobada por Carlos y en `main`.
 - 2026-10-09 P14 Release v1.1.0: bump, CHANGELOG, verificación Docker local (BD antigua migrada 008–014) y de la imagen publicada (multi-arch, latest, instalación limpia); tag confirmado por Carlos.
 - 2026-10-09 P13 Limpieza para publicación: datos demo ficticios, sección «Datos demo» en ADMIN/INSTALL, `promo/` eliminado, README y README.en reescritos para 1.1.0, seis capturas sobre datos demo (`scripts/screenshots.js` + seed), MAP al día, `@fastify/static` 10.1.6, `scripts/smoke.js` partido en `scripts/smoke/0*.js` (34 pasos, consola limpia).
 - 2026-10-09 P13 Datos demo ficticios: marcas, productos internos, personas, ids (`am_*`, `pg_eco_ambar`), URLs y claves Jira renombrados en `scripts/seed/*`, `tests/seed.test.js`, `tests/projects.test.js`, CHANGELOG y MAP; archivos `ambar-tree.js` / `ambar-projects.js`.
