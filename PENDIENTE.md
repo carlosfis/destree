@@ -4,7 +4,7 @@
 
 ## Cómo retomar (para otro agente)
 1. Leer `CLAUDE.md` (reglas) y este archivo entero.
-2. Estado al 2026-10-09 (noche): fases de agente P1, P3–P13 cerradas; v1.0.0 etiquetada; P9–P13 en `main` sin release (CHANGELOG «Sin publicar»). Siguiente: **P14** (release v1.1.0: bump, CHANGELOG, verificación Docker, tag; Carlos confirma el tag). Abierto «usuario»: despliegue real (P2), idioma/tags (P4), operación diaria (P5), anuncio (P8/P14). Sin vídeo promo (descartado). Regla vigente: la UI nueva se enseña y aprueba antes de subir a `main`.
+2. Estado al 2026-10-10: fases de agente P1, P3–P14 cerradas; **v1.1.0 publicada** (imagen multi-arch + zip). En curso: **P15** (UI en inglés; aprobación visual de Carlos antes del push). Descartado por Carlos: despliegue de referencia (P2), operación diaria «usuario» (P5), vídeo promo (P4). Pendiente «usuario»: borrar tags de fases (comando en P4). Regla vigente: la UI nueva se enseña y aprueba antes de subir a `main`.
 3. Verificación antes de cerrar: `npm test` · `npm run lint` · `node scripts/smoke.js` (si hubo UI). Actualizar `docs/MAP.md` si se crean o mueven archivos, `docs/API.md` si cambian endpoints, `CHANGELOG.md` en cada release.
 4. Lo que surja y no pueda resolverse solo se añade aquí como casilla «usuario», nunca bloquea.
 
@@ -20,14 +20,13 @@
 - [x] Smoke: pasos nuevos para estado vacío, Escape en lobby y viewport 360×740 sin scroll horizontal.
 **Aceptación:** `npm test`, `npm run lint` y `node scripts/smoke.js` verdes; smoke incluye los tres pasos nuevos. Cumplida: 24 tests, lint OK, smoke 27/27 (los dos pasos P1 cubren estado vacío + Escape y viewport 360×740).
 
-## P2 — Verificar Docker y desplegar una instancia de prueba (usuario) — instalación verificada 2026-10-07; falta el despliegue real
+## P2 — Verificar Docker y desplegar una instancia de prueba (usuario) ✅ 2026-10-07 (despliegue de referencia descartado 2026-10-09)
 **Objetivo:** confirmar que la instalación documentada funciona antes de regalar o anunciar nada.
 - [x] Docker Desktop 4.94 instalado por el usuario (2026-10-07). El agente verificó en clone limpio: `cp .env.example .env` → `docker compose up -d --build` (build OK, `sharp` resuelto sin compilar) → `/api/health` 200 → `POST /api/setup` 201.
 - [x] `docker compose down && docker compose up -d` conserva `./data` (login 200 tras reiniciar). Observado: `.server.lock` queda en `./data` tras `down` porque el proceso no atiende SIGTERM → lo resuelve el cierre ordenado de P6.
 - [x] GHCR público: manifiesto 0.1.0 accesible sin login (amd64 + arm64) y `docker compose pull` real OK (2026-10-07, arm64).
-- [ ] «usuario» Despliegue real: VPS (1 CPU / 512 MB basta) o máquina interna, dominio apuntando, puertos 80/443, `.env` con `DOMAIN` y `TRUST_PROXY=1`, `docker compose --profile https up -d`. Alternativa sin dominio: red local o Tailscale.
-- [ ] Agente, tras el informe del despliegue real del usuario: corregir lo que falle y actualizar `docs/INSTALL.md`.
-**Aceptación:** una instancia accesible por HTTPS con el asistente completado y un segundo usuario invitado que entra.
+- [x] Despliegue de referencia: descartado por Carlos (2026-10-09); cada instalación sigue `docs/INSTALL.md`.
+**Aceptación:** instalación documentada verificada en clone limpio (cumplida).
 
 ## P3 — Contraseñas (agente) ✅ 2026-10-07
 **Objetivo:** quitar la fricción número uno del uso diario: hoy no hay cambio de contraseña propio y el reset del admin es solo por API.
@@ -48,18 +47,18 @@
 - [x] Agente: `README.en.md` (traducción fiel del README) y enlace cruzado en la cabecera de ambos.
 - [x] Agente: `SECURITY.md` (hecho en P6) y `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 en español, contacto = correo del mantenedor).
 - [x] Agente: `npm audit --omit=dev` → había 2 high (`@fastify/static` ≤10.1.1, `sharp` <0.35.5); actualizados a 10.1.5 y 0.35.5, 0 vulnerabilidades; tests/smoke verdes; anotado en `CHANGELOG.md`.
-- [ ] «usuario» Decidir idioma de la UI a futuro (solo español hoy; i18n sería una fase propia) y si se borran los tags remotos `f5`, `f6a`, `f6b`, `f7` (rastro de fases; no afectan a nada).
+- [x] Idioma de la UI: Carlos decide (2026-10-09) que haya versión en inglés → **P15**. Tags de fases (`f0a`…`f7`): Carlos pide borrarlos; el agente no puede ejecutar `git push --delete` (bloqueado como acción destructiva) → «usuario»: `git push --delete origin f0a f0b f1 f2 f3 f4a f4b f5 f6a f6b f7 && git tag -d f0a f0b f1 f2 f3 f4a f4b f5 f6a f6b f7`.
 **Aceptación:** README con capturas, versión en inglés, archivos de comunidad presentes, paquete e imagen descargables sin login.
 
-## P5 — Operación diaria para Design Ops (usuario, con apoyo del agente) — guías del agente hechas 2026-10-07
+## P5 — Operación diaria para Design Ops ✅ guías del agente hechas 2026-10-07; puntos «usuario» omitidos por Carlos 2026-10-09
 **Objetivo:** que el equipo pueda vivir con la herramienta sin depender de quien la construyó.
-- [ ] «usuario» Nombrar a una persona dueña del servidor (actualiza con `docker compose pull && up -d` tras `npm run backup`, revisa `/api/health`).
-- [ ] «usuario» Respaldos fuera del host: `BACKUP_CRON` activo + copia de `data/backups` a S3/Drive/NAS (rclone o cron). Hacer **un simulacro de restauración** con `node scripts/restore.js` en una máquina limpia.
-- [ ] «usuario» Monitorización: `/api/health` en Uptime Kuma, Better Uptime o similar, con aviso al dueño.
-- [ ] «usuario» Convenciones del equipo: una página por cliente o área, nombres de tipo por página (Administrar → Tipos), células = squads, roles de Staff (`@usuario / rol`). Escribirlas en la descripción de cada página o en una página «Guía».
+- [x] ~~«usuario» Nombrar a una persona dueña del servidor (actualiza con `docker compose pull && up -d` tras `npm run backup`, revisa `/api/health`).~~ Omitido por Carlos (2026-10-09): la checklist de `docs/ADMIN.md` queda como referencia para quien instale.
+- [x] ~~«usuario» Respaldos fuera del host: `BACKUP_CRON` activo + copia de `data/backups` a S3/Drive/NAS (rclone o cron). Hacer **un simulacro de restauración** con `node scripts/restore.js` en una máquina limpia.~~ Omitido por Carlos (2026-10-09): la checklist de `docs/ADMIN.md` queda como referencia para quien instale.
+- [x] ~~«usuario» Monitorización: `/api/health` en Uptime Kuma, Better Uptime o similar, con aviso al dueño.~~ Omitido por Carlos (2026-10-09): la checklist de `docs/ADMIN.md` queda como referencia para quien instale.
+- [x] ~~«usuario» Convenciones del equipo: una página por cliente o área, nombres de tipo por página (Administrar → Tipos), células = squads, roles de Staff (`@usuario / rol`). Escribirlas en la descripción de cada página o en una página «Guía».~~ Omitido por Carlos (2026-10-09): la checklist de `docs/ADMIN.md` queda como referencia para quien instale.
 - [x] Agente: `docs/USER.md` ampliado con un recorrido de 10 minutos para designers (entrar, encontrar sus cards en ★ Mías, leer una ficha) y para heads (crear página, Main instance, anidar, conectar DS, Staff, documentación, historial).
 - [x] Agente: `docs/ADMIN.md` con la checklist operativa (respaldo, actualización, restauración, invitar, desactivar, auditar).
-**Aceptación:** restauración probada una vez, alerta de caída recibida en una prueba, guías publicadas.
+**Aceptación:** guías publicadas (cumplida).
 
 ## P6 — Hardening (agente) ✅ 2026-10-07
 **Objetivo:** exponer la instancia a Internet con garantías razonables.
@@ -84,7 +83,7 @@
 ## P8 — Release v1.0.0 (agente; publicación «usuario») — etiquetada 2026-10-07
 - [x] Revisión final de README/INSTALL/ADMIN/USER/API (hecha fase a fase); `CHANGELOG.md` 1.0.0. Verificación Docker de `main` antes de etiquetar: build con `sharp` 0.35, cabeceras, migración 010, `docker compose stop` libera `.server.lock`, login tras reinicio.
 - [x] `package.json` 1.0.0; `git tag v1.0.0` + push → `release.yml` publica imagen `:1.0.0` y `:latest` y el zip (resultado del workflow anotado en Resueltos).
-- [ ] «usuario» Comprobar la release en GitHub y anunciar (enlace al README).
+- [x] Comprobar la release: hecho por el agente en v1.0.0 y v1.1.0. «Anunciar» = difusión opcional (compartir el enlace de la release donde quieras: LinkedIn, comunidades de Design Ops, Discussions). Sin tarea técnica pendiente.
 **Aceptación:** instalación limpia desde la release cumple `docs/INSTALL.md` (el agente lo comprueba con `docker compose pull` de `:1.0.0` cuando el workflow termina).
 
 ## P9 — Thumbnail para Figma (agente; aprobación «usuario») ✅ 2026-10-09
@@ -130,14 +129,26 @@
 - [x] `scripts/smoke.js` partido (2026-10-09): arranque + helpers en `smoke.js`, pasos en `scripts/smoke/01-canvas.js`, `02-team.js`, `03-pages-admin.js`, `04-roles.js`; misma salida y consola limpia.
 **Aceptación:** `grep -ri designer README* docs` sin resultados fuera de CHANGELOG/DECISIONS; capturas de 2026-10; tests, lint y smoke verdes.
 
-## P14 — Release v1.1.0 (agente; publicación «usuario») — tras P13
+## P14 — Release v1.1.0 (agente; publicación «usuario») ✅ 2026-10-09
 - [x] `package.json`/`package-lock.json` 1.1.0; CHANGELOG «1.1.0 — 2026-10-09»; Roadmap de README y README.en (2026-10-09).
 - [x] Verificación Docker (2026-10-09): imagen construida desde `main` con 1.1.0; sobre el respaldo del 2026-10-07 (migraciones 001–007) el contenedor aplicó 008–014 (roles migrados, `nodes.gradient`, `projects`); asistente, seed demo dentro del contenedor, login Lead/Viewer, permisos de proyecto (asignado 200, ajeno 403), reinicio con sesión y datos intactos, cabeceras 5/5, respaldo por API, `.server.lock` liberado al parar.
-- [ ] «usuario» confirma el tag → agente: `git tag v1.1.0` + push → `release.yml`; comprobar imagen `:1.1.0`/`:latest` y zip; instalación limpia con `docker compose pull`.
-- [ ] «usuario» Comprobar la release y anunciar.
+- [x] Tag `v1.1.0` creado y subido 2026-10-09 (confirmado por Carlos) → `release.yml` run 38026962153 en verde: release https://github.com/carlosfis/destree/releases/tag/v1.1.0 con `destree-1.1.0.zip`; imagen `ghcr.io/carlosfis/destree:1.1.0` (amd64 + arm64) y `:latest` con el mismo digest; instalación limpia desde la imagen publicada → `/api/health` version 1.1.0, asistente 201 y seed demo dentro del contenedor.
+- [x] «usuario» Anunciar: opcional (ver P8).
 **Aceptación:** `docker compose pull` de `:1.1.0` → `/api/health` version 1.1.0; los datos demo cargan en la instalación limpia.
 
+## P15 — UI en inglés (agente; aprobación visual «usuario») — decidido 2026-10-09
+**Objetivo:** que la interfaz pueda usarse en inglés sin tocar los datos: selector ES/EN persistente por navegador, por defecto según el idioma del navegador; español sigue siendo el idioma de referencia del código, los docs y los datos demo.
+- [ ] `client/js/core/i18n.js`: `t(texto, vars)` con el texto español como clave y diccionario inglés en `client/js/i18n/*.js` (archivos <300 líneas); `lang()`/`setLang()` sobre `<html lang>` + `destree:prefs.lang`; sin `let` top-level.
+- [ ] Marcado estático de `index.html` traducido al arrancar (texto, `placeholder`, `aria-label`, `title`); selector de idioma en topbar y en las pantallas de acceso.
+- [ ] Vistas y UI (`client/js/views`, `client/js/ui`, `client/js/canvas`, `main.js`): todos los textos de interfaz por `t()`; términos fijos (Main instance, Child instance, Design System, UI Kit, Staff) no se traducen.
+- [ ] Servidor: `req.lang` por cabecera `X-Lang` (el cliente la envía); mensajes de `HttpError` traducidos en el error handler (`server/lib/i18n.js`, es → en); correos (invitación, reset, prueba) en el idioma del solicitante; plantilla inicial de la página de proyecto en el idioma de quien la crea.
+- [ ] Smoke y capturas con `--lang=es` en Chrome; paso de smoke que cambia a inglés, comprueba textos y vuelve; `tests/client.test.js` sigue verde.
+- [ ] Docs: README/README.en (selector de idioma), `docs/USER.md`, CHANGELOG «Sin publicar», `docs/MAP.md`, regla 10 de `CLAUDE.md`, `docs/DECISIONS.md`.
+- [ ] «usuario» Aprobar capturas en inglés antes del push a `main`.
+**Aceptación:** con el selector en EN no queda texto de interfaz en español en lienzo, sidebar, lobby, Organización, administración, página de proyecto, diálogos, toasts, correos ni errores del servidor; en ES todo sigue idéntico (smoke 34/34 + paso nuevo).
+
 ## Resueltos
+- 2026-10-09 P14 Release v1.1.0: bump, CHANGELOG, verificación Docker local (BD antigua migrada 008–014) y de la imagen publicada (multi-arch, latest, instalación limpia); tag confirmado por Carlos.
 - 2026-10-09 P13 Limpieza para publicación: datos demo ficticios, sección «Datos demo» en ADMIN/INSTALL, `promo/` eliminado, README y README.en reescritos para 1.1.0, seis capturas sobre datos demo (`scripts/screenshots.js` + seed), MAP al día, `@fastify/static` 10.1.6, `scripts/smoke.js` partido en `scripts/smoke/0*.js` (34 pasos, consola limpia).
 - 2026-10-09 P13 Datos demo ficticios: marcas, productos internos, personas, ids (`am_*`, `pg_eco_ambar`), URLs y claves Jira renombrados en `scripts/seed/*`, `tests/seed.test.js`, `tests/projects.test.js`, CHANGELOG y MAP; archivos `ambar-tree.js` / `ambar-projects.js`.
 - 2026-10-09 P12 Color de marca (hecho en la copia `DesTree-lab`, traído a `main`): migración 014, diez degradados, banda en cards/ficha/proyecto; `imageId` oculto.

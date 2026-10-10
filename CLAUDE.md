@@ -35,6 +35,6 @@ node scripts/smoke.js  # checklist de UI en Chrome headless (requiere Chrome)
 7. Secretos solo en `.env`. Nunca en logs ni respuestas.
 8. Commits pequeños `feat: …`, `fix: …`, `docs: …`, `chore: …`; push a `main`. `gh` está en `/opt/homebrew/bin/gh` (no en PATH).
 9. `npm test` y `npm run lint` deben pasar antes de cerrar una fase; `node scripts/smoke.js` si hubo cambios de UI.
-10. Idioma: UI y docs en español; código e identificadores en inglés. Términos de producto fijos: Main instance, Child instance, Design System, UI Kit, Staff.
+10. Idioma: UI en español (referencia) con versión en inglés vía `t()` (P15: cadena española como clave, diccionario en `client/js/i18n/`); docs en español; código e identificadores en inglés. Términos de producto fijos (no se traducen): Main instance, Child instance, Design System, UI Kit, Staff. Todo texto nuevo de UI pasa por `t()` y se añade al diccionario inglés.
 11. Decisión nueva → una línea en `docs/DECISIONS.md`. No rediscutir decisiones registradas.
 12. Cliente ESM: estado reasignable solo en `S.x` (nunca `let` top-level); sin `window.*` salvo `window.S` en dev; nunca usar `S.x` en el nivel superior de un módulo (ciclos de import).
