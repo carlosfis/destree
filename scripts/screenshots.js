@@ -1,18 +1,19 @@
 // Capturas para el README (docs/img/*.png) con Chrome headless vía CDP sobre un servidor con BD temporal sembrada con los datos demo (scripts/seed-demo.js).
-// Uso: node scripts/screenshots.js  (requiere Google Chrome). Salidas: docs/img/{canvas,project,drawer,schedule,org,lobby}.png.
+// Uso: node scripts/screenshots.js  (requiere Google Chrome). Salidas: docs/img/{canvas,project,drawer,schedule,org,lobby}.png · UI_LANG=en → docs/img/en/*.png (P15).
 import { spawn, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 const ROOT = path.resolve(import.meta.dirname, '..');
-const OUT = path.join(ROOT, 'docs', 'img');
+const UI_LANG = process.env.UI_LANG === 'en' ? 'en' : 'es'; // P15
+const OUT = path.join(ROOT, 'docs', 'img', ...(UI_LANG === 'en' ? ['en'] : []));
 const PORT = 5175, DBG = 9334, W = 1440, H = 900;
 const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const prof = fs.mkdtempSync(path.join(os.tmpdir(), 'destree-shots-'));
 const DB = path.join(prof, 'shots.db');
 const srv = spawn(process.execPath, ['server/index.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), DATABASE_PATH: DB, LOG_LEVEL: 'silent' }, stdio: 'ignore' });
-const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${DBG}`, `--user-data-dir=${prof}`, '--no-first-run', '--disable-gpu', '--hide-scrollbars', `--window-size=${W},${H}`, 'about:blank'], { stdio: 'ignore' });
+const chrome = spawn(CHROME, ['--headless=new', '--lang=es', `--remote-debugging-port=${DBG}`, `--user-data-dir=${prof}`, '--no-first-run', '--disable-gpu', '--hide-scrollbars', `--window-size=${W},${H}`, 'about:blank'], { stdio: 'ignore' });
 const cleanup = () => { try { chrome.kill(); } catch {} try { srv.kill(); } catch {} try { fs.rmSync(prof, { recursive: true, force: true, maxRetries: 3 }); } catch {} };
 process.on('exit', cleanup);
 let list;
@@ -29,6 +30,7 @@ const api = (method, url, body) => ev(`fetch(${JSON.stringify(url)}, { method: $
 await send('Runtime.enable'); await send('Page.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: Number(process.env.SCALE || 1), mobile: false });
 await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` }); await sleep(1200);
+if (UI_LANG === 'en') { await ev(`localStorage.setItem('destree:lang', 'en'); true`); await send('Page.reload'); await sleep(1500); } // P15: idioma antes del asistente
 // Asistente inicial (organización ficticia) y datos demo en la misma BD temporal.
 await ev(`(() => { const f = document.querySelector('#authView form'); f.orgName.value = 'Grupo Ambar'; f.name.value = 'Valentina Ríos'; f.email.value = 'admin@grupo.demo'; f.password.value = 'demo-12345'; f.requestSubmit(); return true; })()`); await sleep(1500);
 for (let i = 0; i < 20 && !(await ev(`!!window.S && !!S.state && S.state.nodes.length > 0`)); i++) await sleep(200);

@@ -7,6 +7,7 @@ import { sel, nodeEls, edgeEls, renderNodes } from './render-nodes.js';
 import { renderEdges } from './render-edges.js';
 import { drawMinimap } from './minimap.js';
 import { adminPanel, renderAdmin } from '../ui/page-settings.js';
+import { t } from '../core/i18n.js'; // P15
 /** Linaje de la selección: ancestros, descendientes y nodos conectados por DS / fuente. */
 export function lineageSet() {
   if (!sel.nodes.size) return null;
@@ -42,9 +43,9 @@ export function topLevelSelection() { return [...sel.nodes].filter(id => nodeByI
 export function updateStatus() {
   const bar = $('#statusBar');
   const r = roots().length;
-  const parts = [`${r} raíz${r === 1 ? '' : 'ces'}`, `${S.state.nodes.length} cards`, `${S.state.edges.length} conexiones`];
-  if (sel.nodes.size) parts.push(`${sel.nodes.size} seleccionada${sel.nodes.size > 1 ? 's' : ''}`);
-  if (sel.edge) parts.push('1 conexión seleccionada');
+  const parts = [t(r === 1 ? '{n} raíz' : '{n} raíces', { n: r }), t('{n} cards', { n: S.state.nodes.length }), t('{n} conexiones', { n: S.state.edges.length })];
+  if (sel.nodes.size) parts.push(t(sel.nodes.size > 1 ? '{n} seleccionadas' : '{n} seleccionada', { n: sel.nodes.size }));
+  if (sel.edge) parts.push(t('1 conexión seleccionada'));
   bar.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join('');
 }
 
@@ -55,8 +56,8 @@ export function renderEmptyHint() {
   el.hidden = !empty;
   if (!empty) { el.innerHTML = ''; return; }
   el.innerHTML = S.readonly
-    ? '<h3>Esta página está vacía</h3><p>Aún no hay cards visibles para ti. Cuando el equipo añada contenido aparecerá aquí.</p>'
-    : '<h3>Esta página está vacía</h3><p>Crea la primera <b>Main instance</b> (un software raíz) y anida dentro sus features, Design Systems y UI Kits.</p><button type="button" class="btn primary" id="emptyNew">＋ Nueva Main instance</button><p class="hint">También con clic derecho en el fondo o la tecla <kbd>N</kbd>.</p>';
+    ? `<h3>${t('Esta página está vacía')}</h3><p>${t('Aún no hay cards visibles para ti. Cuando el equipo añada contenido aparecerá aquí.')}</p>`
+    : `<h3>${t('Esta página está vacía')}</h3><p>${t('Crea la primera <b>Main instance</b> (un software raíz) y anida dentro sus features, Design Systems y UI Kits.')}</p><button type="button" class="btn primary" id="emptyNew">${t('＋ Nueva Main instance')}</button><p class="hint">${t('También con clic derecho en el fondo o la tecla <kbd>N</kbd>.')}</p>`;
   el.onpointerdown = e => e.stopPropagation(); // no inicia marquee ni pan
   $('#emptyNew', el)?.addEventListener('click', () => $('#btnNew').click());
 }

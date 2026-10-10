@@ -10,6 +10,7 @@ import { topLevelSelection, renderAll } from '../canvas/selection.js';
 import { deleteEdge } from './connections.js';
 import { confirmBox } from './dialogs.js';
 import { toast } from './theme.js';
+import { t } from '../core/i18n.js'; // P15
 export async function deleteNodes(ids) {
   ids = ids.filter(nodeById); if (!ids.length) return;
   const set = new Set(ids);
@@ -23,16 +24,17 @@ export async function deleteNodes(ids) {
     const n = nodeById(ids[0]); const kids = childrenOf(n.id);
     if (kids.length && (n.parentId || kids.every(isContainer))) keep = { node: n, kids };
   }
-  const names = ids.length === 1 ? `"${nodeById(ids[0]).name}"` : `${ids.length} cards`;
-  let message = `Vas a eliminar ${names}.`;
-  if (inside.size) message += `\nContiene ${inside.size} elemento${inside.size > 1 ? 's' : ''} (${typeName('software')}, ${typeName('ds')} o ${typeName('uikit')}).`;
-  message += connected.length ? `\nHay ${connected.length} ${connected.length > 1 ? 'conexiones' : 'conexión'} involucrada${connected.length > 1 ? 's' : ''}.` : '\nNo hay conexiones involucradas.';
-  if (keep) message += `\nPuedes conservar su contenido moviéndolo a ${keep.node.parentId ? `"${parentOf(keep.node).name}"` : 'la raíz'}.`;
-  if (orphanKits.length) message += `\n⚠ ${orphanKits.length} ${typeName('uikit')} (${orphanKits.map(k => k.name).join(', ')}) quedará${orphanKits.length > 1 ? 'n' : ''} sin fuente.`;
-  const buttons = [{ label: 'Cancelar', value: '' }];
-  if (keep) buttons.push({ label: 'Eliminar y conservar contenido', value: 'keep' });
-  buttons.push({ label: inside.size ? 'Eliminar con todo su contenido' : connected.length ? 'Eliminar con sus conexiones' : 'Eliminar', value: 'all', kind: 'danger' });
-  const choice = await confirmBox({ title: 'Eliminar card', message, buttons });
+  const TN = { software: typeName('software'), ds: typeName('ds'), uikit: typeName('uikit') };
+  const names = ids.length === 1 ? `"${nodeById(ids[0]).name}"` : t('{n} cards', { n: ids.length });
+  let message = t('Vas a eliminar {names}.', { names });
+  if (inside.size) message += '\n' + t(inside.size > 1 ? 'Contiene {n} elementos ({software}, {ds} o {uikit}).' : 'Contiene {n} elemento ({software}, {ds} o {uikit}).', { n: inside.size, ...TN });
+  message += '\n' + (connected.length ? t(connected.length > 1 ? 'Hay {n} conexiones involucradas.' : 'Hay {n} conexión involucrada.', { n: connected.length }) : t('No hay conexiones involucradas.'));
+  if (keep) message += '\n' + t('Puedes conservar su contenido moviéndolo a {where}.', { where: keep.node.parentId ? `"${parentOf(keep.node).name}"` : t('la raíz') });
+  if (orphanKits.length) message += '\n⚠ ' + t(orphanKits.length > 1 ? '{n} {uikit} ({names}) quedarán sin fuente.' : '{n} {uikit} ({names}) quedará sin fuente.', { n: orphanKits.length, uikit: TN.uikit, names: orphanKits.map(k => k.name).join(', ') });
+  const buttons = [{ label: t('Cancelar'), value: '' }];
+  if (keep) buttons.push({ label: t('Eliminar y conservar contenido'), value: 'keep' });
+  buttons.push({ label: inside.size ? t('Eliminar con todo su contenido') : connected.length ? t('Eliminar con sus conexiones') : t('Eliminar'), value: 'all', kind: 'danger' });
+  const choice = await confirmBox({ title: t('Eliminar card'), message, buttons });
   if (!choice) return;
   pushHistory();
   let toDelete = all;
@@ -45,7 +47,7 @@ export async function deleteNodes(ids) {
   S.state.edges = S.state.edges.filter(e => !toDelete.has(e.from) && !toDelete.has(e.to));
   toDelete.forEach(id => sel.nodes.delete(id));
   renderAll(); save();
-  toast(`${names.replace(/"/g, '')} eliminad${ids.length === 1 ? 'a' : 'as'}`);
+  toast(t(ids.length === 1 ? '{names} eliminada' : '{names} eliminadas', { names: names.replace(/"/g, '') }));
 }
 export function deleteSelection() {
   if (sel.edge) return deleteEdge(sel.edge);
@@ -68,6 +70,6 @@ export function duplicateSelection() {
   }
   sel.nodes = new Set(tops.map(id => map.get(id))); sel.edge = null;
   renderAll(); save();
-  toast(`${copies.length} card${copies.length > 1 ? 's' : ''} duplicada${copies.length > 1 ? 's' : ''}`);
+  toast(t(copies.length > 1 ? '{n} cards duplicadas' : '{n} card duplicada', { n: copies.length }));
 }
 

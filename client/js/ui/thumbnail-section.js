@@ -6,6 +6,7 @@ import { $, esc, debounce } from '../core/utils.js';
 import { uploadImage, bindDropZone, imageSrc, canUpload } from './uploader.js';
 import { toast } from './theme.js';
 import { renderThumbnail, copyThumbnail, downloadThumbnail, flagEmoji, iconSrcOf } from './thumbnail.js';
+import { t } from '../core/i18n.js'; // P15
 
 /** Países disponibles (ISO 3166-1 alfa-2 → nombre). Se ordenan por nombre al pintar el select. */
 export const GEO = Object.entries({
@@ -18,9 +19,9 @@ export const GEO = Object.entries({
   TH: 'Tailandia', MY: 'Malasia', AU: 'Australia', NZ: 'Nueva Zelanda',
 }).sort((a, b) => a[1].localeCompare(b[1]));
 
-const copyAndToast = d => copyThumbnail(d).then(() => toast('Thumbnail copiado: pégalo en Figma (⌘/Ctrl+V)'), err => toast(err.message || 'No se pudo copiar', 'error', 5000));
-const downloadAndToast = d => downloadThumbnail(d).catch(err => toast(err.message || 'No se pudo generar el PNG', 'error', 5000));
-export const thumbActionsHTML = (prefix, primary = true) => `<div class="thumb-actions"><button type="button" class="btn ${primary ? 'primary' : ''}" id="${prefix}Copy">Copiar thumbnail</button><button type="button" class="btn ghost" id="${prefix}Download">Descargar PNG</button></div>`;
+const copyAndToast = d => copyThumbnail(d).then(() => toast(t('Thumbnail copiado: pégalo en Figma (⌘/Ctrl+V)')), err => toast(err.message || t('No se pudo copiar'), 'error', 5000));
+const downloadAndToast = d => downloadThumbnail(d).catch(err => toast(err.message || t('No se pudo generar el PNG'), 'error', 5000));
+export const thumbActionsHTML = (prefix, primary = true) => `<div class="thumb-actions"><button type="button" class="btn ${primary ? 'primary' : ''}" id="${prefix}Copy">${t('Copiar thumbnail')}</button><button type="button" class="btn ghost" id="${prefix}Download">${t('Descargar PNG')}</button></div>`;
 /** Conecta Copiar/Descargar a `data()` (datos en el momento del clic). */
 export function bindThumbActions(root, prefix, data) {
   $(`#${prefix}Copy`, root).addEventListener('click', () => copyAndToast(data()));
@@ -31,16 +32,16 @@ export function bindThumbActions(root, prefix, data) {
 export function thumbnailSection(draft) {
   const html = `<h3 class="section">Thumbnail</h3>
     <div class="field-row">
-      <div class="field"><label>Geografía</label><select name="geo"><option value="">— Sin geografía —</option>${GEO.map(([c, n]) => `<option value="${c}" ${c === draft.geo ? 'selected' : ''}>${flagEmoji(c)} ${esc(n)}</option>`).join('')}</select></div>
-      <div class="field"><label>Icono</label>
+      <div class="field"><label>${t('Geografía')}</label><select name="geo"><option value="">${t('— Sin geografía —')}</option>${GEO.map(([c, n]) => `<option value="${c}" ${c === draft.geo ? 'selected' : ''}>${flagEmoji(c)} ${esc(t(n))}</option>`).join('')}</select></div>
+      <div class="field"><label>${t('Icono')}</label>
         <div class="img-field"><div class="img-preview thumb-icon-preview" id="fThumbIcon"></div>
-          <div class="img-actions"><label class="btn">Cambiar icono<input type="file" accept="image/*" hidden id="fThumbIconInput"></label><button type="button" class="btn ghost" id="fThumbIconRemove">Quitar icono</button></div></div></div>
+          <div class="img-actions"><label class="btn">${t('Cambiar icono')}<input type="file" accept="image/*" hidden id="fThumbIconInput"></label><button type="button" class="btn ghost" id="fThumbIconRemove">${t('Quitar icono')}</button></div></div></div>
     </div>
-    <div class="hint">${canUpload() ? 'Mejor un PNG con fondo transparente (dispositivo, logotipo…). Sin icono, el thumbnail se genera sin imagen.' : 'Sin servidor no se puede subir un icono propio.'}</div>
-    <div class="field"><label>Vista previa <span class="counter">1920×1080</span></label>
+    <div class="hint">${canUpload() ? t('Mejor un PNG con fondo transparente (dispositivo, logotipo…). Sin icono, el thumbnail se genera sin imagen.') : t('Sin servidor no se puede subir un icono propio.')}</div>
+    <div class="field"><label>${t('Vista previa')} <span class="counter">1920×1080</span></label>
       <div class="thumb-preview"><canvas id="fThumbCanvas" width="1920" height="1080"></canvas></div>
       ${thumbActionsHTML('fThumb')}
-      <div class="hint">Se genera con los datos actuales del formulario (nombre, contenedor, etiquetas, staff, geografía e icono). En Figma: pega la imagen en un frame y usa «Set as thumbnail».</div></div>`;
+      <div class="hint">${t('Se genera con los datos actuales del formulario (nombre, contenedor, etiquetas, staff, geografía e icono). En Figma: pega la imagen en un frame y usa «Set as thumbnail».')}</div></div>`;
   let unbindDrop = null;
   const bind = (form, base) => {
     const canvas = $('#fThumbCanvas', form);
@@ -49,12 +50,12 @@ export function thumbnailSection(draft) {
     const refresh = debounce(() => { const n = ++seq; renderThumbnail(data(), canvas).catch(() => {}).then(() => { if (n !== seq) refresh(); }); }, 250);
     const refreshIcon = () => {
       const src = draft.thumbIconId ? imageSrc({ imageId: draft.thumbIconId }) : null;
-      $('#fThumbIcon', form).innerHTML = src ? `<img src="${src}" alt="">` : 'Sin icono';
+      $('#fThumbIcon', form).innerHTML = src ? `<img src="${src}" alt="">` : t('Sin icono');
       $('#fThumbIconRemove', form).hidden = !src; refresh();
     };
     const setIconFile = async f => {
-      if (!canUpload()) return toast('Sin servidor no se puede subir un icono propio.', 'error', 4000);
-      $('#fThumbIcon', form).textContent = 'Subiendo…';
+      if (!canUpload()) return toast(t('Sin servidor no se puede subir un icono propio.'), 'error', 4000);
+      $('#fThumbIcon', form).textContent = t('Subiendo…');
       try { draft.thumbIconId = (await uploadImage(f)).id; } catch (err) { toast(err.message, 'error', 5000); }
       refreshIcon();
     };

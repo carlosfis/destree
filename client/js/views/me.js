@@ -8,6 +8,7 @@ import { fitToScreen } from '../canvas/camera.js';
 import { selectOnly, renderAll } from '../canvas/selection.js';
 import { openNodeView } from '../ui/node-view.js';
 import { pathOf, editorDialog } from '../ui/card-editor.js';
+import { t } from '../core/i18n.js'; // P15
 
 /** Centra y selecciona un nodo; abre su ficha. Devuelve false si no existe (o no es visible). */
 export function goToNode(id, view = true) {
@@ -24,18 +25,18 @@ export async function assignmentItems() {
   const me = S.session?.user.id;
   return myNodes().map(n => ({ pageId: S.pageId, pageName: S.state.page.name, pageStatus: 'active', nodeId: n.id, name: n.name, type: n.type, isRoot: !n.parentId, role: n.ownerUserId === me ? 'owner' : 'assignee', path: n.parentId ? pathOf(rootOf(n)) : '' }));
 }
-export const assignmentHTML = items => (items.length ? `<ul class="me-list">${items.map(a => `<li><a href="#/p/${encodeURIComponent(a.pageId)}/n/${encodeURIComponent(a.nodeId)}"><span class="type-badge">${TYPE_META[a.type].label}</span><b>${esc(a.name)}</b><span class="url">${esc(a.pageName)}${a.pageStatus === 'archived' ? ' (archivada)' : ''}${a.path ? ' › ' + esc(a.path) : ''}</span><span class="chip tag-gray">${a.role === 'owner' ? 'responsable' : 'asignado'}</span></a></li>`).join('')}</ul>` : '<div class="empty">No tienes cards asignadas.</div>');
+export const assignmentHTML = items => (items.length ? `<ul class="me-list">${items.map(a => `<li><a href="#/p/${encodeURIComponent(a.pageId)}/n/${encodeURIComponent(a.nodeId)}"><span class="type-badge">${TYPE_META[a.type].label}</span><b>${esc(a.name)}</b><span class="url">${esc(a.pageName)}${a.pageStatus === 'archived' ? ' ' + t('(archivada)') : ''}${a.path ? ' › ' + esc(a.path) : ''}</span><span class="chip tag-gray">${a.role === 'owner' ? t('responsable') : t('asignado')}</span></a></li>`).join('')}</ul>` : `<div class="empty">${t('No tienes cards asignadas.')}</div>`);
 
 export async function openMyAssignments() {
   if (!S.session) return;
   const items = await assignmentItems();
   editorDialog.innerHTML = `<div class="dialog-inner node-view">
-    <header><h2>Mis asignaciones</h2><button type="button" class="icon-btn" data-cancel aria-label="Cerrar">✕</button></header>
+    <header><h2>${t('Mis asignaciones')}</h2><button type="button" class="icon-btn" data-cancel aria-label="${t('Cerrar')}">✕</button></header>
     <div class="dialog-body">
-      <p class="hint">Cards donde eres responsable o estás asignado, en todas las páginas que puedes ver.</p>
+      <p class="hint">${t('Cards donde eres responsable o estás asignado, en todas las páginas que puedes ver.')}</p>
       ${assignmentHTML(items)}
     </div>
-    <footer><button type="button" class="btn" data-cancel>Cerrar</button></footer>
+    <footer><button type="button" class="btn" data-cancel>${t('Cerrar')}</button></footer>
   </div>`;
   editorDialog.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', () => { editorDialog.close(); if (location.hash === '#/me') history.replaceState(null, '', location.pathname); }));
   $('.me-list', editorDialog)?.addEventListener('click', e => { const a = e.target.closest('a'); if (!a) return; e.preventDefault(); editorDialog.close(); location.hash = a.getAttribute('href'); });

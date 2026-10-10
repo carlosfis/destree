@@ -9,6 +9,7 @@ import { config } from './config.js';
 import { openReady, migrate } from './db/sqlite.js';
 import { loadSchemas, AJV_OPTIONS, formatErrors } from './lib/schemas.js';
 import { HttpError } from './lib/pages.js';
+import { tr, langOf } from './lib/i18n.js'; // P15
 import sessionPlugin from './plugins/session.js';
 import guardPlugin from './plugins/guard.js';
 import originPlugin from './plugins/origin-check.js';
@@ -51,17 +52,18 @@ export async function buildApp({ dbPath = config.dbPath, logger = { level: confi
   for (const s of loadSchemas()) app.addSchema(s);
 
   app.setErrorHandler((err, req, reply) => {
+    const lang = req.lang || langOf(req); // P15
     if (err.validation) return reply.code(400).send({ error: 'validation', message: err.message, errors: formatErrors(err.validation) });
     if (err instanceof HttpError) {
       const code = { 401: 'unauthorized', 403: 'forbidden', 409: 'conflict', 410: 'gone', 413: 'too_large', 415: 'unsupported', 429: 'rate_limited' }[err.status] || 'error';
-      return reply.code(err.status).send({ error: code, message: err.message, ...(err.version != null ? { version: err.version } : {}), ...(err.setup != null ? { setup: err.setup } : {}), ...(err.mail != null ? { mail: err.mail } : {}) });
+      return reply.code(err.status).send({ error: code, message: tr(lang, err.message), ...(err.version != null ? { version: err.version } : {}), ...(err.setup != null ? { setup: err.setup } : {}), ...(err.mail != null ? { mail: err.mail } : {}) });
     }
-    if (err.statusCode && err.statusCode < 500) return reply.code(err.statusCode).send({ error: 'error', message: err.message });
+    if (err.statusCode && err.statusCode < 500) return reply.code(err.statusCode).send({ error: 'error', message: tr(lang, err.message) });
     req.log.error(err);
-    return reply.code(500).send({ error: 'internal', message: 'Error interno' });
+    return reply.code(500).send({ error: 'internal', message: tr(lang, 'Error interno') });
   });
   app.setNotFoundHandler((req, reply) => {
-    if (req.url.startsWith('/api/')) return reply.code(404).send({ error: 'not_found', message: 'Ruta no encontrada' });
+    if (req.url.startsWith('/api/')) return reply.code(404).send({ error: 'not_found', message: tr(langOf(req), 'Ruta no encontrada') });
     return reply.code(404).type('text/plain').send('Not found');
   });
 

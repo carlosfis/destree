@@ -6,6 +6,7 @@ import { S, save } from './state.js';
 import { sel } from '../canvas/render-nodes.js';
 import { renderAll } from '../canvas/selection.js';
 import { toast } from '../ui/theme.js';
+import { t } from './i18n.js'; // P15
 export const history = { past: [], future: [] };
 export function snapshot() { return JSON.stringify({ nodes: S.state.nodes, edges: S.state.edges, tags: S.state.tags, branchTypes: S.state.branchTypes }); }
 export function pushHistory() {
@@ -23,13 +24,13 @@ export function restoreSnapshot(snap) {
   renderAll(); save();
 }
 export function undo() {
-  if (!history.past.length) return toast('Nada que deshacer');
+  if (!history.past.length) return toast(t('Nada que deshacer'));
   history.future.push(snapshot());
   restoreSnapshot(history.past.pop());
   updateUndoButtons();
 }
 export function redo() {
-  if (!history.future.length) return toast('Nada que rehacer');
+  if (!history.future.length) return toast(t('Nada que rehacer'));
   history.past.push(snapshot());
   restoreSnapshot(history.future.pop());
   updateUndoButtons();

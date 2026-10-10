@@ -10,7 +10,7 @@ const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const prof = fs.mkdtempSync(path.join(os.tmpdir(), 'destree-smoke-'));
 const srv = spawn(process.execPath, ['server/index.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), DATABASE_PATH: path.join(prof, 'smoke.db'), LOG_LEVEL: 'silent' }, stdio: 'ignore' });
-const chrome = spawn(CHROME, ['--headless=new', `--remote-debugging-port=${DBG}`, `--user-data-dir=${prof}`, '--no-first-run', '--disable-gpu', '--window-size=1400,900', 'about:blank'], { stdio: 'ignore' });
+const chrome = spawn(CHROME, ['--headless=new', '--lang=es', `--remote-debugging-port=${DBG}`, `--user-data-dir=${prof}`, '--no-first-run', '--disable-gpu', '--window-size=1400,900', 'about:blank'], { stdio: 'ignore' });
 const cleanup = () => { try { chrome.kill(); } catch {} try { srv.kill(); } catch {} try { fs.rmSync(prof, { recursive: true, force: true, maxRetries: 3 }); } catch {} };
 process.on('exit', cleanup);
 let list;
@@ -24,8 +24,8 @@ const problems = [];
 const drain = () => { for (const m of events.splice(0)) {
   if (m.method === 'Runtime.exceptionThrown') problems.push('EXC ' + (m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text));
   if (m.method === 'Runtime.consoleAPICalled' && ['error', 'warning', 'assert'].includes(m.params.type)) problems.push('CONSOLE.' + m.params.type + ' ' + m.params.args.map((a) => a.description || a.value).join(' '));
-  // F2: 401 en /api/me sin sesión y el 403 del PUT de designer son respuestas esperadas del flujo, no errores.
-  if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error' && !/status of (401|403)/.test(m.params.entry.text)) problems.push('LOG ' + m.params.entry.text + ' ' + (m.params.entry.url || ''));
+  // F2: 401 en /api/me sin sesión y el 403 del PUT de designer son respuestas esperadas del flujo, no errores. P15: los 404 a /api/…/nope son a propósito (mensajes por idioma).
+  if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error' && !/status of (401|403)/.test(m.params.entry.text) && !(/status of 404/.test(m.params.entry.text) && /\/nope$/.test(m.params.entry.url || ''))) problems.push('LOG ' + m.params.entry.text + ' ' + (m.params.entry.url || ''));
 } };
 await send('Runtime.enable'); await send('Log.enable'); await send('Page.enable');
 await send('Browser.setDownloadBehavior', { behavior: 'deny' }).catch(() => {});
@@ -42,7 +42,7 @@ const fill = async (pairs) => ev(`(() => { ${pairs.map(([n, v]) => `document.que
 const c = { ev, send, sleep, mouse, drag, key, center, step, fill, META, SHIFT, ROOT };
 await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` });
 await sleep(1200); drain();
-for (const m of ['01-canvas', '02-team', '03-pages-admin', '04-roles']) await (await import(`./smoke/${m}.js`)).default(c);
+for (const m of ['01-canvas', '02-team', '03-pages-admin', '04-roles', '05-i18n']) await (await import(`./smoke/${m}.js`)).default(c);
 drain();
 console.log(results.join('\n'));
 console.log(problems.length ? `\nPROBLEMAS (${problems.length}):\n` + problems.join('\n') : '\nconsola limpia: 0 excepciones / 0 console.error');

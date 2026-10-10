@@ -45,7 +45,7 @@ test('index.html: estilos css/01..16 en orden, un único <script type="module" s
 });
 
 test('ESM: sin use strict, sin let/var top-level, sin globales window.* salvo S en main.js', () => {
-  assert.equal(JS.length, 49, JS.join(','));
+  assert.equal(JS.length, 54, JS.join(','));
   for (const f of JS) {
     const src = read(f);
     assert.ok(!src.includes("'use strict'"), `${f}: 'use strict' sobra en ESM`);
@@ -63,6 +63,7 @@ test('S: core/state.js exporta S con las claves migradas; ningún módulo usa es
   assert.deepEqual(keys, S_KEYS);
   const bare = new RegExp(`(?<![\\w$])(?<!(?<!\\.\\.)\\.)(${S_KEYS.join('|')})(?![\\w$:])`, 'g');
   for (const f of JS) {
+    if (f.startsWith('js/i18n/')) continue; // P15: diccionarios (prosa en inglés), no código
     const code = stripComments(read(f)).replace(/^export const S = \{[\s\S]*?^\};/m, '').replace(/^import[\s\S]*?from '[^']+';/gm, '');
     const hits = [...code.matchAll(bare)].map((m) => m[1]);
     assert.deepEqual(hits, [], `${f}: símbolos sin S.`);

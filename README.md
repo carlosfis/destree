@@ -2,7 +2,7 @@
 
 🇬🇧 [English version](README.en.md)
 
-Fuente única de verdad para agencias y equipos de producto: un lienzo con el **árbol de software** (aplicaciones → features → variantes), sus **Design Systems y UI Kits**, responsables, equipos (células), documentación, páginas de proyecto y versiones. Autoalojado, multi-página, con cinco niveles de rol (Admin · Ops · Head · Lead · Viewer).
+Fuente única de verdad para agencias y equipos de producto: un lienzo con el **árbol de software** (aplicaciones → features → variantes), sus **Design Systems y UI Kits**, responsables, equipos (células), documentación, páginas de proyecto y versiones. Autoalojado, multi-página, con cinco niveles de rol (Admin · Ops · Head · Lead · Viewer). Interfaz en español e inglés (selector ES/EN).
 
 - **Lienzo**: contenedores anidados (ramificaciones), DS y UI Kits dentro de cada software, conexiones «usa DS» y «deriva de», etiquetas, color de marca por Main instance, auto-layout, minimapa, undo/redo.
 - **Página de proyecto por card**: Overview con secciones editables (ficha, resumen con métricas, antecedentes, usuarios, problemática, objetivos, entregables, equipo), Cronograma por fases y semanas, y tablero Kanban de actividades (To Do · Doing · Done · Cancelled).
@@ -10,12 +10,13 @@ Fuente única de verdad para agencias y equipos de producto: un lienzo con el **
 - **Organización**: cinco niveles fijos con nombres visibles configurables, plantilla con roles y asignaciones, tabla de capacidades, invitaciones por enlace o por correo (SMTP opcional), restablecer contraseña, audit log.
 - **Documentación**: enlaces (Figma, Notion, repos…) y notas en markdown por card; imágenes seguras (WebP + miniatura); thumbnail PNG 1920×1080 de cada Main instance para usar como portada en Figma.
 - **Historial**: versiones automáticas y manuales por página, diff y restauración; respaldos tar.gz programables; export/import de la organización; datos demo con un comando.
+- **Idioma**: interfaz en español o inglés por navegador (botón ES/EN en la barra y en el acceso; por defecto, el idioma del navegador); los mensajes del servidor y los correos siguen el idioma elegido.
 - **Sin dependencias pesadas**: Node 22 + Fastify 5 + SQLite (`node:sqlite`), cliente vanilla ESM sin bundler. Única dependencia nativa: `sharp`.
 
 > Sin integración con Figma (API, métricas, webhooks): la app es completa sin ello. Los enlaces a archivos de Figma se añaden a mano en Documentación y el thumbnail se copia y se pega.
 
 ## Un vistazo
-Capturas sobre los datos demo (organización ficticia «Grupo Ambar»).
+Capturas sobre los datos demo (organización ficticia «Grupo Ambar»); la versión en inglés del README muestra la interfaz en inglés.
 | Lienzo | Página de proyecto | Sidebar de instancia |
 |---|---|---|
 | ![Lienzo con el árbol de software, Design Systems y UI Kits](docs/img/canvas.png) | ![Overview de la página de proyecto de una Main instance](docs/img/project.png) | ![Sidebar de una Main instance: tipo, nombre, color de marca, etiquetas y relaciones](docs/img/drawer.png) |
@@ -70,7 +71,7 @@ Cinco niveles fijos; cada nivel incluye todo lo del inferior. El nombre visible 
 `docs/INSTALL.md` (instalación y variables) · `docs/ADMIN.md` (administración y datos demo) · `docs/USER.md` (lienzo y página de proyecto) · `docs/API.md` · `docs/SECURITY.md` (modelo de amenazas y cabeceras) · `docs/MAP.md` (mapa del código) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CODE_OF_CONDUCT.md` · `SECURITY.md` (reportar vulnerabilidades) · `CHANGELOG.md` · `PENDIENTE.md` (roadmap detallado por fases).
 
 ## Roadmap
-v1.1.0 incluye: página de proyecto por card (Overview · Cronograma · Kanban) · color de marca en Main instances · cinco niveles de rol y pestaña Organización · thumbnail para Figma · datos demo. v1.0.0 trajo contraseñas, correo SMTP, hardening (CSP estricta), README en inglés y capturas. Pendiente (detalle y estado en `PENDIENTE.md`): despliegue de referencia. Fuera de alcance: integración con Figma, SSO/OAuth; la UI es solo en español por ahora.
+Sin publicar: interfaz en inglés (selector ES/EN). v1.1.0 incluye: página de proyecto por card (Overview · Cronograma · Kanban) · color de marca en Main instances · cinco niveles de rol y pestaña Organización · thumbnail para Figma · datos demo. v1.0.0 trajo contraseñas, correo SMTP, hardening (CSP estricta), README en inglés y capturas. Pendiente (detalle y estado en `PENDIENTE.md`): despliegue de referencia. Fuera de alcance: integración con Figma, SSO/OAuth.
 
 ## Licencia
 MIT — ver `LICENSE`.

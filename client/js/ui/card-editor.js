@@ -18,6 +18,7 @@ import { docsSection, staffSection, teamSection, visibilitySection } from './car
 import { GRADIENTS, DEFAULT_GRADIENT } from '../core/normalize.js'; // P12
 import { drawerHTML, openDrawer, closeDrawer, showTab, tabOf, instanceLabel } from './node-drawer.js';
 import { thumbnailSection } from './thumbnail-section.js'; // P9
+import { t } from '../core/i18n.js'; // P15
 export const editorDialog = $('#editorDialog'); // modal: lo siguen usando #/me y el panel de versiones
 /** Ruta legible de un contenedor: Raíz › Hijo › Nieto */
 export function pathOf(n) { const parts = [n.name]; let p = parentOf(n), g = 0; while (p && g++ < 100) { parts.unshift(p.name); p = parentOf(p); } return parts.join(' › '); }
@@ -36,29 +37,29 @@ export function openEditor(id, preset = {}) {
   draft.sourceId = node ? (sourceEdgeOf(node.id)?.to || '') : '';
   draft.dsIds = node ? new Set(dsOf(node.id).map(n => n.id)) : new Set();
   const hasKids = node ? childrenOf(node.id).length : 0;
-  const title = parentId => `${node ? '' : 'Nueva '}${instanceLabel(parentId)}`;
+  const title = parentId => (node ? instanceLabel(parentId) : t('Nueva {instance}', { instance: instanceLabel(parentId) }));
   const T = { software: esc(typeName('software')), ds: esc(typeName('ds')), uikit: esc(typeName('uikit')) };
 
   const panes = {
-    general: `<div class="field"><label>Tipo</label><div class="type-picker" id="fType">${Object.entries(TYPE_META).map(([k, m]) => `<button type="button" data-v="${k}" class="${k === draft.type ? 'active' : ''}" title="${esc(m.desc)}"><span class="t"><span class="dot" data-style="background:${m.color}"></span>${T[k]}</span><span class="d">${m.desc}</span></button>`).join('')}</div>
-        ${hasKids ? `<div class="hint">Este contenedor tiene ${hasKids} elemento${hasKids > 1 ? 's' : ''} dentro; para cambiarlo de tipo primero muévelos o elimínalos.</div>` : ''}</div>
-      <div class="field" id="fNameField"><label>Nombre *</label><input name="name" maxlength="80" value="${esc(draft.name)}" placeholder="Nombre de la instancia" autocomplete="off"><div class="error" hidden>El nombre es obligatorio.</div></div>
+    general: `<div class="field"><label>${t('Tipo')}</label><div class="type-picker" id="fType">${Object.entries(TYPE_META).map(([k, m]) => `<button type="button" data-v="${k}" class="${k === draft.type ? 'active' : ''}" title="${esc(t(m.desc))}"><span class="t"><span class="dot" data-style="background:${m.color}"></span>${T[k]}</span><span class="d">${esc(t(m.desc))}</span></button>`).join('')}</div>
+        ${hasKids ? `<div class="hint">${t(hasKids > 1 ? 'Este contenedor tiene {n} elementos dentro; para cambiarlo de tipo primero muévelos o elimínalos.' : 'Este contenedor tiene {n} elemento dentro; para cambiarlo de tipo primero muévelos o elimínalos.', { n: hasKids })}</div>` : ''}</div>
+      <div class="field" id="fNameField"><label>${t('Nombre *')}</label><input name="name" maxlength="80" value="${esc(draft.name)}" placeholder="${t('Nombre de la instancia')}" autocomplete="off"><div class="error" hidden>${t('El nombre es obligatorio.')}</div></div>
       <div class="field-row">
-        <div class="field" id="fParentField"><label id="fParentLabel">Contenedor padre</label><select name="parent"></select><div class="error" hidden>${T.ds} y ${T.uikit} deben vivir dentro de ${T.software}.</div></div>
-        <div class="field" id="fBranchField"><label>Tipo de ramificación</label><select name="branchType">${S.state.branchTypes.map(t => `<option value="${t.id}" ${t.id === (draft.branchTypeId || defaultBranchType()) ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>
+        <div class="field" id="fParentField"><label id="fParentLabel">${t('Contenedor padre')}</label><select name="parent"></select><div class="error" hidden>${t('{ds} y {uikit} deben vivir dentro de {software}.', T)}</div></div>
+        <div class="field" id="fBranchField"><label>${t('Tipo de ramificación')}</label><select name="branchType">${S.state.branchTypes.map(t => `<option value="${t.id}" ${t.id === (draft.branchTypeId || defaultBranchType()) ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div>
       </div>
-      <div class="field"><label>Descripción breve <span class="counter" id="fCounter">${draft.description.length}/140</span></label><textarea name="description" maxlength="140" rows="2" placeholder="¿Qué es y para qué sirve?">${esc(draft.description)}</textarea></div>
-      <div class="field" id="fGradField"><label>Color de marca <span class="hint">Main instance</span></label><div class="grad-picker" id="fGrad">${GRADIENTS.map(g => `<button type="button" class="grad-dot grad-${g.id} ${g.id === draft.gradient ? 'active' : ''}" data-v="${g.id}" title="${g.colors.join(' → ')}" aria-label="${g.id}"></button>`).join('')}</div><div class="hint">Se muestra en la cabecera de la card, en la ficha y en los encabezados de su página de proyecto.</div></div>
-      <div class="field"><label>Etiquetas</label><div class="chips-select" id="fTags"></div></div>
-      <h3 class="section" id="fRelHead">Relaciones</h3>
-      <div class="field" id="fSourceField"><label>Fuente * (${T.ds} o ${T.software} del que deriva)</label><select name="source"></select><div class="error" hidden>${T.uikit} debe tener fuente.</div></div>
-      <div class="field" id="fDSField"><label>${T.ds} que usa</label><div class="check-list" id="fDS"></div><div class="hint">Si ${T.ds} vive en otro ${T.software} raíz, la línea se dibuja discontinua.</div></div>
+      <div class="field"><label>${t('Descripción breve')} <span class="counter" id="fCounter">${draft.description.length}/140</span></label><textarea name="description" maxlength="140" rows="2" placeholder="${t('¿Qué es y para qué sirve?')}">${esc(draft.description)}</textarea></div>
+      <div class="field" id="fGradField"><label>${t('Color de marca')} <span class="hint">Main instance</span></label><div class="grad-picker" id="fGrad">${GRADIENTS.map(g => `<button type="button" class="grad-dot grad-${g.id} ${g.id === draft.gradient ? 'active' : ''}" data-v="${g.id}" title="${g.colors.join(' → ')}" aria-label="${g.id}"></button>`).join('')}</div><div class="hint">${t('Se muestra en la cabecera de la card, en la ficha y en los encabezados de su página de proyecto.')}</div></div>
+      <div class="field"><label>${t('Etiquetas')}</label><div class="chips-select" id="fTags"></div></div>
+      <h3 class="section" id="fRelHead">${t('Relaciones')}</h3>
+      <div class="field" id="fSourceField"><label>${t('Fuente * ({ds} o {software} del que deriva)', T)}</label><select name="source"></select><div class="error" hidden>${t('{uikit} debe tener fuente.', T)}</div></div>
+      <div class="field" id="fDSField"><label>${t('{ds} que usa', T)}</label><div class="check-list" id="fDS"></div><div class="hint">${t('Si {ds} vive en otro {software} raíz, la línea se dibuja discontinua.', T)}</div></div>
       ${thumbSec.html}`,
     staff: `${staffSec.html}${teamSec.html}${visSec.html}`,
     docs: docsSec.html,
     notes: docsSec.notesHtml,
   };
-  const footer = `${node && !own ? '<button type="button" class="btn danger left" id="fDelete">Eliminar</button>' : ''}${node ? `<button type="button" class="btn ${own ? 'left' : ''}" id="fProject" title="Overview, cronograma y actividades">▤ Proyecto</button>` : ''}<button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn primary">${node ? 'Guardar cambios' : 'Crear'}</button>`;
+  const footer = `${node && !own ? `<button type="button" class="btn danger left" id="fDelete">${t('Eliminar')}</button>` : ''}${node ? `<button type="button" class="btn ${own ? 'left' : ''}" id="fProject" title="${t('Overview, cronograma y actividades')}">${t('▤ Proyecto')}</button>` : ''}<button type="button" class="btn" data-cancel>${t('Cancelar')}</button><button type="submit" class="btn primary">${node ? t('Guardar cambios') : t('Crear')}</button>`;
   const form = openDrawer(drawerHTML({ title: title(draft.parentId), panes, footer, tag: 'form', id: 'editorForm' }), { onClose: () => thumbSec.unbind() });
   if (own) form.classList.add('own-mode'); // CSS oculta tipo, contenedor, relaciones y nueva etiqueta
   const sortByPath = (a, b) => pathOf(a).localeCompare(pathOf(b));
@@ -69,20 +70,20 @@ export function openEditor(id, preset = {}) {
     $('#fSourceField').hidden = draft.type !== 'uikit';
     $('#fDSField').hidden = !soft;
     $('#fRelHead').hidden = draft.type === 'ds';
-    $('#fParentLabel').textContent = soft ? 'Contenedor padre (vacío = raíz)' : 'Contenedor padre *';
+    $('#fParentLabel').textContent = soft ? t('Contenedor padre (vacío = raíz)') : t('Contenedor padre *');
     // Contenedores válidos: software que no sea el propio nodo ni un descendiente suyo
     const parents = S.state.nodes.filter(n => isContainer(n) && n.id !== draft.id && !(draft.id && isAncestor(draft.id, n.id))).sort(sortByPath);
     const current = form.parent.value !== undefined && form.parent.options.length ? form.parent.value : (draft.parentId || '');
-    form.parent.innerHTML = (soft ? '<option value="">— Ninguno: Main instance (raíz) —</option>' : `<option value="">— Selecciona ${T.software} —</option>`) +
+    form.parent.innerHTML = (soft ? `<option value="">${t('— Ninguno: Main instance (raíz) —')}</option>` : `<option value="">${t('— Selecciona {software} —', T)}</option>`) +
       parents.map(n => `<option value="${n.id}" ${n.id === current ? 'selected' : ''}>${esc(pathOf(n))}</option>`).join('');
     refreshBranch();
     const srcSel = form.source;
     const candidates = S.state.nodes.filter(n => n.id !== draft.id && !(draft.id && wouldCycle('source', draft.id, n.id)))
       .sort((a, b) => (a.type === 'ds' ? 0 : a.type === 'uikit' ? 1 : 2) - (b.type === 'ds' ? 0 : b.type === 'uikit' ? 1 : 2) || a.name.localeCompare(b.name));
-    srcSel.innerHTML = `<option value="">— Selecciona la fuente —</option>` + candidates.map(n => `<option value="${n.id}" ${n.id === draft.sourceId ? 'selected' : ''}>${esc(n.name)} · ${esc(typeName(n.type))}${n.parentId ? ` (en ${esc(rootOf(n).name)})` : ''}</option>`).join('');
+    srcSel.innerHTML = `<option value="">${t('— Selecciona la fuente —')}</option>` + candidates.map(n => `<option value="${n.id}" ${n.id === draft.sourceId ? 'selected' : ''}>${esc(n.name)} · ${esc(typeName(n.type))}${n.parentId ? ' ' + t('(en {name})', { name: esc(rootOf(n).name) }) : ''}</option>`).join('');
     const dsList = S.state.nodes.filter(n => (n.type === 'ds' || n.type === 'uikit') && n.id !== draft.id).sort((a, b) => a.name.localeCompare(b.name));
-    $('#fDS').innerHTML = dsList.length ? dsList.map(n => `<label><input type="checkbox" value="${n.id}" ${draft.dsIds.has(n.id) ? 'checked' : ''}><span class="t-dot" data-style="background:${TYPE_META[n.type].color}"></span>${esc(n.name)}<span class="where">${esc(typeName(n.type))} · en ${esc(rootOf(n).name)}</span></label>`).join('')
-      : `<div class="empty">Aún no hay ${T.ds} ni ${T.uikit}.</div>`; applyDataStyles($('#fDS'));
+    $('#fDS').innerHTML = dsList.length ? dsList.map(n => `<label><input type="checkbox" value="${n.id}" ${draft.dsIds.has(n.id) ? 'checked' : ''}><span class="t-dot" data-style="background:${TYPE_META[n.type].color}"></span>${esc(n.name)}<span class="where">${esc(typeName(n.type))} · ${t('en {name}', { name: esc(rootOf(n).name) })}</span></label>`).join('')
+      : `<div class="empty">${t('Aún no hay {ds} ni {uikit}.', T)}</div>`; applyDataStyles($('#fDS'));
   };
   const refreshBranch = () => {
     $('#fBranchField').hidden = !(draft.type === 'software' && form.parent.value); const vf = $('#fVisField'); if (vf) vf.hidden = !(draft.type === 'software' && !form.parent.value); // P10: sin pages.visibility no hay sección
@@ -92,7 +93,7 @@ export function openEditor(id, preset = {}) {
   const refreshTags = () => {
     const box = $('#fTags');
     box.innerHTML = S.state.tags.map(t => `<span class="chip tag-${t.color} ${draft.tags.includes(t.id) ? 'on' : ''}" data-id="${t.id}">${esc(t.name)}</span>`).join('') +
-      (own ? '' : `<span class="add-tag"><input placeholder="＋ nueva etiqueta" id="fNewTag"></span>`);
+      (own ? '' : `<span class="add-tag"><input placeholder="${t('＋ nueva etiqueta')}" id="fNewTag"></span>`);
     box.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => { const i = draft.tags.indexOf(c.dataset.id); i >= 0 ? draft.tags.splice(i, 1) : draft.tags.push(c.dataset.id); refreshTags(); }));
     $('#fNewTag')?.addEventListener('keydown', ev => {
       if (ev.key !== 'Enter') return; ev.preventDefault();
@@ -105,11 +106,11 @@ export function openEditor(id, preset = {}) {
   };
   $('#fGrad').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (!b) return; draft.gradient = b.dataset.v; $$('#fGrad button').forEach(x => x.classList.toggle('active', x === b)); });
   refreshType(); refreshTags(); docsSec.bind(form); staffSec.bind(form); visSec.bind(form);
-  thumbSec.bind(form, () => ({ name: form.name.value.trim() || 'Sin nombre', type: typeName(draft.type), path: form.parent.value && nodeById(form.parent.value) ? pathOf(nodeById(form.parent.value)).split(' › ') : [], tags: draft.tags.map(tagById).filter(Boolean).map(t => t.name), staff: staffSec.read(form).staff })); // P9: vista previa con el borrador
+  thumbSec.bind(form, () => ({ name: form.name.value.trim() || t('Sin nombre'), type: typeName(draft.type), path: form.parent.value && nodeById(form.parent.value) ? pathOf(nodeById(form.parent.value)).split(' › ') : [], tags: draft.tags.map(tagById).filter(Boolean).map(t => t.name), staff: staffSec.read(form).staff })); // P9: vista previa con el borrador
 
   $('#fType').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.v !== 'software' && hasKids) return toast('Este contenedor tiene elementos dentro; muévelos o elimínalos antes de cambiar el tipo.', 'error', 3600);
+    if (b.dataset.v !== 'software' && hasKids) return toast(t('Este contenedor tiene elementos dentro; muévelos o elimínalos antes de cambiar el tipo.'), 'error', 3600);
     draft.type = b.dataset.v; refreshType();
   });
   form.parent.addEventListener('change', refreshBranch);
@@ -129,7 +130,7 @@ export function openEditor(id, preset = {}) {
     mark('#fSourceField', draft.type === 'uikit' && !sourceId);
     if (invalid.length) { showTab(tabOf(invalid[0])); $('input, select', invalid[0])?.focus(); return; }
     if (own) return saveOwn(node, { name, description: form.description.value.trim().slice(0, 140), ...(node.parentId ? {} : { gradient: draft.gradient }), tags: draft.tags.filter(tagById), ...staffSec.read(form), ...docsSec.read(form), ...thumbSec.read(form) });
-    if (parentId && (parentId === draft.id || (draft.id && isAncestor(draft.id, parentId)))) return toast('No se puede anidar dentro de sí mismo', 'error');
+    if (parentId && (parentId === draft.id || (draft.id && isAncestor(draft.id, parentId)))) return toast(t('No se puede anidar dentro de sí mismo'), 'error');
     pushHistory();
     const isRoot = draft.type === 'software' && !parentId;
     const data = { type: draft.type, name, description: form.description.value.trim().slice(0, 140), image: null, imageId: null, gradient: isRoot ? draft.gradient : '', tags: draft.tags.filter(tagById), ...staffSec.read(form), ...docsSec.read(form), ...teamSec.read(form), ...visSec.read(form, isRoot), ...thumbSec.read(form) };
@@ -165,7 +166,7 @@ export function openEditor(id, preset = {}) {
     closeDrawer();
     if (!node) selectOnly(tid);
     renderAll(); save();
-    toast(node ? 'Instancia actualizada' : 'Instancia creada');
+    toast(node ? t('Instancia actualizada') : t('Instancia creada'));
   });
   form.name.focus();
 }
@@ -175,6 +176,6 @@ async function saveOwn(node, data) {
   try {
     const res = await api.patchNodeFields(S.pageId, node.id, body);
     Object.assign(node, res.node); S.version = res.version;
-    closeDrawer(); renderAll(); toast('Instancia actualizada');
-  } catch (err) { toast('No se pudo guardar: ' + err.message, 'error', 6000); }
+    closeDrawer(); renderAll(); toast(t('Instancia actualizada'));
+  } catch (err) { toast(t('No se pudo guardar: {msg}', { msg: err.message }), 'error', 6000); }
 }

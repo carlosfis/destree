@@ -10,6 +10,7 @@ import { confirmBox } from '../ui/dialogs.js';
 import { menuPopover } from '../ui/popover.js';
 import { isoWeek, sprintOf } from '../core/project-template.js';
 import { openActivityDialog, openPhaseDialog, openSprintDialog } from './project-activity.js';
+import { t } from '../core/i18n.js'; // P15
 
 export const COLW = 104, ROW = 62, PAD = 18, MIN_COLS = 6; // px: ancho de semana, alto por actividad, margen vertical de fase
 const DAY = COLW / 7, MS_DAY = 864e5;
@@ -47,14 +48,14 @@ export function renderSchedule(box, ctx) {
         <div class="act-body"><b class="act-title">${esc(a.title)}</b><span class="act-line" data-style="width:${line}px;background:${esc(p.color)}"><i data-style="background:${esc(p.color)}"></i></span>${a.description ? `<p class="act-desc">${esc(a.description)}</p>` : ''}</div></div>`;
     }).join('');
     return `<div class="sched-row" data-phase="${esc(p.id)}" data-style="height:${h}px">
-      <div class="sched-phase"><span class="sched-num">${num(i)}</span><h3>${esc(p.name)}</h3>${canEdit ? `<div class="sched-phase-tools"><button type="button" class="btn ghost" data-add-act title="Nueva actividad en esta fase">＋ Actividad</button><button type="button" class="icon-btn" data-phase-menu title="Opciones de la fase" aria-label="Opciones de la fase">⋯</button></div>` : ''}</div>
+      <div class="sched-phase"><span class="sched-num">${num(i)}</span><h3>${esc(p.name)}</h3>${canEdit ? `<div class="sched-phase-tools"><button type="button" class="btn ghost" data-add-act title="${t('Nueva actividad en esta fase')}">${t('＋ Actividad')}</button><button type="button" class="icon-btn" data-phase-menu title="${t('Opciones de la fase')}" aria-label="${t('Opciones de la fase')}">⋯</button></div>` : ''}</div>
       <div class="sched-track" data-style="width:${width}px">${cols}${marker}${items}</div></div>`;
   }).join('');
-  box.innerHTML = `<div class="sched-toolbar"><span class="hint">${scheduled.length} actividad${scheduled.length === 1 ? '' : 'es'} en ${phases.length} fase${phases.length === 1 ? '' : 's'} · ${count} semanas</span><span class="spacer"></span>
-      ${canEdit ? '<button type="button" class="btn" id="schedSprints" title="Numeración de sprints">⚙ Sprints</button><button type="button" class="btn" id="schedAddPhase">＋ Nueva fase</button><button type="button" class="btn primary" id="schedAddAct">＋ Actividad</button>' : ''}</div>
+  box.innerHTML = `<div class="sched-toolbar"><span class="hint">${t('{acts} en {phases} · {weeks} semanas', { acts: t(scheduled.length === 1 ? '{n} actividad' : '{n} actividades', { n: scheduled.length }), phases: t(phases.length === 1 ? '{n} fase' : '{n} fases', { n: phases.length }), weeks: count })}</span><span class="spacer"></span>
+      ${canEdit ? `<button type="button" class="btn" id="schedSprints" title="${t('Numeración de sprints')}">⚙ Sprints</button><button type="button" class="btn" id="schedAddPhase">${t('＋ Nueva fase')}</button><button type="button" class="btn primary" id="schedAddAct">${t('＋ Actividad')}</button>` : ''}</div>
     <div class="sched-wrap"><div class="sched">
-      <div class="sched-head"><div class="sched-corner"></div><div class="sched-weeks" data-style="width:${width}px">${weeks.map(w => `<div class="sched-week"><b>Semana ${w.week}</b><span>Sprint ${sprintOf(w.week, data.settings)}</span></div>`).join('')}${showToday ? `<i class="sched-today-cap" data-style="left:${todayX}px"></i>` : ''}</div></div>
-      ${rows || `<div class="sched-empty">${canEdit ? 'Crea la primera fase y añade actividades con fecha para dibujar el cronograma.' : 'Este proyecto aún no tiene cronograma.'}</div>`}
+      <div class="sched-head"><div class="sched-corner"></div><div class="sched-weeks" data-style="width:${width}px">${weeks.map(w => `<div class="sched-week"><b>${t('Semana {n}', { n: w.week })}</b><span>${t('Sprint {n}', { n: sprintOf(w.week, data.settings) })}</span></div>`).join('')}${showToday ? `<i class="sched-today-cap" data-style="left:${todayX}px"></i>` : ''}</div></div>
+      ${rows || `<div class="sched-empty">${canEdit ? t('Crea la primera fase y añade actividades con fecha para dibujar el cronograma.') : t('Este proyecto aún no tiene cronograma.')}</div>`}
       ${showToday && rows ? `<div class="sched-foot"><div class="sched-corner"></div><div class="sched-track" data-style="width:${width}px"><i class="sched-today-cap bottom" data-style="left:${todayX}px"></i></div></div>` : ''}
     </div></div>`;
   box.addEventListener('click', e => {
@@ -74,13 +75,13 @@ function phaseMenu(p, px, py, ctx) {
   const n = ctx.data.phases.length;
   menuPopover(px, py, [
     { title: p.name },
-    { label: 'Editar fase (nombre, color)', ico: '✎', action: () => openPhaseDialog({ phase: p }, ctx) },
-    ...(p.position > 0 ? [{ label: 'Subir', ico: '↑', action: () => act(() => api.updatePhase(ctx.pid, ctx.nid, p.id, { position: p.position - 1 })) }] : []),
-    ...(p.position < n - 1 ? [{ label: 'Bajar', ico: '↓', action: () => act(() => api.updatePhase(ctx.pid, ctx.nid, p.id, { position: p.position + 1 })) }] : []),
+    { label: t('Editar fase (nombre, color)'), ico: '✎', action: () => openPhaseDialog({ phase: p }, ctx) },
+    ...(p.position > 0 ? [{ label: t('Subir'), ico: '↑', action: () => act(() => api.updatePhase(ctx.pid, ctx.nid, p.id, { position: p.position - 1 })) }] : []),
+    ...(p.position < n - 1 ? [{ label: t('Bajar'), ico: '↓', action: () => act(() => api.updatePhase(ctx.pid, ctx.nid, p.id, { position: p.position + 1 })) }] : []),
     '-',
-    { label: 'Eliminar fase', ico: '🗑', danger: true, action: async () => {
-      const ok = await confirmBox({ title: 'Eliminar fase', message: `«${p.name}» desaparecerá del cronograma. Sus actividades se conservan en el kanban (sin fase).`, buttons: [{ label: 'Cancelar', value: '' }, { label: 'Eliminar', value: 'ok', kind: 'danger' }] });
-      if (ok) act(() => api.deletePhase(ctx.pid, ctx.nid, p.id), 'Fase eliminada');
+    { label: t('Eliminar fase'), ico: '🗑', danger: true, action: async () => {
+      const ok = await confirmBox({ title: t('Eliminar fase'), message: t('«{name}» desaparecerá del cronograma. Sus actividades se conservan en el kanban (sin fase).', { name: p.name }), buttons: [{ label: t('Cancelar'), value: '' }, { label: t('Eliminar'), value: 'ok', kind: 'danger' }] });
+      if (ok) act(() => api.deletePhase(ctx.pid, ctx.nid, p.id), t('Fase eliminada'));
     } },
   ]);
 }

@@ -43,8 +43,9 @@ export function sanitizeSettings(s) {
 }
 /** Normaliza `@usuario` (sin espacios internos; vacío si no hay nada). */
 export const normalizeAssignee = s => { s = String(s || '').trim().replace(/\s+/g, ' '); return s ? (s.startsWith('@') ? s : '@' + s) : ''; };
-/** Plantilla inicial del Overview (las 9 secciones de la ficha): se rellena con lo que ya tiene la card. */
-export function defaultSections(node = {}) {
+const TITLES_EN = { 'Ficha de proyecto': 'Project links', 'Resumen del proyecto': 'Project summary', 'Antecedentes': 'Background', 'Usuarios identificados': 'Identified users', 'Problemática': 'Problem statement', 'Objetivos de negocio': 'Business goals', 'Entregables': 'Deliverables', 'Scrum team': 'Scrum team', 'Staff de diseño': 'Design staff' }; // P15
+/** Plantilla inicial del Overview (las 9 secciones de la ficha): se rellena con lo que ya tiene la card; títulos en inglés si `lang` es 'en'. */
+export function defaultSections(node = {}, lang = 'es') {
   const docs = (node.docs || []).map(d => ({ emoji: '', label: d.label || d.url, url: d.url }));
   const staff = (node.staff || []).map(m => ({ name: m.name, role: m.role || '' }));
   return [
@@ -57,7 +58,7 @@ export function defaultSections(node = {}) {
     { kind: 'checklist', title: 'Entregables', data: { items: [] } },
     { kind: 'people', title: 'Scrum team', data: { items: [] } },
     { kind: 'people', title: 'Staff de diseño', data: { items: staff } },
-  ].map(s => ({ ...s, data: sanitizeSectionData(s.kind, s.data) }));
+  ].map(s => ({ ...s, title: lang === 'en' ? TITLES_EN[s.title] || s.title : s.title, data: sanitizeSectionData(s.kind, s.data) }));
 }
 /** Semana ISO 8601 de una fecha YYYY-MM-DD → { year, week, monday (Date UTC) }. Compartido con el cliente para pintar las columnas. */
 export function isoWeek(dateStr) {

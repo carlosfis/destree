@@ -2,9 +2,10 @@
    F1. Cliente HTTP de la API (fetch, JSON, errores con status)
    ========================================================= */
 const BASE = '/api';
+const LANG = () => ({ 'X-Lang': document.documentElement.lang || 'es' }); // P15: idioma de los mensajes del servidor
 async function req(method, url, body, opts = {}) {
   const res = await fetch(BASE + url, {
-    method, headers: { ...(body == null ? {} : { 'Content-Type': 'application/json' }), ...(opts.headers || {}) },
+    method, headers: { ...LANG(), ...(body == null ? {} : { 'Content-Type': 'application/json' }), ...(opts.headers || {}) },
     body: body == null ? undefined : JSON.stringify(body), keepalive: !!opts.keepalive, cache: 'no-store',
   });
   const data = res.status === 204 ? null : await res.json().catch(() => null);
@@ -28,7 +29,7 @@ export const duplicatePage = (id, name) => req('POST', `/pages/${encodeURICompon
 export const myAssignments = () => req('GET', '/me/assignments').then(r => r.items);
 /* --- F5: imágenes (cuerpo binario, no JSON) --- */
 export async function uploadImage(file, { kind = 'node', filename = '' } = {}) {
-  const res = await fetch(`${BASE}/images?` + new URLSearchParams({ kind, filename: filename.slice(0, 200) }), { method: 'POST', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file, cache: 'no-store' });
+  const res = await fetch(`${BASE}/images?` + new URLSearchParams({ kind, filename: filename.slice(0, 200) }), { method: 'POST', headers: { ...LANG(), 'Content-Type': file.type || 'application/octet-stream' }, body: file, cache: 'no-store' });
   const data = await res.json().catch(() => null);
   if (!res.ok) { const err = new Error((data && data.message) || res.statusText); err.status = res.status; if (res.status === 401) document.dispatchEvent(new CustomEvent('destree:unauthorized')); throw err; }
   return data;

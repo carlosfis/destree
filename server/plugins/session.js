@@ -1,6 +1,7 @@
 // F2: cookie de sesión → req.user / req.role / req.orgId. Plugin sin encapsular (skip-override) para que el hook sea global.
 import { SESSION_COOKIE, SESSION_DAYS, resolveSession } from '../lib/auth.js';
 import { config } from '../config.js';
+import { langOf } from '../lib/i18n.js'; // P15
 
 export function parseCookies(header) {
   const out = {};
@@ -17,7 +18,9 @@ function sessionPlugin(app, opts, done) {
   app.decorateRequest('role', null);
   app.decorateRequest('orgId', null);
   app.decorateRequest('sessionToken', null);
+  app.decorateRequest('lang', 'es'); // P15: idioma de los mensajes (cabecera X-Lang)
   app.addHook('onRequest', async (req) => {
+    req.lang = langOf(req);
     if (!req.url.startsWith('/api/') && !req.url.startsWith('/uploads/')) return; // F5: /uploads también exige sesión
     const token = parseCookies(req.headers.cookie)[SESSION_COOKIE] || null;
     req.sessionToken = token;

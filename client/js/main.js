@@ -29,6 +29,10 @@ import { refreshCells } from './views/cells.js';
 import { openAccountDialog } from './views/account.js'; // P3
 import { openProject, closeProject } from './views/project.js'; // P11
 import './canvas/keyboard.js'; // solo efectos (listeners)
+import { initLang, translateStatic, toggleLang, lang, t } from './core/i18n.js'; // P15
+initLang(); translateStatic();
+$('#langSwitch').textContent = lang() === 'en' ? 'ES' : 'EN';
+$('#langSwitch').addEventListener('click', toggleLang);
 $('#btnNew').addEventListener('click', e => { const r = e.currentTarget.getBoundingClientRect(); showNewMenu(r.left, r.bottom + 4); });
 $('#btnLayout').addEventListener('click', autoLayout);
 $('#btnUndo').addEventListener('click', undo);
@@ -51,34 +55,34 @@ async function authenticate() {
   try { return await api.getMe(); } catch (err) {
     if (err.status === 401) {
       const needsSetup = err.data?.setup ?? (r && r.name === 'setup');
-      const res = await (needsSetup ? showSetup() : showLogin(r && r.name === 'setup' ? 'La instalación ya está configurada.' : '', { mail: !!err.data?.mail }));
+      const res = await (needsSetup ? showSetup() : showLogin(r && r.name === 'setup' ? t('La instalación ya está configurada.') : '', { mail: !!err.data?.mail }));
       if (res === 'forgot') { await showForgot(); return authenticate(); } // P7
       location.hash = ''; return authenticate();
     }
-    if (err.status) { toast('El servidor respondió ' + err.status + ': ' + err.message, 'error', 8000); return null; }
+    if (err.status) { toast(t('El servidor respondió {status}: {msg}', { status: err.status, msg: err.message }), 'error', 8000); return null; }
     return null; // sin servidor: bootstrap() entra en modo local
   }
 }
 const chipHTML = () => `<b>${esc(S.session.user.name || S.session.user.email)}</b><span class="role">${esc(roleLabel(S.session.role))}</span>`;
 function renderUserChip() {
   if (!S.session || $('#userChip')) return;
-  const chip = document.createElement('button'); chip.className = 'user-chip'; chip.id = 'userChip'; chip.type = 'button'; chip.title = 'Mi cuenta (nombre, contraseña)'; // P3
+  const chip = document.createElement('button'); chip.className = 'user-chip'; chip.id = 'userChip'; chip.type = 'button'; chip.title = t('Mi cuenta (nombre, contraseña)'); // P3
   chip.innerHTML = chipHTML();
   chip.addEventListener('click', openAccountDialog);
-  const out = document.createElement('button'); out.className = 'btn'; out.id = 'btnLogout'; out.title = 'Cerrar sesión'; out.textContent = 'Salir';
+  const out = document.createElement('button'); out.className = 'btn'; out.id = 'btnLogout'; out.title = t('Cerrar sesión'); out.textContent = t('Salir');
   out.addEventListener('click', async () => { await api.logout().catch(() => {}); location.hash = '#/login'; location.reload(); });
-  const me = document.createElement('button'); me.className = 'btn'; me.id = 'btnMe'; me.title = 'Mis asignaciones'; me.innerHTML = '★ <span class="hide-sm">Mías</span>'; // F3
+  const me = document.createElement('button'); me.className = 'btn'; me.id = 'btnMe'; me.title = t('Mis asignaciones'); me.innerHTML = `★ <span class="hide-sm">${t('Mías')}</span>`; // F3
   me.addEventListener('click', () => { location.hash = '#/me'; });
-  const ver = document.createElement('button'); ver.className = 'btn'; ver.id = 'btnVersions'; ver.title = 'Historial de versiones'; ver.innerHTML = '⟲ <span class="hide-sm">Historial</span>'; ver.addEventListener('click', openVersionsPanel); // F6a
+  const ver = document.createElement('button'); ver.className = 'btn'; ver.id = 'btnVersions'; ver.title = t('Historial de versiones'); ver.innerHTML = `⟲ <span class="hide-sm">${t('Historial')}</span>`; ver.addEventListener('click', openVersionsPanel); // F6a
   const org = adminTabsFor().length ? document.createElement('button') : null; // F4b
-  if (org) { org.className = 'btn'; org.id = 'btnOrg'; org.title = 'Administración (usuarios, células, audit)'; org.innerHTML = '⚑ <span class="hide-sm">Admin</span>'; org.addEventListener('click', () => { location.hash = '#/admin'; }); }
+  if (org) { org.className = 'btn'; org.id = 'btnOrg'; org.title = t('Administración (usuarios, células, audit)'); org.innerHTML = '⚑ <span class="hide-sm">Admin</span>'; org.addEventListener('click', () => { location.hash = '#/admin'; }); }
   $('#btnAdmin').before(chip, me, ver, ...(org ? [org] : []), out);
-  $('#btnAdmin').innerHTML = '⚙ <span class="hide-sm">Página</span>'; $('#btnAdmin').title = 'Ajustes de la página';
+  $('#btnAdmin').innerHTML = `⚙ <span class="hide-sm">${t('Página')}</span>`; $('#btnAdmin').title = t('Ajustes de la página');
 }
 /** F4a: botón de página actual → lobby (inyectado tras la marca). */
 function renderPageButton() {
   let b = $('#btnLobby');
-  if (!b) { b = document.createElement('button'); b.className = 'btn'; b.id = 'btnLobby'; b.title = 'Páginas (lobby)'; b.addEventListener('click', () => { location.hash = '#/lobby'; }); $('.topbar .brand').after(b); }
+  if (!b) { b = document.createElement('button'); b.className = 'btn'; b.id = 'btnLobby'; b.title = t('Páginas (lobby)'); b.addEventListener('click', () => { location.hash = '#/lobby'; }); $('.topbar .brand').after(b); }
   b.innerHTML = `⌂ <b>${esc(S.state?.page?.name || 'Páginas')}</b>`;
   document.title = S.state?.page?.name ? `DesTree · ${S.state.page.name}` : 'DesTree';
 }
@@ -90,7 +94,7 @@ async function loadPage(pid) {
   closePopover(); if (editorDialog.open) editorDialog.close(); closeDrawer(); toggleAdmin(false); closeProject(); // P11
   document.dispatchEvent(new CustomEvent('destree:reload'));
   closeLobby(); renderPageButton();
-  setSaveStatus(S.offline ? 'Sin conexión' : S.readonly ? 'Solo lectura' : 'Guardado');
+  setSaveStatus(S.offline ? t('Sin conexión') : S.readonly ? t('Solo lectura') : t('Guardado'));
 }
 /** F3: carga células (admin/head: todas; designer: las suyas) y directorio (admin/head). */
 async function loadTeamData() {
@@ -109,16 +113,16 @@ async function appRoute() {
     if (pid !== S.pageId) await loadPage(pid);
     if (pid !== S.pageId) return; // no se pudo cargar
     closeLobby();
-    if (r.node && r.project) { if (!(await openProject(decodeURIComponent(r.node), r.tab))) toast('Esa card no existe o no es visible para ti.', 'error', 5000); return; } // P11
+    if (r.node && r.project) { if (!(await openProject(decodeURIComponent(r.node), r.tab))) toast(t('Esa card no existe o no es visible para ti.'), 'error', 5000); return; } // P11
     closeProject();
-    if (r.node && !goToNode(decodeURIComponent(r.node))) toast('Esa card no existe o no es visible para ti.', 'error', 5000);
+    if (r.node && !goToNode(decodeURIComponent(r.node))) toast(t('Esa card no existe o no es visible para ti.'), 'error', 5000);
     return;
   }
   closeLobby(); closeProject();
   if (r.name === 'me') openMyAssignments();
-  else if (r.name === 'n' && r.arg && !goToNode(decodeURIComponent(r.arg))) toast('Esa card no existe o no es visible para ti.', 'error', 5000);
+  else if (r.name === 'n' && r.arg && !goToNode(decodeURIComponent(r.arg))) toast(t('Esa card no existe o no es visible para ti.'), 'error', 5000);
 }
-document.addEventListener('destree:unauthorized', () => { if (!$('#authView').hidden) return; showLogin('Tu sesión ha caducado. Vuelve a entrar.').then(() => location.reload()); });
+document.addEventListener('destree:unauthorized', () => { if (!$('#authView').hidden) return; showLogin(t('Tu sesión ha caducado. Vuelve a entrar.')).then(() => location.reload()); });
 window.addEventListener('hashchange', () => { const r = route(); if (r && r.name === 'invite' && S.session) location.reload(); else appRoute(); });
 
 export async function init() {
@@ -145,7 +149,7 @@ export async function init() {
     fitToScreen(null, false);
     persist();
   } else applyCamera();
-  setSaveStatus(S.offline ? 'Sin conexión' : S.readonly ? 'Solo lectura' : 'Guardado');
+  setSaveStatus(S.offline ? t('Sin conexión') : S.readonly ? t('Solo lectura') : t('Guardado'));
   appRoute();
 }
 // F1: tras un 409 state.js recarga el documento del servidor y avisa aquí para repintar.

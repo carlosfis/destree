@@ -12,18 +12,18 @@ const activity = r => ({ id: r.id, position: r.position, phaseId: r.phase_id, ti
 const TABLE = { section: 'project_sections', phase: 'project_phases', activity: 'project_activities' };
 
 /** Crea la fila del proyecto (y la plantilla del Overview) si no existe. `node` = la card tal como la ve el usuario. */
-export function ensureProject(db, pageId, nodeId, node = {}) {
+export function ensureProject(db, pageId, nodeId, node = {}, lang = 'es') {
   const cur = db.prepare('SELECT * FROM projects WHERE page_id = ? AND node_id = ?').get(pageId, nodeId);
   if (cur) return cur;
   return transaction(db, () => {
     db.prepare('INSERT INTO projects (page_id, node_id, settings_json) VALUES (?, ?, ?)').run(pageId, nodeId, j(sanitizeSettings({})));
     const ins = db.prepare('INSERT INTO project_sections (id, page_id, node_id, position, kind, title, data_json) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    defaultSections(node).forEach((s, i) => ins.run(ulid(), pageId, nodeId, i, s.kind, s.title, j(s.data)));
+    defaultSections(node, lang).forEach((s, i) => ins.run(ulid(), pageId, nodeId, i, s.kind, s.title, j(s.data)));
     return db.prepare('SELECT * FROM projects WHERE page_id = ? AND node_id = ?').get(pageId, nodeId);
   });
 }
-export function getProject(db, pageId, nodeId, node = {}) {
-  const p = ensureProject(db, pageId, nodeId, node);
+export function getProject(db, pageId, nodeId, node = {}, lang = 'es') {
+  const p = ensureProject(db, pageId, nodeId, node, lang);
   const rows = t => db.prepare(`SELECT * FROM ${t} WHERE page_id = ? AND node_id = ? ORDER BY position, rowid`).all(pageId, nodeId);
   return { settings: sanitizeSettings(pj(p.settings_json, {})), sections: rows('project_sections').map(section), phases: rows('project_phases').map(phase), activities: rows('project_activities').map(activity), updatedAt: p.updated_at };
 }

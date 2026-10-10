@@ -15,6 +15,7 @@ import {
 import { updateEdgePaths } from './render-edges.js';
 import { drawMinimap } from './minimap.js';
 import { DEFAULT_GRADIENT } from '../core/normalize.js'; // P12
+import { t } from '../core/i18n.js'; // P15
 export const sel = { nodes: new Set(), edge: null };
 export const sizes = new Map();     // id -> { w, h, headH? } tamaño efectivo
 export const measured = new Map();  // id -> alto medido: card hoja completa o cabecera de contenedor
@@ -38,27 +39,27 @@ export function commonHTML(n) {
   const tags = n.tags.map(tagById).filter(Boolean);
   const T = { ds: typeName('ds'), uikit: typeName('uikit'), software: typeName('software') };
   let foot = '';
-  if (n.ownerUserId) foot += `<span class="owner person" title="Responsable">${esc(userName(n.ownerUserId))}</span>`;
+  if (n.ownerUserId) foot += `<span class="owner person" title="${t('Responsable')}">${esc(userName(n.ownerUserId))}</span>`;
   if (n.staff && n.staff.length) foot += n.staff.slice(0, 3).map(m => `<span class="owner staff" title="${esc(m.role || 'Staff')}">${esc(m.name)}${m.role ? `<span class="role"> · ${esc(m.role)}</span>` : ''}</span>`).join('') + (n.staff.length > 3 ? `<span class="count-ref">+${n.staff.length - 3}</span>` : '');
   else if (n.owner && !n.ownerUserId) foot += `<span class="owner">${esc(n.owner)}</span>`;
-  for (const u of n.assigneeIds || []) foot += `<span class="assignee" title="Asignado">${esc(userName(u))}</span>`; // F3
-  if (n.docs && n.docs.length) foot += `<span class="docs-ref" title="${n.docs.length} enlace${n.docs.length > 1 ? 's' : ''} de documentación">⎘ ${n.docs.length}</span>`;
-  if (n.hasExternalRefs) foot += `<span class="hidden-ref" title="Tiene conexiones con elementos que no puedes ver">⇢ ocultas</span>`;
+  for (const u of n.assigneeIds || []) foot += `<span class="assignee" title="${t('Asignado')}">${esc(userName(u))}</span>`; // F3
+  if (n.docs && n.docs.length) foot += `<span class="docs-ref" title="${t(n.docs.length > 1 ? '{n} enlaces de documentación' : '{n} enlace de documentación', { n: n.docs.length })}">⎘ ${n.docs.length}</span>`;
+  if (n.hasExternalRefs) foot += `<span class="hidden-ref" title="${t('Tiene conexiones con elementos que no puedes ver')}">⇢ ${t('ocultas')}</span>`;
   if (n.type === 'software') {
     const ds = S.state.edges.filter(e => e.kind === 'ds' && e.from === n.id).map(e => ({ n: nodeById(e.to), ext: isExternalDs(e) })).filter(x => x.n);
     foot += ds.length
-      ? ds.map(x => `<span class="ds-ref ${x.ext ? 'ext' : ''}" title="${x.ext ? `Usa ${esc(T.ds)} de otro ${esc(T.software)}` : `Usa su propio ${esc(T.ds)}`}">${esc(x.n.name)}</span>`).join('')
+      ? ds.map(x => `<span class="ds-ref ${x.ext ? 'ext' : ''}" title="${x.ext ? t('Usa {ds} de otro {software}', { ds: esc(T.ds), software: esc(T.software) }) : t('Usa su propio {ds}', { ds: esc(T.ds) })}">${esc(x.n.name)}</span>`).join('')
       : `<span class="ds-ref none">Sin ${esc(T.ds)}</span>`;
     const kids = childrenOf(n.id).length;
     if (kids) foot += `<span class="count-ref">${kids} elemento${kids > 1 ? 's' : ''}</span>`;
   }
   if (n.type !== 'software') {
     const ext = S.state.edges.filter(e => e.kind === 'ds' && e.to === n.id && isExternalDs(e)).map(e => nodeById(e.from)).filter(Boolean);
-    if (ext.length) foot += `<span class="ext-ref" title="Este ${esc(typeName(n.type))} nació en un ${esc(T.software)} anidado y lo consume otro">⇢ ${esc(ext.map(x => x.name).join(', '))}</span>`;
+    if (ext.length) foot += `<span class="ext-ref" title="${t('Este {type} nació en un {software} anidado y lo consume otro', { type: esc(typeName(n.type)), software: esc(T.software) })}">⇢ ${esc(ext.map(x => x.name).join(', '))}</span>`;
   }
   if (n.type === 'uikit') {
     const se = sourceEdgeOf(n.id); const src = se && nodeById(se.to);
-    foot += src ? `<span class="src-ref" title="Fuente">↗ ${esc(src.name)}</span>` : `<span class="src-ref none">⚠ Sin fuente</span>`;
+    foot += src ? `<span class="src-ref" title="${t('Fuente')}">↗ ${esc(src.name)}</span>` : `<span class="src-ref none">⚠ ${t('Sin fuente')}</span>`;
   }
   return {
     name: `<div class="card-name">${esc(n.name)}</div>`,
@@ -71,14 +72,14 @@ export function commonHTML(n) {
 function visibilityChip(n) {
   if (n.visibility !== 'cells') return '';
   const cells = (n.cellIds || []).map(cellById).filter(Boolean);
-  return `<span class="chip vis-cells" title="Visible solo para células${cells.length ? ': ' + esc(cells.map(c => c.name).join(', ')) : ' (ninguna asignada)'}">◐ ${cells.length ? esc(cells.map(c => c.name).join(', ')) : 'Solo células'}</span>`;
+  return `<span class="chip vis-cells" title="${t('Visible solo para células')}${cells.length ? ': ' + esc(cells.map(c => c.name).join(', ')) : ' ' + t('(ninguna asignada)')}">◐ ${cells.length ? esc(cells.map(c => c.name).join(', ')) : t('Solo células')}</span>`;
 }
 export const PORTS = `<div class="port port-t" data-port="t"></div><div class="port port-r" data-port="r"></div><div class="port port-b" data-port="b"></div><div class="port port-l" data-port="l"></div>`;
 
 export function leafHTML(n) {
   const c = commonHTML(n);
   return `<div class="card-body">
-      <div class="card-head"><span class="type-badge">${esc(typeName(n.type))}</span><button class="icon-btn card-menu" data-action="menu" title="Opciones">⋯</button></div>
+      <div class="card-head"><span class="type-badge">${esc(typeName(n.type))}</span><button class="icon-btn card-menu" data-action="menu" title="${t('Opciones')}">⋯</button></div>
       ${c.name}${c.desc}${c.tags}${c.foot}
     </div>${PORTS}`;
 }
@@ -88,9 +89,9 @@ export function headHTML(n) {
   return `${n.parentId ? '' : `<div class="card-grad grad-${esc(n.gradient || DEFAULT_GRADIENT)}"></div>`}
     <div class="head-top">
       <span class="type-badge">${esc(typeName('software'))}${n.parentId ? '' : ' · Raíz'}</span>
-      ${bt ? `<span class="chip tag-${bt.color}" title="Tipo de ramificación">↳ ${esc(bt.name)}</span>` : (n.parentId ? '<span class="chip tag-gray">↳ sin tipo</span>' : visibilityChip(n))}
+      ${bt ? `<span class="chip tag-${bt.color}" title="${t('Tipo de ramificación')}">↳ ${esc(bt.name)}</span>` : (n.parentId ? `<span class="chip tag-gray">↳ ${t('sin tipo')}</span>` : visibilityChip(n))}
       <span class="spacer"></span>
-      <span class="head-actions"><button class="icon-btn" data-action="add" title="Agregar dentro">＋</button><button class="icon-btn" data-action="menu" title="Opciones">⋯</button></span>
+      <span class="head-actions"><button class="icon-btn" data-action="add" title="${t('Agregar dentro')}">＋</button><button class="icon-btn" data-action="menu" title="${t('Opciones')}">⋯</button></span>
     </div>
     <div class="head-main"><div class="texts">${c.name}${c.desc}</div></div>
     ${c.tags}${c.foot}${PORTS}`;
@@ -109,7 +110,7 @@ export function renderNodes() {
       el.dataset.id = n.id; el._ctr = ctr;
       if (ctr) {
         const head = document.createElement('div'); head.className = 'ctr-head';
-        const empty = document.createElement('div'); empty.className = 'ctr-empty'; empty.textContent = `Vacío: arrastra aquí ${typeName('software')}, ${typeName('ds')} o ${typeName('uikit')}, o usa ＋`;
+        const empty = document.createElement('div'); empty.className = 'ctr-empty'; empty.textContent = t('Vacío: arrastra aquí {software}, {ds} o {uikit}, o usa ＋', { software: typeName('software'), ds: typeName('ds'), uikit: typeName('uikit') });
         const rs = document.createElement('div'); rs.className = 'resize'; rs.title = 'Redimensionar';
         el.append(head, empty, rs); el._head = head; el._empty = empty;
       }
@@ -119,7 +120,7 @@ export function renderNodes() {
     if (el.parentElement !== parentEl) parentEl.appendChild(el);
     const html = ctr ? headHTML(n) : leafHTML(n);
     if (el._html !== html) { (ctr ? el._head : el).innerHTML = html; el._html = html; }
-    if (ctr) { el._empty.hidden = childrenOf(n.id).length > 0; el._empty.textContent = `Vacío: arrastra aquí ${typeName('software')}, ${typeName('ds')} o ${typeName('uikit')}, o usa ＋`; }
+    if (ctr) { el._empty.hidden = childrenOf(n.id).length > 0; el._empty.textContent = t('Vacío: arrastra aquí {software}, {ds} o {uikit}, o usa ＋', { software: typeName('software'), ds: typeName('ds'), uikit: typeName('uikit') }); }
     el.className = ctr ? `node ctr ${n.parentId ? 'nested' : 'root'} type-software` : `node leaf type-${n.type}`;
     el.style.transform = `translate(${n.x}px, ${n.y}px)`;
   }

@@ -92,13 +92,21 @@ export async function sendMail({ to, subject, text }, cfg = config) {
   } finally { conn.end(); }
 }
 
-/* --- Plantillas (texto plano, español) --- */
-export const inviteMail = ({ orgName, role, link, expiresAt }) => ({
+/* --- Plantillas (texto plano; español por defecto, inglés con lang:'en' · P15) --- */
+export const inviteMail = ({ orgName, role, link, expiresAt, lang }) => lang === 'en' ? {
+  subject: `Invitation to ${orgName} on DesTree`,
+  text: `You have been invited to ${orgName} on DesTree with the role ${role}.\n\nCreate your password and sign in from this link (valid until ${new Date(expiresAt).toLocaleDateString('en')}):\n${link}\n\nIf you were not expecting this invitation, ignore this email.`,
+} : {
   subject: `Invitación a ${orgName} en DesTree`,
   text: `Te han invitado a ${orgName} en DesTree con el rol ${role}.\n\nCrea tu contraseña y entra desde este enlace (válido hasta ${new Date(expiresAt).toLocaleDateString('es')}):\n${link}\n\nSi no esperabas esta invitación, ignora este correo.`,
-});
-export const resetMail = ({ link }) => ({
+};
+export const resetMail = ({ link, lang }) => lang === 'en' ? {
+  subject: 'Reset your DesTree password',
+  text: `We received a request to reset your password.\n\nOpen this link within the next hour to choose a new one:\n${link}\n\nIf you did not request it, ignore this email: your password stays the same.`,
+} : {
   subject: 'Restablecer tu contraseña de DesTree',
   text: `Hemos recibido una solicitud para restablecer tu contraseña.\n\nAbre este enlace en la próxima hora para elegir una nueva:\n${link}\n\nSi no la pediste, ignora este correo: tu contraseña no cambia.`,
-});
-export const testMail = ({ orgName }) => ({ subject: `Prueba de correo de DesTree (${orgName})`, text: `El envío de correo de DesTree funciona. Este mensaje lo pidió un admin desde Administración → Usuarios.` });
+};
+export const testMail = ({ orgName, lang }) => lang === 'en'
+  ? { subject: `DesTree test email (${orgName})`, text: 'DesTree email delivery works. An admin requested this message from Organization → Mail.' }
+  : { subject: `Prueba de correo de DesTree (${orgName})`, text: `El envío de correo de DesTree funciona. Este mensaje lo pidió un admin desde Administración → Usuarios.` };

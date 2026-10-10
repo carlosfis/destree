@@ -2,7 +2,7 @@
 
 🇪🇸 [Versión en español](README.md)
 
-Single source of truth for agencies and product teams: a canvas with the **software tree** (applications → features → variants), their **Design Systems and UI Kits**, owners, teams (cells), documentation, project pages and versions. Self-hosted, multi-page, with five role levels (Admin · Ops · Head · Lead · Viewer).
+Single source of truth for agencies and product teams: a canvas with the **software tree** (applications → features → variants), their **Design Systems and UI Kits**, owners, teams (cells), documentation, project pages and versions. Self-hosted, multi-page, with five role levels (Admin · Ops · Head · Lead · Viewer). Interface in English and Spanish (EN/ES switch).
 
 - **Canvas**: nested containers (branches), DS and UI Kits inside each software, "uses DS" and "derives from" connections, tags, brand color per Main instance, auto-layout, minimap, undo/redo.
 - **Project page per card**: Overview with editable sections (links, summary with metrics, background, users, problem statement, goals, deliverables, team), a Schedule by phases and weeks, and a Kanban board of activities (To Do · Doing · Done · Cancelled).
@@ -10,19 +10,20 @@ Single source of truth for agencies and product teams: a canvas with the **softw
 - **Organization**: five fixed levels with configurable display names, staff list with roles and assignments, capabilities table, invitations by link or email (optional SMTP), password reset, audit log.
 - **Documentation**: links (Figma, Notion, repos…) and markdown notes per card; safe images (WebP + thumbnail); a 1920×1080 PNG thumbnail of each Main instance to use as a Figma cover.
 - **History**: automatic and manual versions per page, diff and restore; schedulable tar.gz backups; organization export/import; demo data with one command.
+- **Language**: English or Spanish interface per browser (EN/ES button in the top bar and on the sign-in screens; defaults to the browser language); server messages and emails follow the chosen language.
 - **No heavy dependencies**: Node 22 + Fastify 5 + SQLite (`node:sqlite`), vanilla ESM client without a bundler. Only native dependency: `sharp`.
 
 > No Figma integration (API, metrics, webhooks): the app is complete without it. Links to Figma files are added by hand under Documentation and the thumbnail is copied and pasted.
 
 ## At a glance
-Screenshots taken on the demo data (fictional organization "Grupo Ambar").
+Screenshots taken on the demo data (fictional organization "Grupo Ambar") with the interface in English.
 | Canvas | Project page | Instance sidebar |
 |---|---|---|
-| ![Canvas with the software tree, Design Systems and UI Kits](docs/img/canvas.png) | ![Project page Overview of a Main instance](docs/img/project.png) | ![Sidebar of a Main instance: type, name, brand color, tags and relations](docs/img/drawer.png) |
+| ![Canvas with the software tree, Design Systems and UI Kits](docs/img/en/canvas.png) | ![Project page Overview of a Main instance](docs/img/en/project.png) | ![Sidebar of a Main instance: type, name, brand color, tags and relations](docs/img/en/drawer.png) |
 
 | Schedule | Organization | Page lobby |
 |---|---|---|
-| ![Schedule by phases and weeks with activities](docs/img/schedule.png) | ![Lobby → Organization: levels, capabilities and staff](docs/img/org.png) | ![Lobby with several pages](docs/img/lobby.png) |
+| ![Schedule by phases and weeks with activities](docs/img/en/schedule.png) | ![Lobby → Organization: levels, capabilities and staff](docs/img/en/org.png) | ![Lobby with several pages](docs/img/en/lobby.png) |
 
 ## Quick install (Docker)
 ```
@@ -70,7 +71,7 @@ Five fixed levels; each level includes everything below it. The visible name of 
 Product docs are in Spanish (the UI language): `docs/INSTALL.md` (installation and variables) · `docs/ADMIN.md` (administration and demo data) · `docs/USER.md` (canvas and project page) · `docs/API.md` · `docs/SECURITY.md` (threat model and headers) · `docs/MAP.md` (code map) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CODE_OF_CONDUCT.md` · `SECURITY.md` (reporting vulnerabilities) · `CHANGELOG.md` · `PENDIENTE.md` (detailed roadmap by phases).
 
 ## Roadmap
-v1.1.0 includes: project page per card (Overview · Schedule · Kanban) · brand color on Main instances · five role levels and the Organization tab · Figma thumbnail · demo data. v1.0.0 brought passwords, SMTP mail, hardening (strict CSP), the English README and screenshots. Pending (details and status in `PENDIENTE.md`): reference deployment. Out of scope: Figma integration, SSO/OAuth; the UI is Spanish-only for now.
+Unreleased: English interface (EN/ES switch). v1.1.0 includes: project page per card (Overview · Schedule · Kanban) · brand color on Main instances · five role levels and the Organization tab · Figma thumbnail · demo data. v1.0.0 brought passwords, SMTP mail, hardening (strict CSP), the English README and screenshots. Pending (details and status in `PENDIENTE.md`): reference deployment. Out of scope: Figma integration, SSO/OAuth.
 
 ## License
 MIT — see `LICENSE`.

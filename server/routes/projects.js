@@ -33,7 +33,7 @@ export default async function projectRoutes(app) {
 
   app.get(BASE, { onRequest: app.guard('pages.read'), schema: { params } }, async (req) => {
     const { node } = visibleNode(req);
-    return { ...P.getProject(app.db, ...ids(req), node), canEdit: canEditNode(req, node) };
+    return { ...P.getProject(app.db, ...ids(req), node, req.lang), canEdit: canEditNode(req, node) };
   });
   app.patch(BASE, { onRequest: app.guard('projects.edit'), schema: { params, body: body({ tagline: str(300), sprintWeeks: { type: 'integer', minimum: 1, maximum: 8 }, sprintOffset: { type: 'integer', minimum: -999, maximum: 999 } }) } }, async (req) => {
     editable(req); const s = P.updateSettings(app.db, ...ids(req), req.body); log(req, 'project.settings', req.params.nodeId, req.body); return s;

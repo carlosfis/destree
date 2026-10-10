@@ -7,6 +7,7 @@ import * as api from '../core/api.js';
 import { toast } from '../ui/theme.js';
 import { confirmDialog } from '../ui/dialogs.js';
 import { roleLabel } from '../core/roles.js'; // P10
+import { t } from '../core/i18n.js'; // P15
 
 const field = (name, label, type, extra = '') => `<div class="field"><label for="acc_${name}">${label}</label><input id="acc_${name}" name="${name}" type="${type}" ${extra}></div>`;
 
@@ -15,46 +16,46 @@ export function openAccountDialog() {
   if (!S.session) return Promise.resolve();
   const u = S.session.user;
   return new Promise(resolve => {
-    confirmDialog.innerHTML = `<div class="dialog-inner account-dialog"><header><h2>Mi cuenta</h2><button type="button" class="icon-btn" data-cancel aria-label="Cerrar">✕</button></header>
+    confirmDialog.innerHTML = `<div class="dialog-inner account-dialog"><header><h2>${t('Mi cuenta')}</h2><button type="button" class="icon-btn" data-cancel aria-label="${t('Cerrar')}">✕</button></header>
       <div class="dialog-body">
         <p class="hint">${esc(u.email)} · ${esc(roleLabel(S.session.role))}</p>
         <form id="accName" class="account-form">
-          ${field('name', 'Nombre', 'text', `value="${esc(u.name || '')}" required maxlength="120" autocomplete="name"`)}
+          ${field('name', t('Nombre'), 'text', `value="${esc(u.name || '')}" required maxlength="120" autocomplete="name"`)}
           <div class="form-error"></div>
-          <div class="inline-actions"><button class="btn" type="submit">Guardar nombre</button></div>
+          <div class="inline-actions"><button class="btn" type="submit">${t('Guardar nombre')}</button></div>
         </form>
-        <h3>Cambiar contraseña</h3>
+        <h3>${t('Cambiar contraseña')}</h3>
         <form id="accPassword" class="account-form">
-          ${field('currentPassword', 'Contraseña actual', 'password', 'required autocomplete="current-password"')}
-          ${field('newPassword', 'Nueva contraseña (mín. 8)', 'password', 'required minlength="8" maxlength="200" autocomplete="new-password"')}
-          ${field('repeatPassword', 'Repite la nueva contraseña', 'password', 'required minlength="8" maxlength="200" autocomplete="new-password"')}
-          <p class="hint">Al cambiarla se cierran tus demás sesiones (otros navegadores o dispositivos).</p>
+          ${field('currentPassword', t('Contraseña actual'), 'password', 'required autocomplete="current-password"')}
+          ${field('newPassword', t('Nueva contraseña (mín. 8)'), 'password', 'required minlength="8" maxlength="200" autocomplete="new-password"')}
+          ${field('repeatPassword', t('Repite la nueva contraseña'), 'password', 'required minlength="8" maxlength="200" autocomplete="new-password"')}
+          <p class="hint">${t('Al cambiarla se cierran tus demás sesiones (otros navegadores o dispositivos).')}</p>
           <div class="form-error"></div>
-          <div class="inline-actions"><button class="btn primary" type="submit">Cambiar contraseña</button></div>
+          <div class="inline-actions"><button class="btn primary" type="submit">${t('Cambiar contraseña')}</button></div>
         </form>
-        <h3>Sesiones</h3>
-        <p class="hint">Si entraste desde otro navegador o dispositivo y ya no lo usas, puedes cerrar esas sesiones sin cambiar la contraseña.</p>
-        <div class="inline-actions"><button class="btn" type="button" id="accSessions">Cerrar las demás sesiones</button></div>
+        <h3>${t('Sesiones')}</h3>
+        <p class="hint">${t('Si entraste desde otro navegador o dispositivo y ya no lo usas, puedes cerrar esas sesiones sin cambiar la contraseña.')}</p>
+        <div class="inline-actions"><button class="btn" type="button" id="accSessions">${t('Cerrar las demás sesiones')}</button></div>
       </div>
-      <footer><button type="button" class="btn" data-cancel>Cerrar</button></footer></div>`;
+      <footer><button type="button" class="btn" data-cancel>${t('Cerrar')}</button></footer></div>`;
     const done = () => { confirmDialog.close(); resolve(); };
     confirmDialog.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', done));
     confirmDialog.oncancel = ev => { ev.preventDefault(); done(); };
     bindForm($('#accName', confirmDialog), async d => {
       const r = await api.patchMe({ name: d.name.trim() });
       S.session.user.name = r.user.name; document.dispatchEvent(new CustomEvent('destree:account'));
-      toast('Nombre actualizado');
+      toast(t('Nombre actualizado'));
     });
     bindForm($('#accPassword', confirmDialog), async (d, f) => {
-      if (d.newPassword !== d.repeatPassword) throw new Error('Las contraseñas no coinciden');
-      if (d.newPassword === d.currentPassword) throw new Error('La nueva contraseña debe ser distinta de la actual');
+      if (d.newPassword !== d.repeatPassword) throw new Error(t('Las contraseñas no coinciden'));
+      if (d.newPassword === d.currentPassword) throw new Error(t('La nueva contraseña debe ser distinta de la actual'));
       const r = await api.patchMe({ currentPassword: d.currentPassword, newPassword: d.newPassword });
       f.reset();
-      toast(r.sessionsClosed ? `Contraseña actualizada; ${r.sessionsClosed} sesión(es) cerrada(s)` : 'Contraseña actualizada');
+      toast(r.sessionsClosed ? t('Contraseña actualizada; {n} sesión(es) cerrada(s)', { n: r.sessionsClosed }) : t('Contraseña actualizada'));
     });
     $('#accSessions', confirmDialog).addEventListener('click', async e => { // P6
       e.currentTarget.disabled = true;
-      try { const r = await api.closeOtherSessions(); toast(r.sessionsClosed ? `${r.sessionsClosed} sesión(es) cerrada(s)` : 'No había otras sesiones abiertas'); } catch (err) { toast(err.message, 'error', 5000); }
+      try { const r = await api.closeOtherSessions(); toast(r.sessionsClosed ? t('{n} sesión(es) cerrada(s)', { n: r.sessionsClosed }) : t('No había otras sesiones abiertas')); } catch (err) { toast(err.message, 'error', 5000); }
       e.currentTarget.disabled = false;
     });
     confirmDialog.showModal();
@@ -66,7 +67,7 @@ function bindForm(f, submit) {
   const err = $('.form-error', f), btn = $('button[type=submit]', f);
   f.addEventListener('submit', async e => {
     e.preventDefault(); err.textContent = ''; btn.disabled = true;
-    try { await submit(Object.fromEntries(new FormData(f)), f); } catch (ex) { err.textContent = ex.message || 'Error'; }
+    try { await submit(Object.fromEntries(new FormData(f)), f); } catch (ex) { err.textContent = ex.message || t('Error'); }
     btn.disabled = false;
   });
 }

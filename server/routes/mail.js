@@ -11,7 +11,7 @@ export default async function mailRoutes(app) {
   app.post('/api/mail/test', { onRequest: app.guard('org.settings') }, async (req) => {
     if (!mailConfigured()) throw new HttpError(409, 'Correo no configurado: define SMTP_URL y MAIL_FROM');
     const org = app.db.prepare('SELECT name FROM orgs WHERE id = ?').get(req.orgId);
-    try { const r = await sendMail({ to: req.user.email, ...testMail({ orgName: org?.name || 'DesTree' }) }); audit(app.db, { orgId: req.orgId, userId: req.user.id, action: 'mail.test', entity: 'user', entityId: req.user.id, meta: { to: r.to } }); return { sent: true, to: r.to }; }
+    try { const r = await sendMail({ to: req.user.email, ...testMail({ lang: req.lang, orgName: org?.name || 'DesTree' }) }); audit(app.db, { orgId: req.orgId, userId: req.user.id, action: 'mail.test', entity: 'user', entityId: req.user.id, meta: { to: r.to } }); return { sent: true, to: r.to }; }
     catch (err) { throw new HttpError(502, 'No se pudo enviar: ' + err.message); }
   });
 
@@ -24,7 +24,7 @@ export default async function mailRoutes(app) {
     if (row && row.is_active) {
       const token = createPasswordReset(app.db, row.id);
       audit(app.db, { orgId: DEFAULT_ORG_ID, userId: row.id, action: 'user.reset_request', entity: 'user', entityId: row.id });
-      sendMail({ to: row.email, ...resetMail({ link: `${publicBase(req)}/#/reset/${token}` }) }).catch(err => req.log.error({ err: err.message }, 'correo de restablecimiento'));
+      sendMail({ to: row.email, ...resetMail({ lang: req.lang, link: `${publicBase(req)}/#/reset/${token}` }) }).catch(err => req.log.error({ err: err.message }, 'correo de restablecimiento'));
     }
     return reply.code(204).send();
   });

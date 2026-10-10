@@ -4,6 +4,7 @@
    ========================================================= */
 import { tagById, parentOf, typeName } from '../core/state.js';
 import { imageSrc } from './uploader.js';
+import { t } from '../core/i18n.js'; // P15
 
 export const W = 1920, H = 1080;
 const FONT = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
@@ -135,11 +136,11 @@ export async function renderThumbnail(d, canvas = document.createElement('canvas
   drawBackground(ctx); drawIcon(ctx, img); drawCard(ctx, d); drawChips(ctx, d.staff || []);
   return canvas;
 }
-const toBlob = canvas => new Promise((res, rej) => canvas.toBlob(b => (b ? res(b) : rej(new Error('No se pudo generar el PNG'))), 'image/png'));
+const toBlob = canvas => new Promise((res, rej) => canvas.toBlob(b => (b ? res(b) : rej(new Error(t('No se pudo generar el PNG')))), 'image/png'));
 export const canCopyImages = () => !!(navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined');
 /** Copia el PNG al portapapeles. Debe llamarse directamente desde el gesto del usuario (Safari exige la promesa síncrona). */
 export function copyThumbnail(d) {
-  if (!canCopyImages()) return Promise.reject(new Error('Este navegador no permite copiar imágenes; usa «Descargar PNG».'));
+  if (!canCopyImages()) return Promise.reject(new Error(t('Este navegador no permite copiar imágenes; usa «Descargar PNG».')));
   const blob = renderThumbnail(d).then(toBlob);
   return navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
 }

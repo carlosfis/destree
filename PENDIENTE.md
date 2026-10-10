@@ -138,12 +138,12 @@
 
 ## P15 — UI en inglés (agente; aprobación visual «usuario») — decidido 2026-10-09
 **Objetivo:** que la interfaz pueda usarse en inglés sin tocar los datos: selector ES/EN persistente por navegador, por defecto según el idioma del navegador; español sigue siendo el idioma de referencia del código, los docs y los datos demo.
-- [ ] `client/js/core/i18n.js`: `t(texto, vars)` con el texto español como clave y diccionario inglés en `client/js/i18n/*.js` (archivos <300 líneas); `lang()`/`setLang()` sobre `<html lang>` + `destree:prefs.lang`; sin `let` top-level.
-- [ ] Marcado estático de `index.html` traducido al arrancar (texto, `placeholder`, `aria-label`, `title`); selector de idioma en topbar y en las pantallas de acceso.
-- [ ] Vistas y UI (`client/js/views`, `client/js/ui`, `client/js/canvas`, `main.js`): todos los textos de interfaz por `t()`; términos fijos (Main instance, Child instance, Design System, UI Kit, Staff) no se traducen.
-- [ ] Servidor: `req.lang` por cabecera `X-Lang` (el cliente la envía); mensajes de `HttpError` traducidos en el error handler (`server/lib/i18n.js`, es → en); correos (invitación, reset, prueba) en el idioma del solicitante; plantilla inicial de la página de proyecto en el idioma de quien la crea.
-- [ ] Smoke y capturas con `--lang=es` en Chrome; paso de smoke que cambia a inglés, comprueba textos y vuelve; `tests/client.test.js` sigue verde.
-- [ ] Docs: README/README.en (selector de idioma), `docs/USER.md`, CHANGELOG «Sin publicar», `docs/MAP.md`, regla 10 de `CLAUDE.md`, `docs/DECISIONS.md`.
+- [x] `client/js/core/i18n.js`: `t(texto, vars)` con el texto español como clave y diccionarios `client/js/i18n/en-{ui,views,editor,project}.js` (≈780 entradas); idioma en `<html lang>` + `localStorage destree:lang`; sin `let` top-level (2026-10-10).
+- [x] Marcado estático traducido al arrancar (`translateStatic`); botón `#langSwitch` (EN/ES) en la topbar y enlace «English/Español» en las pantallas de acceso; cambiar recarga la página.
+- [x] Vistas, UI, lienzo y `main.js` por `t()` (inventario automático sin restos); términos fijos intactos; etiquetas de capacidades, tipos de sección y estados traducidos al pintar.
+- [x] Servidor: `req.lang` por `X-Lang` (`plugins/session.js`), error handler traduce (`server/lib/i18n.js`, 100 mensajes + patrones), correos bilingües, plantilla del proyecto por idioma; `tests/i18n.test.js`.
+- [x] Chrome con `--lang=es` en smoke y capturas; `scripts/smoke/05-i18n.js` (login en inglés, topbar, lobby, Organización, editor, proyecto, errores del servidor, vuelta a ES); `tests/client.test.js` con 54 módulos y diccionarios fuera del chequeo de claves de `S`.
+- [x] Docs: README (idioma) y README.en (capturas en inglés `docs/img/en/`), `docs/USER.md` «Idioma», CHANGELOG «Sin publicar», `docs/MAP.md`, regla 10 de `CLAUDE.md`, `docs/DECISIONS.md`.
 - [ ] «usuario» Aprobar capturas en inglés antes del push a `main`.
 **Aceptación:** con el selector en EN no queda texto de interfaz en español en lienzo, sidebar, lobby, Organización, administración, página de proyecto, diálogos, toasts, correos ni errores del servidor; en ES todo sigue idéntico (smoke 34/34 + paso nuevo).
 

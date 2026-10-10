@@ -12,6 +12,7 @@ import { containerAt, onPointerDown, onPointerMove, onPointerUp } from './pointe
 import { menuPopover, showAddMenu, showNodeMenu, showEdgePopover } from '../ui/popover.js';
 import { openEditor } from '../ui/card-editor.js';
 import { toast } from '../ui/theme.js';
+import { t } from '../core/i18n.js'; // P15
 export function beginDrag() {
   pushHistory();
   S.ptr.type = 'drag';
@@ -89,7 +90,7 @@ export function endDrag() {
   }
   cleanupDrag();
   renderAll(); save();
-  if (reverted.length) toast(`${reverted.join(', ')}: ${typeName('ds')} y ${typeName('uikit')} deben vivir dentro de ${typeName('software')}.`, 'error', 3600);
+  if (reverted.length) toast(t('{names}: {ds} y {uikit} deben vivir dentro de {software}.', { names: reverted.join(', '), ds: typeName('ds'), uikit: typeName('uikit'), software: typeName('software') }), 'error', 3600);
   else if (nested.length) toast(nested.join(' · '));
 }
 
@@ -184,11 +185,11 @@ viewport.addEventListener('contextmenu', e => {
   if (edge) { selectEdge(edge.dataset.id); showEdgePopover(edge.dataset.id, e.clientX, e.clientY); return; }
   const w = toWorld(...Object.values(ptrPos(e)));
   menuPopover(e.clientX, e.clientY, [
-    { title: 'Lienzo' },
-    { label: 'Nueva Main instance aquí', ico: '▣', action: () => openEditor(null, { type: 'software', x: w.x, y: w.y }) },
+    { title: t('Lienzo') },
+    { label: t('Nueva Main instance aquí'), ico: '▣', action: () => openEditor(null, { type: 'software', x: w.x, y: w.y }) },
     '-',
-    { label: 'Seleccionar todo', kbd: `${MOD}+A`, action: selectAll },
-    { label: 'Ajustar a pantalla', kbd: 'Shift+1', action: () => fitToScreen() },
+    { label: t('Seleccionar todo'), kbd: `${MOD}+A`, action: selectAll },
+    { label: t('Ajustar a pantalla'), kbd: 'Shift+1', action: () => fitToScreen() },
   ]);
 });
 

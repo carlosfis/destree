@@ -7,6 +7,7 @@ import * as api from '../core/api.js';
 import { toast } from '../ui/theme.js';
 import { STATUSES, STATUS_META } from '../core/project-template.js';
 import { openActivityDialog } from './project-activity.js';
+import { t } from '../core/i18n.js'; // P15
 
 const br = s => esc(s).replace(/\n/g, '<br>');
 export const cardHTML = (a, canEdit) => `<article class="kb-card" data-id="${esc(a.id)}" ${canEdit ? 'draggable="true"' : ''} tabindex="0">
@@ -16,8 +17,8 @@ export const cardHTML = (a, canEdit) => `<article class="kb-card" data-id="${esc
 export function renderKanban(box, ctx) {
   const { data, canEdit } = ctx;
   const byStatus = Object.fromEntries(STATUSES.map(s => [s, data.activities.filter(a => a.status === s).sort((a, b) => a.position - b.position)]));
-  box.innerHTML = `<div class="kb-toolbar"><span class="hint">${data.activities.length} actividad${data.activities.length === 1 ? '' : 'es'}${canEdit ? ' · arrastra una card para cambiar su estado' : ''}</span><span class="spacer"></span>${canEdit ? '<button type="button" class="btn primary" id="kbNew">＋ Nueva actividad</button>' : ''}</div>
-    <div class="kanban">${STATUSES.map(s => `<section class="kb-col kb-${s}" data-status="${s}"><header><h3>${STATUS_META[s].label}</h3><p>${STATUS_META[s].desc}</p></header><div class="kb-cards">${byStatus[s].map(a => cardHTML(a, canEdit)).join('')}</div></section>`).join('')}</div>`;
+  box.innerHTML = `<div class="kb-toolbar"><span class="hint">${t(data.activities.length === 1 ? '{n} actividad' : '{n} actividades', { n: data.activities.length })}${canEdit ? ' · ' + t('arrastra una card para cambiar su estado') : ''}</span><span class="spacer"></span>${canEdit ? `<button type="button" class="btn primary" id="kbNew">${t('＋ Nueva actividad')}</button>` : ''}</div>
+    <div class="kanban">${STATUSES.map(s => `<section class="kb-col kb-${s}" data-status="${s}"><header><h3>${STATUS_META[s].label}</h3><p>${t(STATUS_META[s].desc)}</p></header><div class="kb-cards">${byStatus[s].map(a => cardHTML(a, canEdit)).join('')}</div></section>`).join('')}</div>`;
   const open = id => { const a = data.activities.find(z => z.id === id); if (a) openActivityDialog({ activity: a, readOnly: !canEdit }, ctx); };
   box.addEventListener('click', e => { const c = e.target.closest('.kb-card'); if (c) open(c.dataset.id); });
   box.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList.contains('kb-card')) open(e.target.dataset.id); });

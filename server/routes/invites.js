@@ -35,7 +35,7 @@ export default async function inviteRoutes(app) {
     let emailSent = false, mailError = null;
     if (mailConfigured()) {
       const org = app.db.prepare('SELECT name FROM orgs WHERE id = ?').get(req.orgId);
-      try { await sendMail({ to: inv.email, ...inviteMail({ orgName: org?.name || 'DesTree', role: orgRoleLabels(app.db, req.orgId)[inv.role] || inv.role, link: link(req, inv.token), expiresAt: inv.expiresAt }) }); emailSent = true; app.db.prepare('UPDATE invites SET email_sent_at = ? WHERE id = ?').run(nowIso(), inv.id); }
+      try { await sendMail({ to: inv.email, ...inviteMail({ lang: req.lang, orgName: org?.name || 'DesTree', role: orgRoleLabels(app.db, req.orgId)[inv.role] || inv.role, link: link(req, inv.token), expiresAt: inv.expiresAt }) }); emailSent = true; app.db.prepare('UPDATE invites SET email_sent_at = ? WHERE id = ?').run(nowIso(), inv.id); }
       catch (err) { mailError = err.message; req.log.warn({ err: err.message }, 'correo de invitación'); }
     }
     return { id: inv.id, email: inv.email, role: inv.role, cellIds, expiresAt: inv.expiresAt, link: link(req, inv.token), emailSent, ...(mailError ? { mailError } : {}) };

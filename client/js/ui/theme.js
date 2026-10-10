@@ -2,6 +2,7 @@
    18. Tema, toasts, atajos
    ========================================================= */
 import { $, esc, MOD } from '../core/utils.js';
+import { t } from '../core/i18n.js'; // P15
 import { S, save } from '../core/state.js';
 import { drawMinimap } from '../canvas/minimap.js';
 import { adminPanel, renderAdmin } from './page-settings.js';
@@ -27,22 +28,22 @@ export function toast(msg, kind = 'info', ms = 2600) {
 }
 
 export function openShortcuts() {
-  const K = (...ks) => ks.map(k => `<kbd>${esc(k)}</kbd>`).join('');
-  const row = (l, ...ks) => `<div class="sc"><span>${l}</span><span>${K(...ks)}</span></div>`;
-  $('#shortcutsDialog').innerHTML = `<div class="dialog-inner"><header><h2>Atajos de teclado</h2><button class="icon-btn" id="closeSc" aria-label="Cerrar">✕</button></header>
+  const K = (...ks) => ks.map(k => `<kbd>${esc(t(k))}</kbd>`).join('');
+  const row = (l, ...ks) => `<div class="sc"><span>${t(l)}</span><span>${K(...ks)}</span></div>`;
+  $('#shortcutsDialog').innerHTML = `<div class="dialog-inner"><header><h2>${t('Atajos de teclado')}</h2><button class="icon-btn" id="closeSc" aria-label="${t('Cerrar')}">✕</button></header>
     <div class="dialog-body"><div class="shortcuts">
-      <h4>Lienzo</h4>
-      ${row('Pan', 'Rueda', 'Espacio + arrastrar', 'Botón central')}${row('Zoom al cursor', MOD + ' + rueda', 'Pinch')}
+      <h4>${t('Lienzo')}</h4>
+      ${row('Pan', 'Rueda', 'Espacio + arrastrar', 'Botón central')}${row('Zoom al cursor', t('{mod} + rueda', { mod: MOD }), 'Pinch')}
       ${row('Acercar / alejar', '+', '−')}${row('Zoom 100%', MOD + '+0')}${row('Ajustar a pantalla', 'Shift+1')}${row('Ajustar a selección', 'Shift+2')}
       ${row('Herramienta mover / mano', 'V', 'H')}
-      <h4>Cards y contenedores</h4>
+      <h4>${t('Cards y contenedores')}</h4>
       ${row('Nueva Main instance', 'N')}${row('Editar instancia (sidebar)', 'Enter', 'Doble clic')}${row('Seleccionar / sumar', 'Clic', 'Shift+clic')}
       ${row('Selección por recuadro', 'Arrastrar fondo')}${row('Seleccionar raíces', MOD + '+A')}${row('Mover 1 px / 10 px', '←↑→↓', 'Shift+flechas')}
       ${row('Anidar / sacar', 'Soltar dentro / fuera')}${row('Desactivar snap al arrastrar', 'Alt')}${row('Duplicar', MOD + '+D')}${row('Eliminar', 'Supr', 'Backspace')}
       ${row('Conectar o anidar', 'Arrastrar desde un puerto')}${row('Redimensionar contenedor', 'Esquina inferior derecha')}
-      <h4>Historial</h4>
+      <h4>${t('Historial')}</h4>
       ${row('Deshacer', MOD + '+Z')}${row('Rehacer', MOD + '+Shift+Z', MOD + '+Y')}${row('Cancelar / deseleccionar', 'Esc')}${row('Este panel', '?')}
-    </div></div><footer><button class="btn primary" id="closeSc2">Cerrar</button></footer></div>`;
+    </div></div><footer><button class="btn primary" id="closeSc2">${t('Cerrar')}</button></footer></div>`;
   const d = $('#shortcutsDialog');
   $('#closeSc').onclick = $('#closeSc2').onclick = () => d.close();
   d.showModal();

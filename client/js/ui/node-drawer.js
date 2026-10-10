@@ -3,6 +3,7 @@
    Cabecera + pestañas (General · Staff · Documentación · Notas) + cuerpo con un panel por pestaña + pie opcional.
    ========================================================= */
 import { $, $$, applyDataStyles } from '../core/utils.js';
+import { t } from '../core/i18n.js'; // P15
 
 export const nodeDrawer = $('#nodeDrawer');
 export const isDrawerOpen = () => nodeDrawer.classList.contains('open');
@@ -13,9 +14,9 @@ export const instanceLabel = parentId => (parentId ? 'Child instance' : 'Main in
 /** Markup completo del sidebar. `panes` = { tabId: html }. `tag` = 'form' (editor) | 'div' (ficha). */
 export function drawerHTML({ title, badge = '', tabs = TABS, panes, footer = '', tag = 'form', id = '', cls = '' }) {
   return `<${tag}${id ? ` id="${id}"` : ''} class="drawer-inner ${cls}">
-    <header>${badge}<h2 id="drawerTitle">${title}</h2><button type="button" class="icon-btn" data-cancel title="Cerrar (Esc)" aria-label="Cerrar">✕</button></header>
-    <nav class="tabs drawer-tabs">${tabs.map((t, i) => `<button type="button" data-tab="${t.id}" class="${i === 0 ? 'active' : ''}">${t.label}</button>`).join('')}</nav>
-    <div class="dialog-body drawer-body">${tabs.map((t, i) => `<section class="tab-pane" data-pane="${t.id}"${i ? ' hidden' : ''}>${panes[t.id] || ''}</section>`).join('')}</div>
+    <header>${badge}<h2 id="drawerTitle">${title}</h2><button type="button" class="icon-btn" data-cancel title="${t('Cerrar (Esc)')}" aria-label="${t('Cerrar')}">✕</button></header>
+    <nav class="tabs drawer-tabs">${tabs.map((tb, i) => `<button type="button" data-tab="${tb.id}" class="${i === 0 ? 'active' : ''}">${t(tb.label)}</button>`).join('')}</nav>
+    <div class="dialog-body drawer-body">${tabs.map((tb, i) => `<section class="tab-pane" data-pane="${tb.id}"${i ? ' hidden' : ''}>${panes[tb.id] || ''}</section>`).join('')}</div>
     ${footer ? `<footer>${footer}</footer>` : ''}
   </${tag}>`;
 }

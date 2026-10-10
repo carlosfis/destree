@@ -59,5 +59,8 @@ Pueden editarla quienes editan la página (Lead o superior) y, sea cual sea su n
 - **Cronograma**: fases como filas (primera columna fija) y semanas ISO como columnas, generadas desde las fechas de las actividades (scroll horizontal si el proyecto se alarga). Cada actividad muestra el círculo con sus siglas en el color de la fase, el título, la línea hasta la fecha de fin y la descripción; la línea vertical marca hoy. Bajo cada semana aparece el sprint (⚙ Sprints ajusta semanas por sprint y numeración). Solo entran las actividades con fase y fecha de inicio.
 - **Actividades** (kanban): columnas To Do · Doing · Done · Cancelled con todas las actividades, también las que no están en el cronograma. Arrastra una card a otra columna o cambia el estado desde su modal. Las canceladas no se borran (quedan en su columna); eliminar es una acción explícita del modal.
 
+## Idioma (ES / EN)
+El botón **EN** / **ES** de la barra superior (y el enlace «English» / «Español» en las pantallas de acceso) cambia el idioma de la interfaz y recarga la página. La elección se guarda por navegador; la primera vez se usa el idioma del navegador. Los datos (nombres de cards, etiquetas, notas) no se traducen; los mensajes del servidor y los correos de invitación o recuperación salen en el idioma elegido.
+
 ## Atajos
 `?` muestra la lista. Rueda: desplazar · Ctrl/⌘+rueda: zoom · Espacio+arrastrar o `H`: mano · `V`: selección · Shift+1 ajustar · Shift+2 ajustar a selección · Supr eliminar · Ctrl/⌘+D duplicar · `E`/Enter editar · Esc cierra menús, el sidebar, el lobby o la administración y vuelve al lienzo.

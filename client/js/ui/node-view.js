@@ -9,6 +9,7 @@ import { DEFAULT_GRADIENT } from '../core/normalize.js'; // P12
 import { drawerHTML, openDrawer, instanceLabel } from './node-drawer.js';
 import { thumbnailData } from './thumbnail.js';
 import { thumbActionsHTML, bindThumbActions } from './thumbnail-section.js'; // P9
+import { t } from '../core/i18n.js'; // P15
 
 const VIS_LABEL = { org: 'Toda la organización', cells: 'Solo células', inherit: 'Hereda de la raíz' };
 const SAFE_URL = /^https?:\/\//i;
@@ -24,26 +25,26 @@ export function openNodeView(id) {
   const panes = {
     general: `${n.parentId ? '' : `<div class="hero grad-${esc(n.gradient || DEFAULT_GRADIENT)}"></div>`}
       <dl class="meta">
-        <dt>Tipo</dt><dd>${esc(typeName(n.type))}</dd>
-        <dt>Nombre</dt><dd>${esc(n.name)}</dd>
-        <dt>Contenedor padre</dt><dd>${n.parentId ? esc(pathOf(nodeById(n.parentId))) : '— (raíz)'}</dd>
-        ${n.hasExternalRefs ? '<dt>Conexiones</dt><dd class="hint">Tiene conexiones con elementos que no puedes ver.</dd>' : ''}
+        <dt>${t('Tipo')}</dt><dd>${esc(typeName(n.type))}</dd>
+        <dt>${t('Nombre')}</dt><dd>${esc(n.name)}</dd>
+        <dt>${t('Contenedor padre')}</dt><dd>${n.parentId ? esc(pathOf(nodeById(n.parentId))) : t('— (raíz)')}</dd>
+        ${n.hasExternalRefs ? `<dt>${t('Conexiones')}</dt><dd class="hint">${t('Tiene conexiones con elementos que no puedes ver.')}</dd>` : ''}
       </dl>
       ${n.description ? `<p class="desc">${esc(n.description)}</p>` : ''}
       ${tags.length ? `<div class="card-tags">${tags.map(t => `<span class="chip tag-${t.color}">${esc(t.name)}</span>`).join('')}</div>` : ''}
-      <h3 class="section">Thumbnail</h3>${thumbActionsHTML('vThumb', false)}<div class="hint">PNG 1920×1080 con los datos de la instancia, para pegar en Figma («Set as thumbnail»).</div>`,
-    staff: `<h3 class="section">Staff</h3>${staff ? `<ul class="staff-list">${staff}</ul>` : '<div class="empty">Sin staff.</div>'}
+      <h3 class="section">Thumbnail</h3>${thumbActionsHTML('vThumb', false)}<div class="hint">${t('PNG 1920×1080 con los datos de la instancia, para pegar en Figma («Set as thumbnail»).')}</div>`,
+    staff: `<h3 class="section">Staff</h3>${staff ? `<ul class="staff-list">${staff}</ul>` : `<div class="empty">${t('Sin staff.')}</div>`}
       <dl class="meta">
-        <dt>Responsable</dt><dd>${n.ownerUserId ? esc(userName(n.ownerUserId)) : '—'}</dd>
-        <dt>Asignados</dt><dd>${people || '—'}</dd>
-        <dt>Visibilidad</dt><dd>${esc(VIS_LABEL[root.visibility] || root.visibility)}${root.visibility === 'cells' ? ` ${cells || '<span class="hint">(sin células)</span>'}` : ''}${n.parentId ? ` <span class="hint">(raíz: ${esc(root.name)})</span>` : ''}</dd>
+        <dt>${t('Responsable')}</dt><dd>${n.ownerUserId ? esc(userName(n.ownerUserId)) : '—'}</dd>
+        <dt>${t('Asignados')}</dt><dd>${people || '—'}</dd>
+        <dt>${t('Visibilidad')}</dt><dd>${esc(t(VIS_LABEL[root.visibility] || root.visibility))}${root.visibility === 'cells' ? ` ${cells || `<span class="hint">${t('(sin células)')}</span>`}` : ''}${n.parentId ? ` <span class="hint">${t('(raíz: {name})', { name: esc(root.name) })}</span>` : ''}</dd>
       </dl>`,
-    docs: docs ? `<ul class="doc-list">${docs}</ul>` : '<div class="empty">Sin enlaces.</div>',
-    notes: n.notes ? `<div class="md">${renderMarkdown(n.notes)}</div>` : '<div class="empty">Sin notas.</div>',
+    docs: docs ? `<ul class="doc-list">${docs}</ul>` : `<div class="empty">${t('Sin enlaces.')}</div>`,
+    notes: n.notes ? `<div class="md">${renderMarkdown(n.notes)}</div>` : `<div class="empty">${t('Sin notas.')}</div>`,
   };
   const badge = `<span class="type-badge">${esc(typeName(n.type))}</span>`;
   const own = S.readonly && isMyNode(id) && S.session?.permissions.includes('nodes.own'); // P10
-  openDrawer(drawerHTML({ title: `${instanceLabel(n.parentId)} · ${esc(n.name)}`, badge, panes, footer: `<button type="button" class="btn left" data-project title="Overview, cronograma y actividades">▤ Proyecto</button>${own ? '<button type="button" class="btn primary" data-edit>Editar</button>' : ''}<button type="button" class="btn" data-cancel>Cerrar</button>`, tag: 'div', cls: 'node-view' }));
+  openDrawer(drawerHTML({ title: `${instanceLabel(n.parentId)} · ${esc(n.name)}`, badge, panes, footer: `<button type="button" class="btn left" data-project title="${t('Overview, cronograma y actividades')}">${t('▤ Proyecto')}</button>${own ? `<button type="button" class="btn primary" data-edit>${t('Editar')}</button>` : ''}<button type="button" class="btn" data-cancel>${t('Cerrar')}</button>`, tag: 'div', cls: 'node-view' }));
   bindThumbActions($('#nodeDrawer'), 'vThumb', () => thumbnailData(n));
   $('#nodeDrawer [data-edit]')?.addEventListener('click', () => openEditor(id));
   $('#nodeDrawer [data-project]').addEventListener('click', () => { location.hash = projectHash(id); }); // P11

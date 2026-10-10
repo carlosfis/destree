@@ -5,6 +5,7 @@ import { $, clamp } from '../core/utils.js';
 import { edgeLayer } from '../core/dom.js';
 import { S, nodeById, childrenOf, parentOf, rootOf, isAncestor, isExternalDs, typeName } from '../core/state.js';
 import { edgeEls, nodeRect, anchorRect } from './render-nodes.js';
+import { t } from '../core/i18n.js'; // P15
 export function portPoint(r, side) {
   switch (side) {
     case 't': return { x: r.cx, y: r.y };
@@ -45,8 +46,8 @@ export const SVG_NS = 'http://www.w3.org/2000/svg';
 export function hostLabel(n) { const h = parentOf(n); if (!h) return n.name; const r = rootOf(h); return r.id === h.id ? h.name : `${h.name} · ${r.name}`; }
 export function edgeTitle(e) {
   const a = nodeById(e.from), b = nodeById(e.to); if (!a || !b) return '';
-  if (e.kind === 'source') return `${a.name} deriva de ${b.name}`;
-  return isExternalDs(e) ? `${a.name} usa ${b.name} (${typeName(b.type)} nacido en ${hostLabel(b)})` : `${a.name} usa ${b.name}`;
+  if (e.kind === 'source') return t('{a} deriva de {b}', { a: a.name, b: b.name });
+  return isExternalDs(e) ? t('{a} usa {b} ({type} nacido en {host})', { a: a.name, b: b.name, type: typeName(b.type), host: hostLabel(b) }) : t('{a} usa {b}', { a: a.name, b: b.name });
 }
 export function renderEdges() {
   const seen = new Set();

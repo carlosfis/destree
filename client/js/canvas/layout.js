@@ -12,6 +12,7 @@ import { measured, computeSizes, applySizes, updateNodeTransforms } from './rend
 import { updateEdgePaths } from './render-edges.js';
 import { renderAll } from './selection.js';
 import { toast } from '../ui/theme.js';
+import { t } from '../core/i18n.js'; // P15
 export function computeLayout(rootIds) {
   const target = new Map(), tmp = new Map();
   const byName = (a, b) => a.name.localeCompare(b.name);
@@ -47,11 +48,11 @@ export function computeLayout(rootIds) {
   return target;
 }
 export function autoLayout() {
-  if (!S.state.nodes.length) return toast('No hay cards que ordenar');
+  if (!S.state.nodes.length) return toast(t('No hay cards que ordenar'));
   pushHistory();
   for (const n of S.state.nodes) { n.w = 0; n.h = 0; } // tamaños manuales se descartan
   const target = computeLayout();
-  animateNodesTo(target, () => { save(); fitToScreen(); toast('Auto-layout aplicado (Ctrl/⌘+Z para deshacer)'); });
+  animateNodesTo(target, () => { save(); fitToScreen(); toast(t('Auto-layout aplicado (Ctrl/⌘+Z para deshacer)')); });
 }
 export function animateNodesTo(target, done, ms = 450) {
   const start = new Map([...target.keys()].map(id => { const n = nodeById(id); return [id, { x: n.x, y: n.y }]; }));

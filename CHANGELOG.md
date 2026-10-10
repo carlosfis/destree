@@ -1,5 +1,8 @@
 # Changelog
 
+## Sin publicar
+- Interfaz en inglés (P15): selector ES/EN en la barra superior y en las pantallas de acceso (preferencia por navegador; por defecto el idioma del navegador). Textos de la UI por `t()` con la cadena española como clave y diccionarios en `client/js/i18n/`; cabecera `X-Lang` del cliente → mensajes de error del servidor, correos (invitación, restablecer, prueba) y plantilla inicial de la página de proyecto en el idioma elegido. Smoke con paso de idioma; capturas en inglés en `docs/img/en/` para el README en inglés.
+
 ## 1.1.0 — 2026-10-09
 Página de proyecto por card, color de marca, roles por nivel con pestaña Organización, thumbnail para Figma y datos demo; repo limpio para publicación.
 - Datos demo solo con marcas, productos y personas ficticias (Grupo Ambar; `scripts/seed/ambar-*.js`, ids `am_*`); sección «Datos demo» en `docs/ADMIN.md`. Fuera `promo/` (vídeo descartado); README y README.en reescritos para 1.1.0 con capturas nuevas sobre los datos demo.

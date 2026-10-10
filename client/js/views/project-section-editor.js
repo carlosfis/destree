@@ -7,6 +7,7 @@ import * as api from '../core/api.js';
 import { toast } from '../ui/theme.js';
 import { confirmBox } from '../ui/dialogs.js';
 import { SPEC, KIND_LABEL, MAX_ITEMS } from '../core/project-template.js';
+import { t } from '../core/i18n.js'; // P15
 
 export const projectDialog = $('#projectDialog');
 const COL_LABEL = { emoji: 'Icono', label: 'Etiqueta', url: 'URL (https://…)', value: 'Valor', text: 'Texto', code: 'Código', title: 'Título', done: 'Hecho', name: '@Nombre', role: 'Rol', quote: 'Cita', highlight: 'Texto a resaltar (parte de la cita)' };
@@ -15,16 +16,16 @@ const LONG = new Set(['text', 'quote']);
 const wide = k => (k === 'text' || k === 'url' ? 'wide' : k === 'emoji' || k === 'code' || k === 'done' ? 'narrow' : '');
 
 const rowHTML = (cols, it = {}) => `<div class="pj-row">${Object.entries(cols).map(([k, r]) => r === 'bool'
-  ? `<label class="pj-cell narrow" title="${esc(COL_LABEL[k])}"><input type="checkbox" data-col="${k}" ${it[k] ? 'checked' : ''}></label>`
-  : `<input class="pj-cell ${wide(k)}" data-col="${k}" maxlength="${r}" placeholder="${esc(COL_LABEL[k] || k)}" value="${esc(it[k] || '')}" autocomplete="off">`).join('')}<button type="button" class="icon-btn pj-row-del" title="Quitar" aria-label="Quitar">🗑</button></div>`;
+  ? `<label class="pj-cell narrow" title="${esc(t(COL_LABEL[k]))}"><input type="checkbox" data-col="${k}" ${it[k] ? 'checked' : ''}></label>`
+  : `<input class="pj-cell ${wide(k)}" data-col="${k}" maxlength="${r}" placeholder="${esc(t(COL_LABEL[k] || k))}" value="${esc(it[k] || '')}" autocomplete="off">`).join('')}<button type="button" class="icon-btn pj-row-del" title="${t('Quitar')}" aria-label="${t('Quitar')}">🗑</button></div>`;
 
 function fieldsHTML(kind, data) {
   return Object.entries(SPEC[kind]).map(([key, rule]) => {
     if (typeof rule === 'number') return LONG.has(key)
-      ? `<div class="field"><label>${esc(COL_LABEL[key] || key)}</label><textarea name="${key}" maxlength="${rule}" rows="${key === 'text' ? 6 : 3}">${esc(data[key] || '')}</textarea></div>`
-      : `<div class="field"><label>${esc(COL_LABEL[key] || key)}</label><input name="${key}" maxlength="${rule}" value="${esc(data[key] || '')}" autocomplete="off"></div>`;
+      ? `<div class="field"><label>${esc(t(COL_LABEL[key] || key))}</label><textarea name="${key}" maxlength="${rule}" rows="${key === 'text' ? 6 : 3}">${esc(data[key] || '')}</textarea></div>`
+      : `<div class="field"><label>${esc(t(COL_LABEL[key] || key))}</label><input name="${key}" maxlength="${rule}" value="${esc(data[key] || '')}" autocomplete="off"></div>`;
     if (rule === 'bool') return '';
-    return `<div class="field"><label>${esc(LIST_LABEL[key] || key)} <span class="counter" data-count="${key}"></span></label><div class="pj-rows" data-list="${key}">${(data[key] || []).map(it => rowHTML(rule, it)).join('')}</div><button type="button" class="btn" data-add="${key}">＋ Añadir</button></div>`;
+    return `<div class="field"><label>${esc(t(LIST_LABEL[key] || key))} <span class="counter" data-count="${key}"></span></label><div class="pj-rows" data-list="${key}">${(data[key] || []).map(it => rowHTML(rule, it)).join('')}</div><button type="button" class="btn" data-add="${key}">${t('＋ Añadir')}</button></div>`;
   }).join('');
 }
 function readData(form, kind) {
@@ -37,12 +38,12 @@ function readData(form, kind) {
 }
 /** Abre el editor de `sec`; al guardar o eliminar llama a ctx.refresh(). */
 export function openSectionEditor(sec, ctx) {
-  projectDialog.innerHTML = `<form class="dialog-inner pj-editor"><header><h2>Editar sección</h2><button type="button" class="icon-btn" data-cancel aria-label="Cerrar">✕</button></header>
+  projectDialog.innerHTML = `<form class="dialog-inner pj-editor"><header><h2>${t('Editar sección')}</h2><button type="button" class="icon-btn" data-cancel aria-label="${t('Cerrar')}">✕</button></header>
     <div class="dialog-body">
-      <div class="field"><label>Título <span class="hint">${esc(KIND_LABEL[sec.kind])}</span></label><input name="title" maxlength="80" value="${esc(sec.title)}" autocomplete="off"></div>
+      <div class="field"><label>${t('Título')} <span class="hint">${esc(t(KIND_LABEL[sec.kind]))}</span></label><input name="title" maxlength="80" value="${esc(sec.title)}" autocomplete="off"></div>
       ${fieldsHTML(sec.kind, sec.data || {})}
     </div>
-    <footer><button type="button" class="btn danger left" data-del>Eliminar sección</button><button type="button" class="btn" data-cancel>Cancelar</button><button type="submit" class="btn primary">Guardar</button></footer></form>`;
+    <footer><button type="button" class="btn danger left" data-del>${t('Eliminar sección')}</button><button type="button" class="btn" data-cancel>${t('Cancelar')}</button><button type="submit" class="btn primary">${t('Guardar')}</button></footer></form>`;
   const form = $('form', projectDialog);
   const counts = () => $$('[data-count]', form).forEach(c => { const n = $$(`[data-list="${c.dataset.count}"] .pj-row`, form).length; c.textContent = `${n}/${MAX_ITEMS}`; const b = $(`[data-add="${c.dataset.count}"]`, form); if (b) b.disabled = n >= MAX_ITEMS; });
   form.addEventListener('click', e => {
@@ -53,15 +54,15 @@ export function openSectionEditor(sec, ctx) {
   $$('[data-cancel]', form).forEach(b => b.addEventListener('click', close));
   projectDialog.oncancel = ev => { ev.preventDefault(); close(); };
   $('[data-del]', form).addEventListener('click', async () => {
-    const ok = await confirmBox({ title: 'Eliminar sección', message: `«${sec.title || KIND_LABEL[sec.kind]}» desaparecerá del overview.`, buttons: [{ label: 'Cancelar', value: '' }, { label: 'Eliminar', value: 'ok', kind: 'danger' }] });
+    const ok = await confirmBox({ title: t('Eliminar sección'), message: t('«{title}» desaparecerá del overview.', { title: sec.title || t(KIND_LABEL[sec.kind]) }), buttons: [{ label: t('Cancelar'), value: '' }, { label: t('Eliminar'), value: 'ok', kind: 'danger' }] });
     if (!ok) return;
-    try { await api.deleteSection(ctx.pid, ctx.nid, sec.id); close(); toast('Sección eliminada'); await ctx.refresh(); } catch (err) { toast(err.message, 'error', 5000); }
+    try { await api.deleteSection(ctx.pid, ctx.nid, sec.id); close(); toast(t('Sección eliminada')); await ctx.refresh(); } catch (err) { toast(err.message, 'error', 5000); }
   });
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const btn = $('[type=submit]', form); btn.disabled = true;
-    try { await api.updateSection(ctx.pid, ctx.nid, sec.id, { title: form.elements.title.value.trim().slice(0, 80), data: readData(form, sec.kind) }); close(); toast('Sección guardada'); await ctx.refresh(); }
-    catch (err) { toast('No se pudo guardar: ' + err.message, 'error', 6000); btn.disabled = false; }
+    try { await api.updateSection(ctx.pid, ctx.nid, sec.id, { title: form.elements.title.value.trim().slice(0, 80), data: readData(form, sec.kind) }); close(); toast(t('Sección guardada')); await ctx.refresh(); }
+    catch (err) { toast(t('No se pudo guardar: {msg}', { msg: err.message }), 'error', 6000); btn.disabled = false; }
   });
   counts();
   projectDialog.showModal();

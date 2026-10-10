@@ -20,6 +20,7 @@
    La ramificación padre → hijo ya no es una línea: es el anidamiento del contenedor.
    ========================================================= */
 import { $, debounce, STORAGE_KEY, LEGACY_KEY, PREFS_KEY, TYPE_META } from './utils.js';
+import { t } from './i18n.js'; // P15
 import { normalizeDocument, defaultDocument } from './normalize.js';
 import * as api from './api.js';
 import { toast } from '../ui/theme.js';
@@ -118,7 +119,7 @@ export async function bootstrap(wantedId = null) {
     S.pageList = await api.listPages();
     const wanted = wantedId || lastPageId();
     const page = S.pageList.find(p => p.id === wanted) || (wantedId ? null : S.pageList[0]);
-    if (!page) { const err = new Error(wantedId ? 'Esa página no existe o no es visible para ti' : 'No hay páginas visibles'); err.status = 404; err.noPage = true; throw err; }
+    if (!page) { const err = new Error(wantedId ? t('Esa página no existe o no es visible para ti') : t('No hay páginas visibles')); err.status = 404; err.noPage = true; throw err; }
     const doc = await api.getPage(page.id);
     S.pageId = doc.page.id; S.version = doc.page.version; S.offline = false; S.docRefs = doc.refs || null; S.dirty = false;
     let s = normalizeState(doc);
@@ -133,7 +134,7 @@ export async function bootstrap(wantedId = null) {
     if (err.status) throw err; // F2: 401/403/5xx no caen en modo local (main.js lo gestiona)
     S.offline = true;
     S.state = loadState();
-    setTimeout(() => toast('Sin conexión con el servidor: trabajando en local (' + err.message + ')', 'error', 6000), 300);
+    setTimeout(() => toast(t('Sin conexión con el servidor: trabajando en local ({msg})', { msg: err.message }), 'error', 6000), 300);
   }
   S.cam = { ...S.state.camera };
   if (S.dirty) { S.dirty = false; save(); }
@@ -147,10 +148,10 @@ export function toDocument() {
   return { version: 3, page: { ...page, version: S.version }, nodes, edges, tags, branchTypes, settings, camera };
 }
 function persistLocal() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S.state)); setSaveStatus(S.offline ? 'Guardado (local)' : 'Sin conexión'); } catch (err) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S.state)); setSaveStatus(S.offline ? t('Guardado (local)') : t('Sin conexión')); } catch (err) {
     const full = err && (err.name === 'QuotaExceededError' || err.code === 22 || err.code === 1014);
-    setSaveStatus('Sin guardar');
-    toast(full ? 'localStorage está lleno: exporta un respaldo y reduce imágenes.' : 'No se pudo guardar: ' + err.message, 'error', 6000);
+    setSaveStatus(t('Sin guardar'));
+    toast(full ? t('localStorage está lleno: exporta un respaldo y reduce imágenes.') : t('No se pudo guardar: {msg}', { msg: err.message }), 'error', 6000);
   }
 }
 async function reloadFromServer() {
@@ -160,18 +161,18 @@ async function reloadFromServer() {
 }
 async function pushRemote(keepalive) {
   if (S.saving) { S.dirty = true; return; }
-  S.saving = true; S.dirty = false; setSaveStatus('Guardando…');
+  S.saving = true; S.dirty = false; setSaveStatus(t('Guardando…'));
   try {
     const hadDataUrls = S.state.nodes.some(n => n.image); // F5: el servidor convierte dataURLs en archivos
     const res = await api.putPage(S.pageId, toDocument(), S.version, { keepalive });
-    S.version = res.version; setSaveStatus('Guardado');
+    S.version = res.version; setSaveStatus(t('Guardado'));
     if (hadDataUrls && !S.dirty) await reloadFromServer().catch(() => {});
   } catch (err) {
-    if (err.status === 409) { setSaveStatus('Conflicto'); await reloadFromServer().catch(() => {}); toast('La página cambió en el servidor: se recargó la última versión.', 'error', 6000); }
-    else if (err.status === 400) { setSaveStatus('Sin guardar'); toast('El servidor rechazó el documento: ' + err.message, 'error', 8000); }
-    else if (err.status === 401) setSaveStatus('Sesión caducada');
-    else if (err.status === 403) { setSaveStatus('Solo lectura'); toast('Sin permisos para guardar cambios en esta página.', 'error', 6000); }
-    else if (err.status) { setSaveStatus('Sin guardar'); toast('No se pudo guardar: ' + err.message, 'error', 6000); }
+    if (err.status === 409) { setSaveStatus(t('Conflicto')); await reloadFromServer().catch(() => {}); toast(t('La página cambió en el servidor: se recargó la última versión.'), 'error', 6000); }
+    else if (err.status === 400) { setSaveStatus(t('Sin guardar')); toast(t('El servidor rechazó el documento: {msg}', { msg: err.message }), 'error', 8000); }
+    else if (err.status === 401) setSaveStatus(t('Sesión caducada'));
+    else if (err.status === 403) { setSaveStatus(t('Solo lectura')); toast(t('Sin permisos para guardar cambios en esta página.'), 'error', 6000); }
+    else if (err.status) { setSaveStatus(t('Sin guardar')); toast(t('No se pudo guardar: {msg}', { msg: err.message }), 'error', 6000); }
     else { persistLocal(); toast('No se pudo guardar en el servidor: ' + err.message, 'error', 6000); }
   } finally { S.saving = false; if (S.dirty) pushRemote(); }
 }
@@ -195,7 +196,7 @@ export const isContainer = n => !!n && n.type === 'software';
 /** Nombres de tipo visibles de la página actual (settings.typeNames; editables en Administrar → Tipos). */
 export const typeNames = () => S.state.settings.typeNames;
 export const typeName = t => typeNames()[t] || TYPE_META[t].label;
-export const kindLabel = kind => (kind === 'source' ? `Fuente de ${typeName('uikit')}` : `Dependencia de ${typeName('ds')}`);
+export const kindLabel = kind => (kind === 'source' ? t('Fuente de {uikit}', { uikit: typeName('uikit') }) : t('Dependencia de {ds}', { ds: typeName('ds') }));
 export const childrenOf = id => S.state.nodes.filter(n => n.parentId === id);
 export const roots = () => S.state.nodes.filter(n => !n.parentId);
 export const edgesOf = id => S.state.edges.filter(e => e.from === id || e.to === id);
