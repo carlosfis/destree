@@ -5,14 +5,14 @@
 1. **Entrar**: abre la URL de tu organización, pon el correo y la contraseña que creaste al aceptar la invitación. Si la olvidaste, pide a un admin una temporal (o usa «¿Olvidaste tu contraseña?» si el correo está configurado).
 2. **Orientarte**: el lienzo muestra el árbol de software de la página actual. Arriba a la izquierda, `⌂` abre el **lobby** con todas las páginas que puedes ver. Rueda = desplazar, Ctrl/⌘+rueda = zoom, `Shift+1` = ajustar todo.
 3. **Encontrar lo tuyo**: pulsa `★ Mías` (o `#/me`). Verás las cards donde eres responsable o estás asignado, en cualquier página; cada una te lleva al lienzo centrado en esa card.
-4. **Leer una ficha**: doble clic (o Enter) sobre una card abre el sidebar con cuatro pestañas: **General** (tipo, descripción, imagen, etiquetas, DS que usa o fuente), **Staff** (`@usuario / rol`, responsable, asignados), **Documentación** (enlaces a Figma, Notion, repos…) y **Notas**.
+4. **Leer una ficha**: doble clic (o Enter) sobre una card abre el sidebar con cuatro pestañas: **General** (tipo, descripción, color de marca en las Main instances, etiquetas, DS que usa o fuente), **Staff** (`@usuario / rol`, responsable, asignados), **Documentación** (enlaces a Figma, Notion, repos…) y **Notas**.
 5. **Entender las líneas**: continua = usa su Design System; discontinua = usa el DS de otro software; punteada = el UI Kit deriva de esa fuente. `⇢ ocultas` indica conexiones con cards que no puedes ver.
 6. **Historial**: `⟲ Historial` lista las versiones de la página; puedes ver cualquiera y compararla con la actual (restaurar es de nivel Head o superior).
-7. **Tus cards**: en las cards donde eres responsable o estás asignado, el doble clic (o **Editar** en la ficha) abre un editor acotado: nombre, descripción, imagen, etiquetas, staff, documentación, notas y thumbnail. Tipo, contenedor, relaciones y visibilidad no se tocan.
+7. **Tus cards**: en las cards donde eres responsable o estás asignado, el doble clic (o **Editar** en la ficha) abre un editor acotado: nombre, descripción, color de marca (si es Main instance), etiquetas, staff, documentación, notas y thumbnail. Tipo, contenedor, relaciones y visibilidad no se tocan.
 
 ### Si eres Lead, Head u Ops (edición)
 1. **Crear una página** (Ops o Admin): `⌂` → `＋ Nueva página` (una por cliente o área). En `⚙ Página` van descripción (Ops) y visibilidad (Head o superior: toda la organización o solo ciertas células). Un Lead solo ve y edita las páginas de sus células o donde está asignado.
-2. **Main instance**: `＋ Nueva card` → Software. Es una raíz: una aplicación o producto. Ponle nombre, descripción, imagen (se muestra como hero) y etiquetas.
+2. **Main instance**: `＋ Nueva card` → Software. Es una raíz: una aplicación o producto. Ponle nombre, descripción, color de marca (uno de los diez degradados; por defecto el verde menta) y etiquetas.
 3. **Anidar**: dentro de la raíz, `＋` (o arrastrar una card dentro) crea **Child instances**: features, forks, versiones mobile… con su tipo de ramificación.
 4. **Design System y UI Kit**: crea un DS dentro del software que lo mantiene; conecta otros softwares arrastrando desde un puerto («usa DS»). Un UI Kit siempre tiene **fuente** (el DS o software del que deriva).
 5. **Staff y responsables**: pestaña Staff → `@usuario / rol` (texto libre), responsable y asignados (usuarios reales; aparecen en `★ Mías` de cada uno). Visibilidad de la raíz: organización o células.
@@ -31,15 +31,15 @@ Cinco niveles fijos, cada uno incluye lo del inferior: **Lev5 Admin** (todo, inc
 
 ## Crear y editar (Lead, Head, Ops, Admin)
 - `＋ Nueva card` o clic derecho en el fondo → **Main instance** (software raíz). Dentro de un contenedor: botón `＋` o menú `⋯` → Child instance (feature, DS o UI Kit).
-- Doble clic / Enter / `⋯ → Editar` abre el **sidebar** de la instancia (**Main instance** si es raíz, **Child instance** si vive dentro de un contenedor), con pestañas: **General** (tipo, nombre, contenedor padre, descripción, imagen, etiquetas, DS que usa / fuente), **Staff** (usuario `@nombre` + rol, p. ej. `@Lorena / UX Designer`; responsable, asignados y **visibilidad de la raíz**), **Documentación** (enlaces) y **Notas** (markdown: títulos, listas, enlaces, código, negrita).
-- Si la card tiene imagen se muestra arriba como **hero** (también en la cabecera de los contenedores).
+- Doble clic / Enter / `⋯ → Editar` abre el **sidebar** de la instancia (**Main instance** si es raíz, **Child instance** si vive dentro de un contenedor), con pestañas: **General** (tipo, nombre, contenedor padre, descripción, color de marca solo en Main instances, etiquetas, DS que usa / fuente), **Staff** (usuario `@nombre` + rol, p. ej. `@Lorena / UX Designer`; responsable, asignados y **visibilidad de la raíz**), **Documentación** (enlaces) y **Notas** (markdown: títulos, listas, enlaces, código, negrita).
+- Cada **Main instance** lleva un **color de marca** obligatorio (diez degradados predefinidos; por defecto `276174 → 33C58E → 63FD88`): se pinta como banda en la cabecera de la card, en la ficha y como fondo de los encabezados de su página de proyecto (Overview, Cronograma y Actividades). Las cards anidadas, DS y UI Kits no tienen color propio y heredan el de su Main instance en la página de proyecto.
 - Una página sin cards muestra una guía centrada con el botón **＋ Nueva Main instance** (en modo lectura, un aviso).
 - Arrastra una card dentro de otro contenedor para anidarla, o fuera para sacarla a raíz. Arrastra desde un puerto para conectar.
 - `⇅ Auto-layout` ordena todo. Ctrl/⌘+Z deshace. Todo se guarda solo ("Guardado" arriba).
 
 ## Thumbnail para Figma
 En el editor de una instancia, pestaña **General**, al final hay la sección **Thumbnail**: una vista previa 1920×1080 que se redibuja con los datos del formulario (nombre, contenedor, etiquetas, staff, geografía e icono).
-- **Geografía**: país (bandera) que aparece junto al tipo. **Icono**: imagen propia para el thumbnail (mejor PNG con fondo transparente); si no eliges ninguna se usa la imagen de la instancia.
+- **Geografía**: país (bandera) que aparece junto al tipo. **Icono**: imagen propia para el thumbnail (mejor PNG con fondo transparente) o ninguna; el mismo icono aparece a la derecha del encabezado del Overview.
 - **Copiar thumbnail** copia el PNG al portapapeles: en Figma pega (⌘/Ctrl+V) dentro de un frame y usa «Set as thumbnail». **Descargar PNG** guarda el archivo (útil en Firefox antiguo o si el navegador no permite copiar imágenes).
 - Los Viewers tienen los mismos botones en la ficha de lectura (pestaña General).
 

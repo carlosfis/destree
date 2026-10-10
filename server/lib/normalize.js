@@ -5,6 +5,14 @@ export const DEFAULT_TYPE_NAMES = { software: 'Software', ds: 'Design System', u
 export const EDGE_KINDS = ['ds', 'source'];
 export const TAG_COLORS = ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red'];
 export const NODE_STATUS = ['active', 'draft', 'deprecated', 'archived'];
+/** Degradados de marca de las Main instances (135°, tres paradas). El id viaja en `node.gradient`; el CSS `.grad-<id>` pinta el mismo degradado. */
+export const GRADIENTS = [
+  { id: 'sunset', colors: ['#74276c', '#c53364', '#fd8263'] }, { id: 'violet', colors: ['#274b74', '#8233c5', '#e963fd'] }, { id: 'candy', colors: ['#879af2', '#d3208b', '#fda000'] },
+  { id: 'ocean', colors: ['#8929ad', '#436aac', '#43b7b8'] }, { id: 'mint', colors: ['#276174', '#33c58e', '#63fd88'] }, { id: 'aurora', colors: ['#574bcd', '#2999ad', '#41e975'] },
+  { id: 'berry', colors: ['#363553', '#903775', '#e8458b'] }, { id: 'cobalt', colors: ['#5c2774', '#335cc5', '#637ffd'] }, { id: 'amber', colors: ['#ea5a6f', '#de791e', '#fccf3a'] }, { id: 'flamingo', colors: ['#f17b41', '#e05ba2', '#cd4bc9'] },
+];
+export const DEFAULT_GRADIENT = 'mint';
+export const gradientById = id => GRADIENTS.find(g => g.id === id) || null;
 export const PAD = 16;              // margen interno de los contenedores
 export const HEAD_H = 90;           // alto mínimo de cabecera al migrar v1
 export const MIN_Z = 0.1, MAX_Z = 4;
@@ -53,6 +61,7 @@ function normalizeNode(n) {
     id: String(n.id), type: TYPES.includes(n.type) ? n.type : 'software', name: str(n.name, 120, 'Sin nombre') || 'Sin nombre',
     description: str(n.description, 140), image: typeof n.image === 'string' && n.image.startsWith('data:image') ? n.image : null, imageId: n.imageId ? String(n.imageId) : null,
     geo: /^[A-Za-z]{2}$/.test(n.geo || '') ? n.geo.toUpperCase() : '', thumbIconId: n.thumbIconId ? String(n.thumbIconId) : null, // thumbnail (P9)
+    gradient: str(n.gradient, 24), // P12: solo raíces software (se fija tras la integridad de jerarquía)
     tags: Array.isArray(n.tags) ? n.tags.map(String).slice(0, 50) : [], owner: str(n.owner, 80), staff, ownerUserId: n.ownerUserId ? String(n.ownerUserId) : null,
     parentId: n.parentId ? String(n.parentId) : null, branchTypeId: n.branchTypeId ? String(n.branchTypeId) : null,
     x: num(n.x), y: num(n.y), w: Math.max(0, num(n.w)), h: Math.max(0, num(n.h)), demo: !!n.demo,
@@ -120,6 +129,7 @@ export function normalizeDocument(raw, page) {
     if (n.parentId && n.type === 'software' && !etIds.has(n.branchTypeId)) n.branchTypeId = s.branchTypes[0].id;
     n.visibility = n.parentId ? 'inherit' : (n.visibility === 'cells' ? 'cells' : 'org');
     if (n.visibility !== 'cells') n.cellIds = [];
+    n.gradient = n.type === 'software' && !n.parentId ? (gradientById(n.gradient) ? n.gradient : DEFAULT_GRADIENT) : ''; // P12: obligatorio en Main instances
   }
 
   const ids2 = new Set(s.nodes.map(n => n.id));

@@ -82,6 +82,13 @@ test('Imports: cada ruta existe y cada nombre importado lo exporta el módulo de
   }
 });
 
+test('P12: cada GRADIENTS.id tiene su clase .grad-<id> en el CSS y mint es el defecto', async () => {
+  const { GRADIENTS, DEFAULT_GRADIENT } = await import('../server/lib/normalize.js');
+  const css = read('css/15-overrides.css');
+  assert.equal(GRADIENTS.length, 10); assert.ok(GRADIENTS.some(g => g.id === DEFAULT_GRADIENT));
+  for (const g of GRADIENTS) { assert.match(css, new RegExp(`\\.grad-${g.id} \\{ background: linear-gradient\\(135deg, ${g.colors.join(', ')}\\); \\}`), g.id); assert.equal(g.colors.length, 3); }
+});
+
 test('normalize.js, permissions.js y project-template.js del cliente son symlinks a server/lib (una sola fuente)', () => {
   for (const f of ['normalize', 'permissions', 'project-template']) {
     const link = path.join(CLIENT, `js/core/${f}.js`);

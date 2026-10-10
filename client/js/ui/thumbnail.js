@@ -40,8 +40,8 @@ function loadImage(src) {
   if (!imgCache.has(src)) imgCache.set(src, new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => { imgCache.delete(src); res(null); }; i.src = src; }));
   return imgCache.get(src);
 }
-/** Icono del thumbnail: el propio (thumbIconId) o, si no hay, la imagen de la instancia. */
-export const iconSrcOf = n => (n.thumbIconId ? imageSrc({ imageId: n.thumbIconId }, 'full') : imageSrc(n, 'full'));
+/** Icono del thumbnail: solo el propio (thumbIconId); sin icono, el thumbnail no lleva imagen (P12). */
+export const iconSrcOf = n => (n.thumbIconId ? imageSrc({ imageId: n.thumbIconId }, 'full') : null);
 /** Datos de dibujo a partir de un nodo del estado; `over` permite sustituir campos (editor con borrador). */
 export function thumbnailData(n, over = {}) {
   const path = []; let p = parentOf(n), g = 0; while (p && g++ < 100) { path.unshift(p.name); p = parentOf(p); }

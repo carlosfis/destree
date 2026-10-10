@@ -14,7 +14,7 @@ import {
 } from '../core/state.js';
 import { updateEdgePaths } from './render-edges.js';
 import { drawMinimap } from './minimap.js';
-import { imageSrc } from '../ui/uploader.js'; // F5
+import { DEFAULT_GRADIENT } from '../core/normalize.js'; // P12
 export const sel = { nodes: new Set(), edge: null };
 export const sizes = new Map();     // id -> { w, h, headH? } tamaño efectivo
 export const measured = new Map();  // id -> alto medido: card hoja completa o cabecera de contenedor
@@ -77,9 +77,7 @@ export const PORTS = `<div class="port port-t" data-port="t"></div><div class="p
 
 export function leafHTML(n) {
   const c = commonHTML(n);
-  const img = imageSrc(n);
-  return `${img ? `<div class="card-img"><img src="${img}" alt="" draggable="false"></div>` : ''}
-    <div class="card-body">
+  return `<div class="card-body">
       <div class="card-head"><span class="type-badge">${esc(typeName(n.type))}</span><button class="icon-btn card-menu" data-action="menu" title="Opciones">⋯</button></div>
       ${c.name}${c.desc}${c.tags}${c.foot}
     </div>${PORTS}`;
@@ -87,8 +85,7 @@ export function leafHTML(n) {
 export function headHTML(n) {
   const c = commonHTML(n);
   const bt = n.parentId ? branchTypeById(n.branchTypeId) : null;
-  const img = imageSrc(n);
-  return `${img ? `<div class="card-img"><img src="${img}" alt="" draggable="false"></div>` : ''}
+  return `${n.parentId ? '' : `<div class="card-grad grad-${esc(n.gradient || DEFAULT_GRADIENT)}"></div>`}
     <div class="head-top">
       <span class="type-badge">${esc(typeName('software'))}${n.parentId ? '' : ' · Raíz'}</span>
       ${bt ? `<span class="chip tag-${bt.color}" title="Tipo de ramificación">↳ ${esc(bt.name)}</span>` : (n.parentId ? '<span class="chip tag-gray">↳ sin tipo</span>' : visibilityChip(n))}

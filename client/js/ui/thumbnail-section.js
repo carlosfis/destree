@@ -1,6 +1,6 @@
 /* =========================================================
-   P9. Sección «Thumbnail» de la pestaña General del editor: geografía (ISO alfa-2), icono propio (imagen subida;
-   por defecto la imagen de la instancia), vista previa en vivo y botones Copiar / Descargar PNG.
+   P9. Sección «Thumbnail» de la pestaña General del editor: geografía (ISO alfa-2), icono propio (imagen subida o nada; P12: ya no hay imagen de card),
+   vista previa en vivo y botones Copiar / Descargar PNG.
    ========================================================= */
 import { $, esc, debounce } from '../core/utils.js';
 import { uploadImage, bindDropZone, imageSrc, canUpload } from './uploader.js';
@@ -34,23 +34,23 @@ export function thumbnailSection(draft) {
       <div class="field"><label>Geografía</label><select name="geo"><option value="">— Sin geografía —</option>${GEO.map(([c, n]) => `<option value="${c}" ${c === draft.geo ? 'selected' : ''}>${flagEmoji(c)} ${esc(n)}</option>`).join('')}</select></div>
       <div class="field"><label>Icono</label>
         <div class="img-field"><div class="img-preview thumb-icon-preview" id="fThumbIcon"></div>
-          <div class="img-actions"><label class="btn">Cambiar icono<input type="file" accept="image/*" hidden id="fThumbIconInput"></label><button type="button" class="btn ghost" id="fThumbIconRemove">Usar imagen de la instancia</button></div></div></div>
+          <div class="img-actions"><label class="btn">Cambiar icono<input type="file" accept="image/*" hidden id="fThumbIconInput"></label><button type="button" class="btn ghost" id="fThumbIconRemove">Quitar icono</button></div></div></div>
     </div>
-    <div class="hint">${canUpload() ? 'Mejor un PNG con fondo transparente (dispositivo, logotipo…). Si no eliges icono se usa la imagen de la instancia.' : 'Sin servidor no se puede subir un icono propio: se usa la imagen de la instancia.'}</div>
+    <div class="hint">${canUpload() ? 'Mejor un PNG con fondo transparente (dispositivo, logotipo…). Sin icono, el thumbnail se genera sin imagen.' : 'Sin servidor no se puede subir un icono propio.'}</div>
     <div class="field"><label>Vista previa <span class="counter">1920×1080</span></label>
       <div class="thumb-preview"><canvas id="fThumbCanvas" width="1920" height="1080"></canvas></div>
       ${thumbActionsHTML('fThumb')}
       <div class="hint">Se genera con los datos actuales del formulario (nombre, contenedor, etiquetas, staff, geografía e icono). En Figma: pega la imagen en un frame y usa «Set as thumbnail».</div></div>`;
-  let unbindDrop = null, onImage = null;
+  let unbindDrop = null;
   const bind = (form, base) => {
     const canvas = $('#fThumbCanvas', form);
     const data = () => ({ ...base(), geo: form.geo.value, iconSrc: iconSrcOf(draft), year: new Date().getFullYear() });
     let seq = 0;
     const refresh = debounce(() => { const n = ++seq; renderThumbnail(data(), canvas).catch(() => {}).then(() => { if (n !== seq) refresh(); }); }, 250);
     const refreshIcon = () => {
-      const own = draft.thumbIconId ? imageSrc({ imageId: draft.thumbIconId }) : null, src = own || imageSrc(draft);
+      const src = draft.thumbIconId ? imageSrc({ imageId: draft.thumbIconId }) : null;
       $('#fThumbIcon', form).innerHTML = src ? `<img src="${src}" alt="">` : 'Sin icono';
-      $('#fThumbIconRemove', form).hidden = !own; refresh();
+      $('#fThumbIconRemove', form).hidden = !src; refresh();
     };
     const setIconFile = async f => {
       if (!canUpload()) return toast('Sin servidor no se puede subir un icono propio.', 'error', 4000);
@@ -63,10 +63,9 @@ export function thumbnailSection(draft) {
     unbindDrop = bindDropZone($('#fThumbIcon', form), setIconFile);
     bindThumbActions(form, 'fThumb', data);
     for (const ev of ['input', 'change', 'click']) form.addEventListener(ev, refresh); // cualquier cambio del borrador repinta la vista previa
-    onImage = refreshIcon; document.addEventListener('destree:image', onImage); // la imagen de la instancia cambió en el editor
     refreshIcon();
   };
-  const unbind = () => { if (unbindDrop) unbindDrop(); unbindDrop = null; if (onImage) document.removeEventListener('destree:image', onImage); onImage = null; };
+  const unbind = () => { if (unbindDrop) unbindDrop(); unbindDrop = null; };
   const read = form => ({ geo: form.geo.value || '', thumbIconId: draft.thumbIconId || null });
   return { html, bind, unbind, read };
 }

@@ -5,7 +5,7 @@ import { $, esc } from '../core/utils.js';
 import { S, nodeById, tagById, rootOf, userName, cellById, typeName, isMyNode, projectHash } from '../core/state.js';
 import { renderMarkdown } from './markdown.js';
 import { pathOf, openEditor } from './card-editor.js';
-import { imageSrc } from './uploader.js';
+import { DEFAULT_GRADIENT } from '../core/normalize.js'; // P12
 import { drawerHTML, openDrawer, instanceLabel } from './node-drawer.js';
 import { thumbnailData } from './thumbnail.js';
 import { thumbActionsHTML, bindThumbActions } from './thumbnail-section.js'; // P9
@@ -17,13 +17,12 @@ export function openNodeView(id) {
   const n = nodeById(id); if (!n) return;
   const root = rootOf(n);
   const tags = n.tags.map(tagById).filter(Boolean);
-  const img = imageSrc(n, 'full');
   const people = (n.assigneeIds || []).map(u => `<span class="chip tag-gray person">${esc(userName(u))}</span>`).join('');
   const cells = (root.cellIds || []).map(c => cellById(c)).filter(Boolean).map(c => `<span class="chip tag-${esc(c.color)}">${esc(c.name)}</span>`).join('');
   const staff = (n.staff && n.staff.length ? n.staff : (n.owner ? [{ name: n.owner, role: '' }] : [])).map(m => `<li><span class="owner">${esc(m.name)}</span>${m.role ? `<span class="role">${esc(m.role)}</span>` : ''}</li>`).join('');
   const docs = (n.docs || []).filter(d => SAFE_URL.test(d.url)).map(d => `<li><a href="${esc(d.url)}" target="_blank" rel="noopener noreferrer">${esc(d.label || d.url)}</a><span class="url">${esc(d.url)}</span></li>`).join('');
   const panes = {
-    general: `${img ? `<div class="hero"><img src="${img}" alt=""></div>` : ''}
+    general: `${n.parentId ? '' : `<div class="hero grad-${esc(n.gradient || DEFAULT_GRADIENT)}"></div>`}
       <dl class="meta">
         <dt>Tipo</dt><dd>${esc(typeName(n.type))}</dd>
         <dt>Nombre</dt><dd>${esc(n.name)}</dd>

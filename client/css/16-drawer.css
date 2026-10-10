@@ -20,8 +20,7 @@
 #nodeDrawer .img-preview.drop-over { border-color: var(--accent); background: var(--accent-soft); }
 
 /* Ficha de lectura (designer) */
-#nodeDrawer .hero { height: 160px; border-radius: var(--radius); overflow: hidden; background: var(--hover); border: 1px solid var(--border); }
-#nodeDrawer .hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#nodeDrawer .hero { height: 120px; border-radius: var(--radius); overflow: hidden; } /* P12: banda con el degradado de la Main instance */
 #nodeDrawer .node-view .meta { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; font-size: 13px; }
 #nodeDrawer .node-view .meta dt { color: var(--fg-3); font-weight: 500; }
 #nodeDrawer .node-view .meta dd { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }

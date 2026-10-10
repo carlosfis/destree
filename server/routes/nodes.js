@@ -10,7 +10,7 @@ const ids = { type: 'array', maxItems: 50, items: { type: 'string', minLength: 1
 const str = max => ({ type: 'string', maxLength: max });
 const ownBody = { type: 'object', additionalProperties: false, minProperties: 1, properties: {
   name: { type: 'string', minLength: 1, maxLength: 80 }, description: str(140), notes: str(20000), geo: str(2), status: { enum: ['active', 'draft', 'deprecated', 'archived'] },
-  imageId: { type: ['string', 'null'], maxLength: 64 }, thumbIconId: { type: ['string', 'null'], maxLength: 64 }, tags: ids,
+  imageId: { type: ['string', 'null'], maxLength: 64 }, thumbIconId: { type: ['string', 'null'], maxLength: 64 }, gradient: str(24), tags: ids,
   docs: { type: 'array', maxItems: 20, items: { type: 'object', additionalProperties: false, properties: { label: str(80), url: str(2048) } } },
   staff: { type: 'array', maxItems: 20, items: { type: 'object', additionalProperties: false, properties: { name: str(80), role: str(80) } } },
 } };

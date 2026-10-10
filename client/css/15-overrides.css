@@ -15,10 +15,21 @@
    Los nodos en arrastre (z 1000) o elevados (z 900) siguen por encima; el hit-stroke de la arista sigue siendo clicable. */
 #edges { z-index: 2; }
 
-/* Hero: la imagen de una card se muestra arriba a todo el ancho (estilo Notion), también en la cabecera de los contenedores. */
-.leaf .card-img { height: 120px; }
-.ctr-head > .card-img { height: 120px; margin: -10px -12px 4px; border-radius: 11px 11px 0 0; overflow: hidden; background: var(--hover); border-bottom: 1px solid var(--border); }
-.ctr.root > .ctr-head > .card-img { margin: -12px -16px 4px; border-radius: 13px 13px 0 0; }
-.ctr-head > .card-img img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+/* P12: degradados de marca (ids en normalize.js GRADIENTS; 135°, tres paradas). Banda en la cabecera de cada Main instance, hero de la ficha y banner del proyecto. */
+.grad-sunset { background: linear-gradient(135deg, #74276c, #c53364, #fd8263); }
+.grad-violet { background: linear-gradient(135deg, #274b74, #8233c5, #e963fd); }
+.grad-candy { background: linear-gradient(135deg, #879af2, #d3208b, #fda000); }
+.grad-ocean { background: linear-gradient(135deg, #8929ad, #436aac, #43b7b8); }
+.grad-mint { background: linear-gradient(135deg, #276174, #33c58e, #63fd88); }
+.grad-aurora { background: linear-gradient(135deg, #574bcd, #2999ad, #41e975); }
+.grad-berry { background: linear-gradient(135deg, #363553, #903775, #e8458b); }
+.grad-cobalt { background: linear-gradient(135deg, #5c2774, #335cc5, #637ffd); }
+.grad-amber { background: linear-gradient(135deg, #ea5a6f, #de791e, #fccf3a); }
+.grad-flamingo { background: linear-gradient(135deg, #f17b41, #e05ba2, #cd4bc9); }
+.ctr.root > .ctr-head > .card-grad { height: 96px; margin: -12px -16px 6px; border-radius: 13px 13px 0 0; pointer-events: none; }
+.grad-picker { display: flex; flex-wrap: wrap; gap: 10px; padding: 4px 0; }
+.grad-dot { width: 34px; height: 34px; border-radius: 50%; border: 0; box-shadow: 0 1px 2px rgba(0, 0, 0, .18); transition: transform .12s, box-shadow .12s; }
+.grad-dot:hover { transform: scale(1.08); }
+.grad-dot.active { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--fg); }
 /* Staff en el pie de la card: @usuario · rol */
 .card-foot .staff .role { color: var(--fg-3); }

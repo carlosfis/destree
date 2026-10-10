@@ -3,11 +3,12 @@
    banner de marca y cuerpo por pestaña. Los datos viven en S.projectView.data (GET …/project); tras cada cambio se recargan del servidor.
    ========================================================= */
 import { $, $$, esc, applyDataStyles } from '../core/utils.js';
-import { S, nodeById, parentOf, tagById, isMyNode, projectHash } from '../core/state.js';
+import { S, nodeById, parentOf, rootOf, tagById, isMyNode, projectHash } from '../core/state.js';
+import { DEFAULT_GRADIENT } from '../core/normalize.js'; // P12
 import * as api from '../core/api.js';
 import { toast } from '../ui/theme.js';
 import { roleLabel, has } from '../core/roles.js';
-import { imageSrc } from '../ui/uploader.js';
+import { iconSrcOf } from '../ui/thumbnail.js'; // P12: icono del thumbnail como hero del overview
 import { renderOverview } from './project-overview.js';
 import { renderSchedule } from './project-schedule.js';
 import { renderKanban } from './project-kanban.js';
@@ -45,19 +46,20 @@ function bindShell(v, nid) {
   $('#projectTabs', v).addEventListener('click', e => { const b = e.target.closest('button'); if (b) location.hash = projectHash(nid, b.dataset.tab); });
   $('#projectBack', v).addEventListener('click', () => { location.hash = `#/p/${encodeURIComponent(S.pageId)}/n/${encodeURIComponent(nid)}`; });
 }
-/** Banner de marca: verde con ondas lima, chip, título, meta y hero (imagen de la card) o emoji a la derecha. */
-export function bannerHTML({ chip, title, meta = '', image = null, emoji = '', cls = '' }) {
-  return `<section class="pj-banner ${cls}">
+/** Banner de marca: degradado de la Main instance (P12) con cinta, chip, título, meta y hero (icono del thumbnail) o emoji a la derecha. */
+export function bannerHTML({ chip, title, meta = '', image = null, emoji = '', cls = '', grad = DEFAULT_GRADIENT }) {
+  return `<section class="pj-banner grad-${esc(grad)} ${cls}">
     <svg class="pj-wave" viewBox="0 0 1200 200" preserveAspectRatio="none" aria-hidden="true"><path d="M-80,150 C200,160 300,-30 600,10 C820,40 900,200 1280,120"/><path d="M700,260 C900,180 1050,230 1280,190"/></svg>
     <div class="pj-banner-card"><span class="pj-chip">${esc(chip)}</span><h1>${esc(title)}</h1>${meta ? `<div class="pj-banner-meta">${esc(meta)}</div>` : ''}</div>
     ${image ? `<img class="pj-hero" src="${image}" alt="">` : emoji ? `<span class="pj-emoji" aria-hidden="true">${emoji}</span>` : ''}
   </section>`;
 }
 function tabBanner(tab, n) {
-  if (tab === 'cronograma') return bannerHTML({ chip: 'Planeación', title: 'Cronograma de actividades', emoji: '📅' });
-  if (tab === 'kanban') return bannerHTML({ chip: 'Actividades', title: 'Actividades Kanban', emoji: '🎯' });
+  const grad = rootOf(n).gradient || DEFAULT_GRADIENT; // las cards anidadas heredan el degradado de su Main instance
+  if (tab === 'cronograma') return bannerHTML({ chip: 'Planeación', title: 'Cronograma de actividades', emoji: '📅', grad });
+  if (tab === 'kanban') return bannerHTML({ chip: 'Actividades', title: 'Actividades Kanban', emoji: '🎯', grad });
   const meta = [...pathParts(n), n.name, ...(n.tags || []).map(tagById).filter(Boolean).map(t => t.name), String(new Date().getFullYear())].map(s => `[${s}]`).join(' ');
-  return bannerHTML({ chip: 'Overview', title: n.name, meta, image: imageSrc(n, 'full'), cls: 'overview' });
+  return bannerHTML({ chip: 'Overview', title: n.name, meta, image: iconSrcOf(n), cls: 'overview', grad });
 }
 /** Repinta la pestaña activa con S.projectView.data. */
 export function renderTab() {

@@ -254,25 +254,30 @@ await step('F4b: #/admin (usuarios/células/borradas/audit) + pestaña Página d
   return { admin, audit, deleted, page };
 });
 // F5: subir imagen desde el editor (input file vía CDP) → preview /uploads → card con thumb webp; import con dataURL → archivo.
-await step('F5: upload en editor → imageId + thumb /uploads; dataURL importada → archivo', async () => {
+await step('F5/P12: icono del thumbnail en editor → thumbIconId + /uploads; dataURL importada → archivo (imageId conservado); degradado en la raíz', async () => {
   const sharp = (await import('sharp')).default;
   const pngPath = path.join(os.tmpdir(), `destree-smoke-${process.pid}.png`);
   fs.writeFileSync(pngPath, await sharp({ create: { width: 640, height: 400, channels: 3, background: '#3366cc' } }).png().toBuffer());
-  const nodeId = await ev(`S.state.nodes.find(n => n.type !== 'software')?.id || S.state.nodes[0].id`);
+  const nodeId = await ev(`S.state.nodes.find(n => !n.parentId).id`);
   await ev(`import('/js/ui/card-editor.js').then(m => m.openEditor(${JSON.stringify(nodeId)}))`); await sleep(150);
+  const grad = await ev(`({ img: !!document.querySelector('#fImgInput'), dots: document.querySelectorAll('#fGrad .grad-dot').length, active: document.querySelector('#fGrad .grad-dot.active')?.dataset.v, visible: !document.querySelector('#fGradField').hidden })`);
+  if (grad.img || grad.dots !== 10 || grad.active !== 'mint' || !grad.visible) throw new Error('selector: ' + JSON.stringify(grad));
+  await ev(`document.querySelector('#fGrad [data-v="sunset"]').click(); true`);
   const { root } = await send('DOM.getDocument', { depth: 1 });
-  const { nodeId: inputNode } = await send('DOM.querySelector', { nodeId: root.nodeId, selector: '#fImgInput' });
+  const { nodeId: inputNode } = await send('DOM.querySelector', { nodeId: root.nodeId, selector: '#fThumbIconInput' });
   await send('DOM.setFileInputFiles', { nodeId: inputNode, files: [pngPath] }); await sleep(1500);
-  const preview = await ev(`document.querySelector('#fImgPreview img')?.getAttribute('src') || document.querySelector('#fImgPreview').textContent`);
+  const preview = await ev(`document.querySelector('#fThumbIcon img')?.getAttribute('src') || document.querySelector('#fThumbIcon').textContent`);
   await ev(`document.querySelector('#editorForm').requestSubmit(); true`); await sleep(1000);
-  const node = await ev(`(() => { const n = S.state.nodes.find(n => n.id === ${JSON.stringify(nodeId)}); const img = document.querySelector('.node[data-id="' + n.id + '"] img'); return { imageId: !!n.imageId, image: n.image, src: img?.getAttribute('src'), w: img?.naturalWidth, h: img?.naturalHeight, status: document.querySelector('#saveStatus').textContent }; })()`);
-  if (!/^\/uploads\/.+\/thumb$/.test(preview) || !node.imageId || node.image) throw new Error('upload: ' + JSON.stringify({ preview, node }));
-  const srv = await ev(`fetch('/api/pages/' + S.pageId).then(r => r.json()).then(d => { const n = d.nodes.find(n => n.id === ${JSON.stringify(nodeId)}); return { imageId: !!n.imageId, image: n.image }; })`);
-  // dataURL en el documento (import legado) → el servidor crea el archivo y el cliente recarga con imageId
+  const node = await ev(`(() => { const n = S.state.nodes.find(n => n.id === ${JSON.stringify(nodeId)}); return { thumbIconId: !!n.thumbIconId, imageId: n.imageId, gradient: n.gradient, band: document.querySelector('.node[data-id="' + n.id + '"] .card-grad')?.className, status: document.querySelector('#saveStatus').textContent }; })()`);
+  if (!/^\/uploads\/.+\/thumb$/.test(preview) || !node.thumbIconId || node.gradient !== 'sunset' || !/grad-sunset/.test(node.band || '')) throw new Error('upload/degradado: ' + JSON.stringify({ preview, node }));
+  const srv = await ev(`fetch('/api/pages/' + S.pageId).then(r => r.json()).then(d => { const n = d.nodes.find(n => n.id === ${JSON.stringify(nodeId)}); return { thumbIconId: !!n.thumbIconId, gradient: n.gradient, child: d.nodes.find(x => x.parentId)?.gradient }; })`);
+  if (srv.gradient !== 'sunset' || srv.child !== '') throw new Error('servidor: ' + JSON.stringify(srv));
+  // dataURL en el documento (import legado) → el servidor crea el archivo y conserva imageId (la card ya no la muestra)
   const dataUrl = 'data:image/png;base64,' + fs.readFileSync(pngPath).toString('base64');
   const other = await ev(`S.state.nodes.find(n => n.id !== ${JSON.stringify(nodeId)} && !n.imageId).id`);
   await ev(`(() => { const n = S.state.nodes.find(n => n.id === ${JSON.stringify(other)}); n.image = ${JSON.stringify(dataUrl)}; n.imageId = null; return import('/js/core/state.js').then(m => m.persist()); })()`); await sleep(1500);
-  const ingested = await ev(`(() => { const n = S.state.nodes.find(n => n.id === ${JSON.stringify(other)}); return { imageId: !!n.imageId, image: n.image, src: document.querySelector('.node[data-id="' + n.id + '"] img')?.getAttribute('src')?.slice(0, 9) }; })()`);
+  const ingested = await ev(`(() => { const n = S.state.nodes.find(n => n.id === ${JSON.stringify(other)}); return { imageId: !!n.imageId, image: n.image, img: !!document.querySelector('.node[data-id="' + n.id + '"] img') }; })()`);
+  if (!ingested.imageId || ingested.img) throw new Error('ingesta: ' + JSON.stringify(ingested));
   fs.rmSync(pngPath, { force: true });
   return { preview: preview.slice(0, 9), node, srv, ingested };
 });

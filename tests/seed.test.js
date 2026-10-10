@@ -30,7 +30,7 @@ test('seed-demo: páginas, proyectos, portadas, cuentas y células; idempotente;
   assert.deepEqual(pages.map(p => p.name).slice(1), ['Ecosistema Elektra', 'Plataforma Tecnológica']);
   const eco = (await j({ method: 'GET', url: '/api/pages/pg_eco_elektra' }, admin)).body;
   assert.equal(eco.nodes.length, 44); assert.equal(eco.nodes.filter(n => !n.parentId).length, 11); assert.equal(eco.edges.length, 40);
-  assert.ok(eco.nodes.filter(n => !n.parentId).every(n => n.imageId), 'portadas en todas las Main instances');
+  assert.ok(eco.nodes.filter(n => !n.parentId).every(n => n.gradient && !n.imageId), 'degradado en todas las Main instances'); assert.ok(eco.nodes.filter(n => n.parentId).every(n => n.gradient === ''), 'sin degradado en cards anidadas');
   assert.equal(eco.nodes.find(n => n.id === 'ek_lideres').visibility, 'cells');
   assert.ok(eco.nodes.every(n => n.x >= 0 && n.y >= 0));
   const pl = (await j({ method: 'GET', url: '/api/pages/pg_plataforma' }, admin)).body;

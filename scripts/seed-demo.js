@@ -1,7 +1,6 @@
-// Datos demo: células, cuentas por nivel y dos páginas completas («Ecosistema Elektra» y «Plataforma Tecnológica») con portadas, relaciones y páginas de proyecto.
+// Datos demo: células, cuentas por nivel y dos páginas completas («Ecosistema Elektra» y «Plataforma Tecnológica») con degradados de marca, relaciones y páginas de proyecto.
 // Uso: node scripts/seed-demo.js [--password=<común para las cuentas demo>] [--reset]   (SEED_PASSWORD como alternativa; sin contraseña se genera una por cuenta y se imprime)
 // Escribe directamente en la BD (DATABASE_PATH o data/destree.db); el servidor puede estar corriendo (WAL). --reset borra y recrea las páginas demo (las cuentas se conservan).
-import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { openReady, DEFAULT_ORG_ID, transaction } from '../server/db/sqlite.js';
 import { config } from '../server/config.js';
@@ -10,8 +9,6 @@ import { createVersion } from '../server/lib/versions.js';
 import { importProjects } from '../server/lib/projects.js';
 import { createUser, findUserByEmail } from '../server/lib/auth.js';
 import { createCell, updateCell, setCellMembers, listCells } from '../server/lib/cells.js';
-import { storeImage } from '../server/lib/images.js';
-import { coverSVG } from './seed/covers.js';
 import * as U from './seed/users.js';
 import * as T1 from './seed/elektra-tree.js';
 import * as T2 from './seed/plataforma-tree.js';
@@ -20,7 +17,6 @@ import { projects as P2 } from './seed/plataforma-projects.js';
 
 const args = Object.fromEntries(process.argv.slice(2).map(a => { const m = a.match(/^--([^=]+)(?:=(.*))?$/); return m ? [m[1], m[2] ?? true] : [a, true]; }));
 const db = openReady(config.dbPath);
-const uploadsDir = config.uploadsDir || path.join(path.dirname(config.dbPath), 'uploads');
 const orgId = DEFAULT_ORG_ID;
 const admin = db.prepare("SELECT user_id FROM memberships WHERE org_id = ? AND role = 'admin' ORDER BY rowid LIMIT 1").get(orgId);
 if (!admin) { console.error('No hay admin: completa el asistente (POST /api/setup) antes de sembrar.'); process.exit(1); }
@@ -44,7 +40,7 @@ for (const c of U.cells) {
 }
 
 /* --- Layout: misma heurística que el auto-layout del cliente (fila de sub-contenedores y luego fila de hojas; raíces en filas) con alturas estimadas
-       a partir de lo que pinta cada card (descripción, etiquetas, chips de staff/responsable/asignados/docs/DS, consumidores externos, portada). Calibrado contra el DOM real. --- */
+       a partir de lo que pinta cada card (descripción, etiquetas, chips de staff/responsable/asignados/docs/DS, consumidores externos, banda de degradado). Calibrado contra el DOM real. --- */
 const CARD_W = 220, CTR_MIN_W = 300, PAD = 16, HEAD_GAP = 12, GAP = 24, MIN_BODY = 96;
 const L = s => String(s || '').length;
 function layout(nodes, edges, users) {
@@ -64,7 +60,7 @@ function layout(nodes, edges, users) {
     const inner = w - 32, perLine = Math.max(20, inner / 8);
     const all = [...chips(n), ...dsRefs(n.id).map(x => '• ' + x), ...(kidsOf(n.id).length ? ['9 elementos'] : [])];
     const chipLines = Math.ceil(all.reduce((a, c) => a + L(c) + 3, 0) / perLine);
-    return 68 + Math.ceil(L(n.description) / Math.max(20, inner / 7)) * 18 + (n.tags.length ? 24 : 0) + chipLines * 22 + (n.cover ? 124 : 0) + 20;
+    return 68 + Math.ceil(L(n.description) / Math.max(20, inner / 7)) * 18 + (n.tags.length ? 24 : 0) + chipLines * 22 + (n.parentId ? 0 : 100) + 20;
   };
   const order = { software: 0, ds: 1, uikit: 2 };
   const size = new Map();
@@ -90,9 +86,7 @@ async function seedPage(T, projects) {
   if (exists) { if (!args.reset) { console.log(`· ${T.page.name}: ya existe (usa --reset para recrearla)`); return; } db.prepare('DELETE FROM pages WHERE id = ?').run(T.page.id); }
   const nodes = [];
   for (const n of T.nodes) {
-    let imageId = null;
-    if (n.cover) imageId = (await storeImage(db, uploadsDir, { buffer: coverSVG(n.cover), orgId, createdBy: admin.user_id, kind: 'node', filename: `${n.id}-cover.svg` })).id;
-    nodes.push({ ...n, x: 0, y: 0, w: 0, h: 0, imageId, cellIds: (n.cells || []).map(k => cellIds[k]).filter(Boolean), ownerUserId: n.owner ? userIds[n.owner] || null : null, assigneeIds: (n.assignees || []).map(k => userIds[k]).filter(Boolean), owner: n.staff[0]?.name || '' });
+    nodes.push({ ...n, x: 0, y: 0, w: 0, h: 0, imageId: null, cellIds: (n.cells || []).map(k => cellIds[k]).filter(Boolean), ownerUserId: n.owner ? userIds[n.owner] || null : null, assigneeIds: (n.assignees || []).map(k => userIds[k]).filter(Boolean), owner: n.staff[0]?.name || '' });
   }
   layout(nodes, T.edges, Object.fromEntries(U.users.map(u => [u.key, u.name])));
   const edges = T.edges.map(([kind, from, to], i) => ({ id: `${T.page.id}_e${i}`, kind, from, to }));
