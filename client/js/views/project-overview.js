@@ -29,7 +29,7 @@ export function sectionBodyHTML(sec) {
       return `<div class="pj-quote">${d.quote ? `<blockquote>“${quote}”</blockquote>` : ''}${items.length ? `<div class="pj-quote-items">${items.map(i => `<div><b>${esc(i.title)}</b><p>${br(i.text)}</p></div>`).join('')}</div>` : ''}</div>`;
     }
     case 'goals': return items.length ? `<ul class="pj-goals">${items.map(i => `<li><span>${esc(i.text)}</span>${i.value ? `<span class="pj-pill">${esc(i.value)}</span>` : ''}</li>`).join('')}</ul>` : '';
-    case 'checklist': return items.length ? `<ul class="pj-checklist">${items.map(i => `<li class="${i.done ? 'done' : ''}"><span class="pj-check">${i.done ? '✓' : ''}</span><span class="pj-check-text">${esc(i.text)}</span><span class="pj-check-status">${esc(i.status || (i.done ? 'Listo' : 'En curso'))}</span></li>`).join('')}</ul>` : '';
+    case 'checklist': return items.length ? `<ul class="pj-checklist">${items.map(i => `<li class="${i.done ? 'done' : ''}"><span class="pj-check">${i.done ? '✓' : ''}</span><span class="pj-check-text">${esc(i.text)}</span><span class="pj-check-status">${i.done ? 'Hecho' : 'Pendiente'}</span></li>`).join('')}</ul>` : '';
     case 'people': return items.length ? `<ul class="pj-people">${items.map(i => `<li><span class="pj-avatar">${esc(roleInitials(i.role, i.name))}</span><span><b>${esc(i.name)}</b><small>${esc(i.role)}</small></span></li>`).join('')}</ul>` : '';
     default: return '';
   }

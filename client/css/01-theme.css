@@ -34,8 +34,10 @@
 
   --radius: 6px;
   --radius-lg: 10px;
+  color-scheme: light; /* los controles nativos (date, number, select, checkbox) siguen al tema de la app, no al del sistema */
 }
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #191919;
   --bg-canvas: #191919;
   --panel: #202020;

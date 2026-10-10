@@ -9,7 +9,7 @@ import { confirmBox } from '../ui/dialogs.js';
 import { SPEC, KIND_LABEL, MAX_ITEMS } from '../core/project-template.js';
 
 export const projectDialog = $('#projectDialog');
-const COL_LABEL = { emoji: 'Icono', label: 'Etiqueta', url: 'URL (https://…)', value: 'Valor', text: 'Texto', code: 'Código', title: 'Título', done: 'Hecho', status: 'Estado', name: '@Nombre', role: 'Rol', quote: 'Cita', highlight: 'Texto a resaltar (parte de la cita)' };
+const COL_LABEL = { emoji: 'Icono', label: 'Etiqueta', url: 'URL (https://…)', value: 'Valor', text: 'Texto', code: 'Código', title: 'Título', done: 'Hecho', name: '@Nombre', role: 'Rol', quote: 'Cita', highlight: 'Texto a resaltar (parte de la cita)' };
 const LIST_LABEL = { items: 'Elementos', metrics: 'Métricas' };
 const LONG = new Set(['text', 'quote']);
 const wide = k => (k === 'text' || k === 'url' ? 'wide' : k === 'emoji' || k === 'code' || k === 'done' ? 'narrow' : '');

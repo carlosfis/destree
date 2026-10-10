@@ -13,7 +13,7 @@ export const SPEC = {
   cards: { items: { code: 12, title: 80, text: 300 } },
   quote: { quote: 500, highlight: 120, items: { title: 80, text: 300 } },
   goals: { items: { text: 160, value: 40 } },
-  checklist: { items: { text: 160, done: 'bool', status: 40 } },
+  checklist: { items: { text: 160, done: 'bool' } },
   people: { items: { name: 80, role: 80 } },
 };
 const str = (v, max) => String(v ?? '').replace(/\r\n?/g, '\n').slice(0, max);

@@ -48,7 +48,7 @@ kbd {
 .icon-btn:hover { background: var(--hover); color: var(--fg); }
 .icon-btn svg { width: 16px; height: 16px; }
 
-input[type="text"], input[type="search"], input[type="email"], input[type="password"], input:not([type]), textarea, select { /* P10: email/password también (invitar, eliminar org, acceso) */
+input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input[type="number"], input[type="date"], input:not([type]), textarea, select { /* P10: email/password también (invitar, eliminar org, acceso) */
   width: 100%; padding: 6px 8px; border-radius: var(--radius);
   border: 1px solid var(--border); background: var(--bg);
   outline: none; transition: border-color .12s, box-shadow .12s;
