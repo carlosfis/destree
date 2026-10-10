@@ -23,7 +23,6 @@ node scripts/smoke.js  # checklist de UI en Chrome headless (requiere Chrome)
 - `server/` — Fastify 5 (JS ESM), SQLite vía `node:sqlite` (`db/sqlite.js`; `sharp` es la única dep nativa), `lib/normalize.js` (compartido: symlink en `client/js/core/`), `lib/pages.js`, `lib/{auth,permissions,audit}.js`, `plugins/{session,guard,origin-check}.js`, `lib/visibility.js` + `lib/cells.js`, `lib/images.js`, `lib/versions.js`, `lib/backup.js` + `lib/org-export.js`.
 - `client/` — vanilla JS ESM + CSS sin bundler. `js/core/state.js` exporta `S` (estado mutable compartido), `bootstrap()`/`persist()` vía `core/api.js`; `js/core/dom.js` nodos DOM; `js/canvas` lienzo; `js/ui` (drawer de instancia, `page-settings.js`); `js/views` (`lobby`, `admin-view`, `users`, `cells`, `me`, `auth-views`, `versions-panel`); `js/main.js` entrada única.
 - `Dockerfile`, `docker-compose.yml`, `docker/Caddyfile`, `.github/workflows/{ci,release}.yml`.
-- `promo/` — pieza de motion graphics (HTML+CSS+GSAP) y render a vídeo con Chrome headless; los vídeos no se versionan.
 - `docs/DECISIONS.md` — append-only. `docs/MAP.md` — mapa de archivos. `docs/{INSTALL,ADMIN,USER,API}.md` — documentación de producto.
 
 ## Reglas

@@ -6,6 +6,3 @@ uploads/
 .DS_Store
 *.log
 export-actual.json
-# Promo: vídeos renderizados (node promo/render.js); el fuente HTML/CSS/JS sí se versiona
-promo/*.webm
-promo/*.mp4

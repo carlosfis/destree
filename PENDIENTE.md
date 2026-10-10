@@ -4,7 +4,7 @@
 
 ## Cómo retomar (para otro agente)
 1. Leer `CLAUDE.md` (reglas) y este archivo entero.
-2. Estado al 2026-10-09 (noche): fases de agente P1, P3–P12 cerradas (P11 y P12 se hicieron en la copia `DesTree-lab` y ya están en `main`); v1.0.0 etiquetada; P9–P12 en `main` sin release (CHANGELOG «Sin publicar»). Siguiente: **P13** (limpieza para publicación) y **P14** (release v1.1.0). Abierto «usuario»: marca de los datos demo (P13), despliegue real (P2), descripción/topics del repo y vídeo (P4), operación diaria (P5), anuncio (P8). Regla vigente: la UI nueva se enseña y aprueba antes de subir a `main`.
+2. Estado al 2026-10-09 (noche): fases de agente P1, P3–P13 cerradas; v1.0.0 etiquetada; P9–P13 en `main` sin release (CHANGELOG «Sin publicar»). Siguiente: **P14** (release v1.1.0: bump, CHANGELOG, verificación Docker, tag; Carlos confirma el tag). Abierto «usuario»: despliegue real (P2), idioma/tags (P4), operación diaria (P5), anuncio (P8/P14). Sin vídeo promo (descartado). Regla vigente: la UI nueva se enseña y aprueba antes de subir a `main`.
 3. Verificación antes de cerrar: `npm test` · `npm run lint` · `node scripts/smoke.js` (si hubo UI). Actualizar `docs/MAP.md` si se crean o mueven archivos, `docs/API.md` si cambian endpoints, `CHANGELOG.md` en cada release.
 4. Lo que surja y no pueda resolverse solo se añade aquí como casilla «usuario», nunca bloquea.
 
@@ -43,13 +43,13 @@
 - [x] Repo público (comprobado 2026-10-07).
 - [x] «usuario» Descripción del repo, topics y Discussions (hecho por Carlos 2026-10-09; verificado con `gh repo view`). Comando usado:
   `gh repo edit carlosfis/destree --description "Fuente única de verdad para agencias: árbol de software, Design Systems, UI Kits, responsables y documentación. Autoalojado (Node 22 + SQLite), cinco niveles de rol (Admin · Ops · Head · Lead · Viewer)." --add-topic design-systems --add-topic design-ops --add-topic self-hosted --add-topic fastify --add-topic sqlite --add-topic agency --enable-discussions`
-- [ ] «usuario» Subir el vídeo promo (`node promo/render.js` → `promo/destree-motion.mp4`) a YouTube/Vimeo o como asset de la release y pasar el enlace; el agente sustituye la línea «pendiente de publicar» en README y README.en.
-- [x] Agente: capturas `docs/img/{canvas,drawer,lobby}.png` (`node scripts/screenshots.js`) enlazadas en README y README.en; el vídeo queda como línea «pendiente de publicar» hasta que el usuario pase el enlace.
+- [x] Vídeo promo descartado por Carlos (2026-10-09): `promo/` eliminado del repo y del README; sin vídeo en el roadmap.
+- [x] Agente: capturas `docs/img/{canvas,drawer,lobby}.png` (`node scripts/screenshots.js`) enlazadas en README y README.en; el vídeo se descartó después.
 - [x] Agente: `README.en.md` (traducción fiel del README) y enlace cruzado en la cabecera de ambos.
 - [x] Agente: `SECURITY.md` (hecho en P6) y `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 en español, contacto = correo del mantenedor).
 - [x] Agente: `npm audit --omit=dev` → había 2 high (`@fastify/static` ≤10.1.1, `sharp` <0.35.5); actualizados a 10.1.5 y 0.35.5, 0 vulnerabilidades; tests/smoke verdes; anotado en `CHANGELOG.md`.
 - [ ] «usuario» Decidir idioma de la UI a futuro (solo español hoy; i18n sería una fase propia) y si se borran los tags remotos `f5`, `f6a`, `f6b`, `f7` (rastro de fases; no afectan a nada).
-**Aceptación:** README con imagen y vídeo, versión en inglés, archivos de comunidad presentes, paquete e imagen descargables sin login.
+**Aceptación:** README con capturas, versión en inglés, archivos de comunidad presentes, paquete e imagen descargables sin login.
 
 ## P5 — Operación diaria para Design Ops (usuario, con apoyo del agente) — guías del agente hechas 2026-10-07
 **Objetivo:** que el equipo pueda vivir con la herramienta sin depender de quien la construyó.
@@ -84,7 +84,7 @@
 ## P8 — Release v1.0.0 (agente; publicación «usuario») — etiquetada 2026-10-07
 - [x] Revisión final de README/INSTALL/ADMIN/USER/API (hecha fase a fase); `CHANGELOG.md` 1.0.0. Verificación Docker de `main` antes de etiquetar: build con `sharp` 0.35, cabeceras, migración 010, `docker compose stop` libera `.server.lock`, login tras reinicio.
 - [x] `package.json` 1.0.0; `git tag v1.0.0` + push → `release.yml` publica imagen `:1.0.0` y `:latest` y el zip (resultado del workflow anotado en Resueltos).
-- [ ] «usuario» Comprobar la release en GitHub y anunciar (enlace al vídeo y al README).
+- [ ] «usuario» Comprobar la release en GitHub y anunciar (enlace al README).
 **Aceptación:** instalación limpia desde la release cumple `docs/INSTALL.md` (el agente lo comprueba con `docker compose pull` de `:1.0.0` cuando el workflow termina).
 
 ## P9 — Thumbnail para Figma (agente; aprobación «usuario») ✅ 2026-10-09
@@ -119,15 +119,15 @@
 - [x] `imageId` conservado en modelo y BD, oculto en el cliente; el thumbnail usa solo `thumbIconId`.
 **Aceptación:** cumplida (ver P11).
 
-## P13 — Limpieza para publicación (agente; decisiones «usuario»)
+## P13 — Limpieza para publicación (agente; decisiones «usuario») ✅ 2026-10-09
 **Objetivo:** que el repo público refleje v1.1.0 (P9–P12) sin textos obsoletos y con capturas actuales.
 - [x] Datos demo solo con marcas, productos y personas ficticias (Grupo Ambar: Ambar.mx, Banco Cobalto, Vértiga, Empeño Ágil, Casa Bruma; `scripts/seed/ambar-*.js`); el mantenedor aparece dos veces como DS Lead de Ambar DS. Decidido por Carlos y hecho 2026-10-09.
-- [ ] README y README.en: roles (líneas 5 y 8 aún dicen admin / head / designer), funciones nuevas (Organización, Thumbnail, Página de proyecto, color de marca), «Probar con datos demo», Roadmap a v1.1.0.
+- [x] README y README.en reescritos (2026-10-09): cinco niveles, funciones P9–P12, «Probar con datos demo», seis capturas, Roadmap 1.1.0; sin vídeo.
 - [x] `docs/ADMIN.md` → «Datos demo» (comandos local y Docker, cuentas y qué ve cada nivel, páginas, cómo retirarlos) y pointer en `docs/INSTALL.md` (2026-10-09).
-- [ ] Capturas nuevas con datos demo (`scripts/screenshots.js` → canvas, drawer, lobby + Organización y página de proyecto), tras la decisión de marca.
-- [ ] Revisión de `docs/USER.md`, `ADMIN.md`, `API.md`, `MAP.md` contra la UI real tras P10–P12 (términos, rutas, endpoints).
+- [x] Capturas nuevas sobre los datos demo (2026-10-09): `scripts/screenshots.js` siembra `seed-demo.js` en la BD temporal y genera `docs/img/{canvas,project,drawer,schedule,org,lobby}.png`.
+- [x] Revisión de docs (2026-10-09): USER, ADMIN, API e INSTALL ya reflejaban P9–P12; MAP actualizado (capturas, screenshots, smoke por módulos, sin promo).
 - [x] `@fastify/static` 10.1.5 → 10.1.6; `npm audit --omit=dev` en 0 (2026-10-09).
-- [ ] `scripts/smoke.js` (505 líneas) partido en `scripts/smoke/` por fases (regla 4), misma salida.
+- [x] `scripts/smoke.js` partido (2026-10-09): arranque + helpers en `smoke.js`, pasos en `scripts/smoke/01-canvas.js`, `02-team.js`, `03-pages-admin.js`, `04-roles.js`; misma salida y consola limpia.
 **Aceptación:** `grep -ri designer README* docs` sin resultados fuera de CHANGELOG/DECISIONS; capturas de 2026-10; tests, lint y smoke verdes.
 
 ## P14 — Release v1.1.0 (agente; publicación «usuario») — tras P13
@@ -138,6 +138,7 @@
 **Aceptación:** `docker compose pull` de `:1.1.0` → `/api/health` version 1.1.0; los datos demo cargan en la instalación limpia.
 
 ## Resueltos
+- 2026-10-09 P13 Limpieza para publicación: datos demo ficticios, sección «Datos demo» en ADMIN/INSTALL, `promo/` eliminado, README y README.en reescritos para 1.1.0, seis capturas sobre datos demo (`scripts/screenshots.js` + seed), MAP al día, `@fastify/static` 10.1.6, `scripts/smoke.js` partido en `scripts/smoke/0*.js` (34 pasos, consola limpia).
 - 2026-10-09 P13 Datos demo ficticios: marcas, productos internos, personas, ids (`am_*`, `pg_eco_ambar`), URLs y claves Jira renombrados en `scripts/seed/*`, `tests/seed.test.js`, `tests/projects.test.js`, CHANGELOG y MAP; archivos `ambar-tree.js` / `ambar-projects.js`.
 - 2026-10-09 P12 Color de marca (hecho en la copia `DesTree-lab`, traído a `main`): migración 014, diez degradados, banda en cards/ficha/proyecto; `imageId` oculto.
 - 2026-10-09 P11 Página de proyecto (`DesTree-lab` → `main`): migración 013, API `…/project/*`, vistas Overview/Cronograma/Kanban, `projects.edit`, datos demo (`scripts/seed-demo.js`), `tests/projects.test.js` + `tests/seed.test.js`; 43 tests, smoke limpio en `main`.

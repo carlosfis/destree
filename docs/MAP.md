@@ -96,9 +96,9 @@ Una línea por archivo. Actualizar al crear/mover archivos.
 
 ## scripts/
 - `lint.js` — `node --check` de todos los .js. `migrate.js` — aplica migraciones + seed. `import.js` — `node scripts/import.js archivo.json [pageId]` (ingiere dataURLs).
-- `screenshots.js` — capturas `docs/img/{canvas,drawer,lobby}.png` para el README (Chrome headless + CDP, servidor con BD temporal y datos de ejemplo; `SCALE=2` para retina).
+- `screenshots.js` — capturas `docs/img/{canvas,project,drawer,schedule,org,lobby}.png` para el README (Chrome headless + CDP, servidor con BD temporal sembrada con `seed-demo.js`; `SCALE=2` para retina).
 - `seed-demo.js` — P11: datos demo directamente en la BD (`--password=`/`SEED_PASSWORD`, `--reset`): cuentas y células de `seed/users.js`, páginas «Ecosistema Ambar» (`seed/ambar-tree.js` + `seed/ambar-projects.js`) y «Plataforma Tecnológica» (`seed/plataforma-tree.js` + `seed/plataforma-projects.js`), degradado de marca por raíz, layout con alturas calibradas, versión `import` y proyectos.
-- `backup.js` — respaldo manual sin API. `restore.js` — restaura un tar.gz con el servidor parado. `smoke.js` — checklist en Chrome headless vía CDP sobre Fastify con DB temporal (setup, lienzo, célula/editor/ficha/#/me, lobby/cambio de página, #/admin + pestaña Página, upload/ingesta, historial, respaldos, estado vacío + Escape, viewport 360×740 sin desborde, invitación→designer readonly + ficha, P3 Mi cuenta (cambio de contraseña) y 🔑 restablecer, P7 estado de correo e invitación pendiente, logout/login, P10 Lobby → Organización (niveles, capacidades, renombrar rol) y viewer editando su card con el editor acotado, P11 página de proyecto (overview → editar sección, fase + actividad en el cronograma, mover en el kanban, Escape); consola limpia).
+- `backup.js` — respaldo manual sin API. `restore.js` — restaura un tar.gz con el servidor parado. `smoke.js` — arranque del smoke (Chrome headless + CDP sobre Fastify con BD temporal), helpers y contexto; ejecuta en orden `smoke/01-canvas.js` (setup, lienzo, conectar, undo, export/import, tema, minimapa, atajos), `smoke/02-team.js` (célula, editor de raíz, Tipos, ficha, #/me), `smoke/03-pages-admin.js` (lobby/páginas, #/admin, icono y degradado, thumbnail, historial, respaldos) y `smoke/04-roles.js` (estado vacío, responsive, invitación/viewer, Mi cuenta, Organización, restablecer, editor acotado, página de proyecto). Consola limpia obligatoria.
 
 ## tests/
 - `client.test.js` — index.html (estilos en orden, único módulo, sin inline), estructura ESM (sin `let` top-level, claves de `S`, imports↔exports, symlink normalize, alcance desde `main.js`).
@@ -118,8 +118,5 @@ Una línea por archivo. Actualizar al crear/mover archivos.
 - `fixtures/legacy-v2.json` — `export-actual.json` anonimizado (11 nodos, 9 aristas, v2).
 
 ## docs/
-- `img/` — capturas del README (`canvas.png`, `drawer.png`, `lobby.png`), generadas por `scripts/screenshots.js`.
+- `img/` — capturas del README (`canvas`, `project`, `drawer`, `schedule`, `org`, `lobby`.png) sobre los datos demo, generadas por `scripts/screenshots.js`.
 - `MAP.md` — este archivo. `DECISIONS.md` — append-only. `API.md` — endpoints. `SECURITY.md` — modelo de amenazas, medidas y cabeceras (P6). `INSTALL.md` (instalación, variables, actualización), `ADMIN.md` (administración), `USER.md` (uso del lienzo), 
-
-## promo/ (motion graphics)
-- `index.html` + `motion.css` + `timeline.js` (GSAP 3.12 desde cdnjs, línea de tiempo pausada/seekable) + `player.js` (escala 1920×1080 al viewport, play/scrub, `?render=1` expone `__seek`/`__duration`). `render.js` — vídeo 1080p vía Chrome headless (CDP, JPEG por fotograma): `.mp4` (por defecto) H.264 codificado dentro de Chrome con `encoder.js` (WebCodecs + mp4-muxer@5.2.2 desde jsdelivr, sin ffmpeg); `.webm` VP8 con el ffmpeg de Playwright (`~/Library/Caches/ms-playwright/ffmpeg-*`; `FFMPEG=` para otro binario). Env `BITRATE`, `MAX_SECONDS`. Salidas `promo/*.mp4|webm` gitignored.
