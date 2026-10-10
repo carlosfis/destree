@@ -121,7 +121,7 @@
 
 ## P13 — Limpieza para publicación (agente; decisiones «usuario»)
 **Objetivo:** que el repo público refleje v1.1.0 (P9–P12) sin textos obsoletos y con capturas actuales.
-- [ ] «usuario» Decidir la marca de los datos demo: hoy «Grupo Elektra / Elektra.mx» (marca real) y «@Carlos Fischer» en Staff. Recomendación: nombres ficticios antes de publicar; el agente renombra `scripts/seed/*`, tests y CHANGELOG.
+- [x] Datos demo solo con marcas, productos y personas ficticias (Grupo Ambar: Ambar.mx, Banco Cobalto, Vértiga, Empeño Ágil, Casa Bruma; `scripts/seed/ambar-*.js`); el mantenedor aparece dos veces como DS Lead de Ambar DS. Decidido por Carlos y hecho 2026-10-09.
 - [ ] README y README.en: roles (líneas 5 y 8 aún dicen admin / head / designer), funciones nuevas (Organización, Thumbnail, Página de proyecto, color de marca), «Probar con datos demo», Roadmap a v1.1.0.
 - [ ] `docs/INSTALL.md` o `docs/ADMIN.md`: sección «Datos demo» (`node scripts/seed-demo.js [--reset]`, cuentas, contraseña).
 - [ ] Capturas nuevas con datos demo (`scripts/screenshots.js` → canvas, drawer, lobby + Organización y página de proyecto), tras la decisión de marca.
@@ -138,6 +138,7 @@
 **Aceptación:** `docker compose pull` de `:1.1.0` → `/api/health` version 1.1.0; los datos demo cargan en la instalación limpia.
 
 ## Resueltos
+- 2026-10-09 P13 Datos demo ficticios: marcas, productos internos, personas, ids (`am_*`, `pg_eco_ambar`), URLs y claves Jira renombrados en `scripts/seed/*`, `tests/seed.test.js`, `tests/projects.test.js`, CHANGELOG y MAP; archivos `ambar-tree.js` / `ambar-projects.js`.
 - 2026-10-09 P12 Color de marca (hecho en la copia `DesTree-lab`, traído a `main`): migración 014, diez degradados, banda en cards/ficha/proyecto; `imageId` oculto.
 - 2026-10-09 P11 Página de proyecto (`DesTree-lab` → `main`): migración 013, API `…/project/*`, vistas Overview/Cronograma/Kanban, `projects.edit`, datos demo (`scripts/seed-demo.js`), `tests/projects.test.js` + `tests/seed.test.js`; 43 tests, smoke limpio en `main`.
 - 2026-10-09 P10 Roles por nivel + Organización: `permissions.js` por niveles (symlink al cliente), migración 012 (designer → viewer), etiquetas por organización, Lobby → Organización (datos, roles, capacidades, plantilla, eliminar organización), reglas de asignación por nivel, Lead con PUT reconciliado, Viewer con editor acotado (`PATCH …/nodes/:id`), `tests/roles.test.js`, 39 tests, smoke 33/33.

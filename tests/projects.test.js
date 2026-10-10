@@ -78,8 +78,8 @@ test('projects API: plantilla, permisos, secciones, fases, actividades, settings
   assert.equal((await j({ method: 'POST', url: `${B}/phases`, payload: { name: '  ' } }, admin)).status, 400);
   assert.equal((await j({ method: 'PATCH', url: `${B}/phases/${f2.body.id}`, payload: { name: 'Diseño UI', position: 0 } }, admin)).body.position, 0);
   // actividades: en cronograma (fase + fecha) y solo kanban; validaciones
-  const a1 = await j({ method: 'POST', url: `${B}/activities`, payload: { title: 'Discovery', description: 'Shadowing', tag: 'ux', assignee: 'Adri Reyes', phaseId: f1.body.id, startDate: '2026-10-05', endDate: '2026-10-16' } }, des.cookie);
-  assert.equal(a1.status, 201); assert.equal(a1.body.tag, 'UX'); assert.equal(a1.body.assignee, '@Adri Reyes'); assert.equal(a1.body.status, 'todo');
+  const a1 = await j({ method: 'POST', url: `${B}/activities`, payload: { title: 'Discovery', description: 'Shadowing', tag: 'ux', assignee: 'Renata Villaseñor', phaseId: f1.body.id, startDate: '2026-10-05', endDate: '2026-10-16' } }, des.cookie);
+  assert.equal(a1.status, 201); assert.equal(a1.body.tag, 'UX'); assert.equal(a1.body.assignee, '@Renata Villaseñor'); assert.equal(a1.body.status, 'todo');
   const a2 = await j({ method: 'POST', url: `${B}/activities`, payload: { title: 'Stakeholder map', status: 'doing', assignee: '@Todos' } }, lead.cookie);
   assert.equal(a2.body.phaseId, null); assert.equal(a2.body.startDate, null); assert.equal(a2.body.position, 1);
   assert.equal((await j({ method: 'POST', url: `${B}/activities`, payload: { title: 'x', startDate: '2026-02-30' } }, admin)).status, 400, 'fecha inválida');
@@ -117,7 +117,7 @@ test('projects API: plantilla, permisos, secciones, fases, actividades, settings
   app.db.prepare('DELETE FROM projects').run();
   const imp = await j({ method: 'POST', url: '/api/org/import', payload: exp }, admin);
   assert.equal(imp.status, 200, JSON.stringify(imp.body)); assert.equal(imp.body.projects, 2);
-  assert.equal((await j({ method: 'GET', url: B }, admin)).body.activities[0].assignee, '@Adri Reyes');
+  assert.equal((await j({ method: 'GET', url: B }, admin)).body.activities[0].assignee, '@Renata Villaseñor');
   const actions = app.db.prepare('SELECT DISTINCT action FROM audit_log').all().map(r => r.action);
   for (const a of ['project.settings', 'project.section.create', 'project.section.update', 'project.section.delete', 'project.phase.create', 'project.phase.update', 'project.phase.delete', 'project.activity.create', 'project.activity.update', 'project.activity.delete']) assert.ok(actions.includes(a), a);
 });

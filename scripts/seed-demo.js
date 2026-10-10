@@ -1,4 +1,4 @@
-// Datos demo: células, cuentas por nivel y dos páginas completas («Ecosistema Elektra» y «Plataforma Tecnológica») con degradados de marca, relaciones y páginas de proyecto.
+// Datos demo: células, cuentas por nivel y dos páginas completas («Ecosistema Ambar» y «Plataforma Tecnológica») con degradados de marca, relaciones y páginas de proyecto.
 // Uso: node scripts/seed-demo.js [--password=<común para las cuentas demo>] [--reset]   (SEED_PASSWORD como alternativa; sin contraseña se genera una por cuenta y se imprime)
 // Escribe directamente en la BD (DATABASE_PATH o data/destree.db); el servidor puede estar corriendo (WAL). --reset borra y recrea las páginas demo (las cuentas se conservan).
 import { randomBytes } from 'node:crypto';
@@ -10,9 +10,9 @@ import { importProjects } from '../server/lib/projects.js';
 import { createUser, findUserByEmail } from '../server/lib/auth.js';
 import { createCell, updateCell, setCellMembers, listCells } from '../server/lib/cells.js';
 import * as U from './seed/users.js';
-import * as T1 from './seed/elektra-tree.js';
+import * as T1 from './seed/ambar-tree.js';
 import * as T2 from './seed/plataforma-tree.js';
-import { projects as P1 } from './seed/elektra-projects.js';
+import { projects as P1 } from './seed/ambar-projects.js';
 import { projects as P2 } from './seed/plataforma-projects.js';
 
 const args = Object.fromEntries(process.argv.slice(2).map(a => { const m = a.match(/^--([^=]+)(?:=(.*))?$/); return m ? [m[1], m[2] ?? true] : [a, true]; }));
