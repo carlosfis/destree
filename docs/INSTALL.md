@@ -24,6 +24,9 @@ npm start          # o: npm run dev (recarga automática)
 ```
 Para producción usa un gestor de procesos (systemd, pm2) y un proxy TLS (Caddy/nginx) con `TRUST_PROXY=1`.
 
+## Datos demo (opcional)
+`node scripts/seed-demo.js --password=<contraseña>` (con Docker: `docker compose exec destree node scripts/seed-demo.js --password=<contraseña>`) carga una organización ficticia de ejemplo: siete cuentas por nivel, cuatro células y dos páginas con proyectos. Cuentas y detalle en `docs/ADMIN.md` → «Datos demo».
+
 ## Variables (`.env`)
 | Variable | Defecto | Uso |
 |---|---|---|

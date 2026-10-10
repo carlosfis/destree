@@ -41,7 +41,7 @@
 ## P4 — Publicación a la comunidad (mixto) — parte del agente hecha 2026-10-07
 **Objetivo:** que alguien que llega al repo entienda qué es, lo vea y lo instale sin ayuda.
 - [x] Repo público (comprobado 2026-10-07).
-- [ ] «usuario» Descripción del repo (aún dice «métricas Figma»), topics y Discussions. El agente no tiene permiso para escribir en GitHub; ejecutar:
+- [x] «usuario» Descripción del repo, topics y Discussions (hecho por Carlos 2026-10-09; verificado con `gh repo view`). Comando usado:
   `gh repo edit carlosfis/destree --description "Fuente única de verdad para agencias: árbol de software, Design Systems, UI Kits, responsables y documentación. Autoalojado (Node 22 + SQLite), cinco niveles de rol (Admin · Ops · Head · Lead · Viewer)." --add-topic design-systems --add-topic design-ops --add-topic self-hosted --add-topic fastify --add-topic sqlite --add-topic agency --enable-discussions`
 - [ ] «usuario» Subir el vídeo promo (`node promo/render.js` → `promo/destree-motion.mp4`) a YouTube/Vimeo o como asset de la release y pasar el enlace; el agente sustituye la línea «pendiente de publicar» en README y README.en.
 - [x] Agente: capturas `docs/img/{canvas,drawer,lobby}.png` (`node scripts/screenshots.js`) enlazadas en README y README.en; el vídeo queda como línea «pendiente de publicar» hasta que el usuario pase el enlace.
@@ -123,7 +123,7 @@
 **Objetivo:** que el repo público refleje v1.1.0 (P9–P12) sin textos obsoletos y con capturas actuales.
 - [x] Datos demo solo con marcas, productos y personas ficticias (Grupo Ambar: Ambar.mx, Banco Cobalto, Vértiga, Empeño Ágil, Casa Bruma; `scripts/seed/ambar-*.js`); el mantenedor aparece dos veces como DS Lead de Ambar DS. Decidido por Carlos y hecho 2026-10-09.
 - [ ] README y README.en: roles (líneas 5 y 8 aún dicen admin / head / designer), funciones nuevas (Organización, Thumbnail, Página de proyecto, color de marca), «Probar con datos demo», Roadmap a v1.1.0.
-- [ ] `docs/INSTALL.md` o `docs/ADMIN.md`: sección «Datos demo» (`node scripts/seed-demo.js [--reset]`, cuentas, contraseña).
+- [x] `docs/ADMIN.md` → «Datos demo» (comandos local y Docker, cuentas y qué ve cada nivel, páginas, cómo retirarlos) y pointer en `docs/INSTALL.md` (2026-10-09).
 - [ ] Capturas nuevas con datos demo (`scripts/screenshots.js` → canvas, drawer, lobby + Organización y página de proyecto), tras la decisión de marca.
 - [ ] Revisión de `docs/USER.md`, `ADMIN.md`, `API.md`, `MAP.md` contra la UI real tras P10–P12 (términos, rutas, endpoints).
 - [x] `@fastify/static` 10.1.5 → 10.1.6; `npm audit --omit=dev` en 0 (2026-10-09).

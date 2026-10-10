@@ -17,6 +17,32 @@
 ## Primer arranque
 `/` muestra el asistente: nombre de la organización + correo/contraseña del primer admin. Solo ocurre una vez (`GET /api/setup` → `needed:false` después).
 
+## Datos demo (opcional)
+Para probar DesTree con contenido realista antes de cargar el tuyo. Todo es ficticio (Grupo Ambar, personas inventadas, dominios `grupo.demo`) y se borra como cualquier página.
+```
+node scripts/seed-demo.js --password=<contraseña>                          # sin Docker; el servidor puede estar corriendo
+docker compose exec destree node scripts/seed-demo.js --password=<contraseña>
+```
+- Requiere haber completado el asistente (existe un Admin). Sin `--password` (o `SEED_PASSWORD`) genera una contraseña aleatoria por cuenta y la imprime una sola vez.
+- Idempotente: cuentas y células existentes se conservan y las páginas no se duplican. `--reset` borra y recrea las dos páginas demo (las cuentas se mantienen).
+- Si la instalación ya tiene datos propios, antes `npm run backup`.
+
+Crea cuatro células (Retail Digital, Banca Digital, Cobranza, Ingeniería de Plataforma), siete cuentas y dos páginas. Entra con cada cuenta para ver qué cambia por nivel:
+| Rol | Cuenta | Qué ve y qué puede hacer |
+|---|---|---|
+| Ops | `ximena.prado@grupo.demo` | Todo: plantilla, respaldos, audit log, crear y borrar páginas. Miembro de las cuatro células. |
+| Head | `emilio.cordero@grupo.demo` | Todas las páginas y raíces; visibilidad y versiones. Responsable de Ambar.mx, App Ambar, Ambar DS y Cobalto DS. |
+| Lead | `renata.villasenor@grupo.demo` | Lead de Retail Digital y Cobranza. «Ecosistema Ambar» salvo Backoffice Crédito; en «Plataforma Tecnológica» solo Portal de Desarrolladores (asignada). |
+| Lead | `ivan.robles@grupo.demo` | Lead de Ingeniería de Plataforma. «Plataforma Tecnológica» completa y, en Ambar, Backoffice Crédito (responsable). |
+| Lead | `camila.ibarra@grupo.demo` | Lead de Banca Digital. Responsable de Banco Cobalto App y Remesas; ve App Campo y Backoffice Crédito por su célula. |
+| Viewer | `mateo.arriaga@grupo.demo` | Solo lectura (Cobranza). Asignado a «Asignación de investigaciones»: edita esa card con el editor acotado y toda su página de proyecto. |
+| Viewer | `gael.montes@grupo.demo` | Solo lectura (Plataforma). Responsable de Aurora DS y Aurora Web Kit, asignado en Pagos Core y Portal de Desarrolladores: edita esas cards y sus proyectos. |
+
+- **Ecosistema Ambar** (toda la organización): 11 Main instances, 44 cards y 40 conexiones (DS propios, DS de otro software y UI Kits derivados). Páginas de proyecto completas en Asignación de investigaciones, Ambar.mx, Ambar DS y Banco Cobalto App.
+- **Plataforma Tecnológica** (solo la célula Ingeniería de Plataforma; vocabulario Servicio · Librería core · SDK): 10 servicios, 39 cards y 46 conexiones. Proyectos en Pagos Core e Identidad (SSO).
+
+Para retirar los datos demo: borrar las dos páginas desde el Lobby (Ops o Admin) y desactivar o borrar las cuentas en Organización; o restaurar el respaldo previo.
+
 ## Organización (`⌂ → Organización`, Admin y Ops)
 - **Datos**: nombre de la organización (solo Admin).
 - **Niveles y roles**: cinco niveles fijos (Admin 5 · Ops 4 · Head 3 · Lead 2 · Viewer 1); cada nivel incluye todo lo del inferior. El código no cambia; el nombre visible sí (Admin lo edita; Admin queda fijo). La tabla **Capacidades por rol** muestra qué puede hacer cada nivel (misma matriz que aplica el servidor).
