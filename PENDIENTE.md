@@ -126,7 +126,7 @@
 - [ ] `docs/INSTALL.md` o `docs/ADMIN.md`: sección «Datos demo» (`node scripts/seed-demo.js [--reset]`, cuentas, contraseña).
 - [ ] Capturas nuevas con datos demo (`scripts/screenshots.js` → canvas, drawer, lobby + Organización y página de proyecto), tras la decisión de marca.
 - [ ] Revisión de `docs/USER.md`, `ADMIN.md`, `API.md`, `MAP.md` contra la UI real tras P10–P12 (términos, rutas, endpoints).
-- [ ] `@fastify/static` 10.1.5 → 10.1.6; `npm audit --omit=dev` en 0.
+- [x] `@fastify/static` 10.1.5 → 10.1.6; `npm audit --omit=dev` en 0 (2026-10-09).
 - [ ] `scripts/smoke.js` (505 líneas) partido en `scripts/smoke/` por fases (regla 4), misma salida.
 **Aceptación:** `grep -ri designer README* docs` sin resultados fuera de CHANGELOG/DECISIONS; capturas de 2026-10; tests, lint y smoke verdes.
 
