@@ -131,9 +131,9 @@
 **Aceptación:** `grep -ri designer README* docs` sin resultados fuera de CHANGELOG/DECISIONS; capturas de 2026-10; tests, lint y smoke verdes.
 
 ## P14 — Release v1.1.0 (agente; publicación «usuario») — tras P13
-- [ ] `package.json` 1.1.0; CHANGELOG «Sin publicar» → «1.1.0 — fecha»; Roadmap del README.
-- [ ] Verificación Docker de `main`: build, migraciones 011–014 sobre una BD 1.0.0, login y página de proyecto tras reinicio.
-- [ ] `git tag v1.1.0` + push → `release.yml`; comprobar imagen `:1.1.0`/`:latest` y zip; instalación limpia con `docker compose pull`.
+- [x] `package.json`/`package-lock.json` 1.1.0; CHANGELOG «1.1.0 — 2026-10-09»; Roadmap de README y README.en (2026-10-09).
+- [x] Verificación Docker (2026-10-09): imagen construida desde `main` con 1.1.0; sobre el respaldo del 2026-10-07 (migraciones 001–007) el contenedor aplicó 008–014 (roles migrados, `nodes.gradient`, `projects`); asistente, seed demo dentro del contenedor, login Lead/Viewer, permisos de proyecto (asignado 200, ajeno 403), reinicio con sesión y datos intactos, cabeceras 5/5, respaldo por API, `.server.lock` liberado al parar.
+- [ ] «usuario» confirma el tag → agente: `git tag v1.1.0` + push → `release.yml`; comprobar imagen `:1.1.0`/`:latest` y zip; instalación limpia con `docker compose pull`.
 - [ ] «usuario» Comprobar la release y anunciar.
 **Aceptación:** `docker compose pull` de `:1.1.0` → `/api/health` version 1.1.0; los datos demo cargan en la instalación limpia.
 

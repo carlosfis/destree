@@ -70,7 +70,7 @@ Cinco niveles fijos; cada nivel incluye todo lo del inferior. El nombre visible 
 `docs/INSTALL.md` (instalación y variables) · `docs/ADMIN.md` (administración y datos demo) · `docs/USER.md` (lienzo y página de proyecto) · `docs/API.md` · `docs/SECURITY.md` (modelo de amenazas y cabeceras) · `docs/MAP.md` (mapa del código) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CODE_OF_CONDUCT.md` · `SECURITY.md` (reportar vulnerabilidades) · `CHANGELOG.md` · `PENDIENTE.md` (roadmap detallado por fases).
 
 ## Roadmap
-En `main`, próximo 1.1.0: página de proyecto por card (Overview · Cronograma · Kanban) · color de marca en Main instances · cinco niveles de rol y pestaña Organización · thumbnail para Figma · datos demo. v1.0.0 trajo contraseñas, correo SMTP, hardening (CSP estricta), README en inglés y capturas. Pendiente (detalle y estado en `PENDIENTE.md`): despliegue de referencia. Fuera de alcance: integración con Figma, SSO/OAuth; la UI es solo en español por ahora.
+v1.1.0 incluye: página de proyecto por card (Overview · Cronograma · Kanban) · color de marca en Main instances · cinco niveles de rol y pestaña Organización · thumbnail para Figma · datos demo. v1.0.0 trajo contraseñas, correo SMTP, hardening (CSP estricta), README en inglés y capturas. Pendiente (detalle y estado en `PENDIENTE.md`): despliegue de referencia. Fuera de alcance: integración con Figma, SSO/OAuth; la UI es solo en español por ahora.
 
 ## Licencia
 MIT — ver `LICENSE`.

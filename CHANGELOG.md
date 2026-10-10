@@ -1,6 +1,7 @@
 # Changelog
 
-## Sin publicar
+## 1.1.0 — 2026-10-09
+Página de proyecto por card, color de marca, roles por nivel con pestaña Organización, thumbnail para Figma y datos demo; repo limpio para publicación.
 - Datos demo solo con marcas, productos y personas ficticias (Grupo Ambar; `scripts/seed/ambar-*.js`, ids `am_*`); sección «Datos demo» en `docs/ADMIN.md`. Fuera `promo/` (vídeo descartado); README y README.en reescritos para 1.1.0 con capturas nuevas sobre los datos demo.
 - Color de marca en las Main instances (P12): la imagen de card desaparece del editor y se sustituye por un selector de diez degradados predefinidos (círculos), obligatorio y con `276174 → 33C58E → 63FD88` por defecto; solo las raíces lo tienen (migración `014_gradient.sql`, `node.gradient`). Se pinta como banda en la cabecera de la card y en la ficha, y es el fondo de los encabezados de Overview, Cronograma y Actividades (las cards anidadas heredan el de su raíz). El thumbnail solo usa el icono subido o ninguno; ese icono aparece también en el encabezado del Overview. `imageId` se conserva en el modelo por compatibilidad pero ya no se muestra.
 - Datos demo (`node scripts/seed-demo.js`): cuentas por nivel, cuatro células y dos páginas completas con portadas, conexiones y páginas de proyecto («Ecosistema Ambar» y «Plataforma Tecnológica», esta última con vocabulario Servicio · Librería core · SDK). Entregables del Overview: solo texto + casilla (Hecho / Pendiente). Los controles nativos (fecha, número, URL) siguen el tema de la app (`color-scheme`), no el del sistema: ya no quedan oscuros en tema claro.

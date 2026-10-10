@@ -70,7 +70,7 @@ Five fixed levels; each level includes everything below it. The visible name of 
 Product docs are in Spanish (the UI language): `docs/INSTALL.md` (installation and variables) · `docs/ADMIN.md` (administration and demo data) · `docs/USER.md` (canvas and project page) · `docs/API.md` · `docs/SECURITY.md` (threat model and headers) · `docs/MAP.md` (code map) · `docs/DECISIONS.md` · `CONTRIBUTING.md` · `CODE_OF_CONDUCT.md` · `SECURITY.md` (reporting vulnerabilities) · `CHANGELOG.md` · `PENDIENTE.md` (detailed roadmap by phases).
 
 ## Roadmap
-On `main`, upcoming 1.1.0: project page per card (Overview · Schedule · Kanban) · brand color on Main instances · five role levels and the Organization tab · Figma thumbnail · demo data. v1.0.0 brought passwords, SMTP mail, hardening (strict CSP), the English README and screenshots. Pending (details and status in `PENDIENTE.md`): reference deployment. Out of scope: Figma integration, SSO/OAuth; the UI is Spanish-only for now.
+v1.1.0 includes: project page per card (Overview · Schedule · Kanban) · brand color on Main instances · five role levels and the Organization tab · Figma thumbnail · demo data. v1.0.0 brought passwords, SMTP mail, hardening (strict CSP), the English README and screenshots. Pending (details and status in `PENDIENTE.md`): reference deployment. Out of scope: Figma integration, SSO/OAuth; the UI is Spanish-only for now.
 
 ## License
 MIT — see `LICENSE`.
